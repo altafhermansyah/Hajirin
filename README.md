@@ -45,3 +45,23 @@ Hajirin adalah platform manajemen event dan e-ticketing berbasis web yang diranc
 - Composer >= 2.x
 - Node.js & NPM
 - PostgreSQL
+
+### Langkah Instalasi
+
+```bash
+# 1. Clone repository
+git clone https://github.com/altafhermansyah/Hajirin.git
+cd Hajirin
+
+# 2. Install dependensi PHP
+composer install
+
+# 3. Salin file environment
+cp .env.example .env
+
+# 4. Generate application key
+php artisan key:generate
+
+# 5. Sesuaikan konfigurasi database di file .env, lalu jalankan migrasi
+php artisan migrate
+```
