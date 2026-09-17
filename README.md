@@ -24,7 +24,7 @@ Hajirin adalah platform manajemen event dan e-ticketing berbasis web yang diranc
 - **Database:** PostgreSQL
 - **Frontend:** HTML, CSS, JavaScript (Blade / Tailwind CSS)
 - **Version Control:** Git & GitHub
-- **Integrasi System:** Payment Gateway (Midtrans/Xendit), QR Code Generator & Scanner
+- **Integrasi System:** Payment Gateway (Midtrans/Xendit) (TENTATIF), QR Code Generator & Scanner
 
 ---
 
