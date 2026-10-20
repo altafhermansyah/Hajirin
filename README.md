@@ -53,15 +53,33 @@ Hajirin adalah platform manajemen event dan e-ticketing berbasis web yang diranc
 git clone https://github.com/altafhermansyah/Hajirin.git
 cd Hajirin
 
-# 2. Install dependensi PHP
+# 2. Install dependensi backend (PHP)
 composer install
 
-# 3. Salin file environment
+# 3. Install dependensi frontend (React, Inertia.js, Tailwind CSS, Lucide Icons)
+npm install
+
+# 4. Salin file environment
 cp .env.example .env
 
-# 4. Generate application key
+# 5. Generate application key
 php artisan key:generate
 
-# 5. Sesuaikan konfigurasi database di file .env, lalu jalankan migrasi
+# 6. Sesuaikan konfigurasi database PostgreSQL di file .env, lalu jalankan migrasi
 php artisan migrate
+
+# 7. Jalankan server pengembangan (Development)
+
+# Opsi Rekomendasi (Menjalankan Laravel Server & Vite secara bersamaan):
+composer run dev
+
+# Atau jalankan secara terpisah di 2 terminal:
+# Terminal 1 (Backend Laravel):
+php artisan serve
+
+# Terminal 2 (Frontend React & Vite):
+npm run dev
+
+# (Opsional) Jika ingin build bundle production:
+npm run build
 ```
