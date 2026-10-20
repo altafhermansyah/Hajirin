@@ -5,12 +5,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hajirin - Website Management Event & Ticketing</title>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <link rel="icon" type="image/svg+xml" href="{{ asset('hajirin_icon.svg') }}">
     <!-- Font Plus Jakarta Sans -->
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
         rel="stylesheet">
     <!-- FontAwesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    @viteReactRefresh
+    @vite(['resources/css/app.css', 'resources/js/app.jsx'])
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -53,16 +56,39 @@
                 <a href="#" class="hover:text-blue">Kategori</a>
             </div>
         </div>
-        <div class="flex items-center space-x-5">
+        <div class="flex items-center space-x-4">
             <a href="#"
                 class="text-sm font-semibold border border-gray-300 rounded-lg px-4 py-2 hover:bg-gray-50">Buat
                 Event</a>
             <button class="text-gray-500 hover:text-navy"><i class="fa-solid fa-magnifying-glass"></i></button>
-            <a href="#" class="text-sm font-semibold text-gray-700 hover:text-navy">Masuk</a>
-            <button
-                class="bg-blue text-white px-5 py-2 rounded-lg font-semibold text-sm hover:bg-blue-700">Daftar</button>
-            <button class="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-500"><i
-                    class="fa-regular fa-user"></i></button>
+
+            @auth
+                <div class="flex items-center space-x-3 bg-gray-50 border border-gray-200 px-3 py-1.5 rounded-xl">
+                    <div class="w-7 h-7 rounded-full bg-blue text-white flex items-center justify-center font-bold text-xs uppercase">
+                        {{ substr(Auth::user()->name, 0, 1) }}
+                    </div>
+                    <div class="text-left">
+                        <p class="text-xs font-bold text-navy leading-tight">{{ Auth::user()->name }}</p>
+                        <span class="text-[10px] text-gray-500 font-medium">{{ Auth::user()->role }}</span>
+                    </div>
+                    <form method="POST" action="{{ route('logout') }}" class="inline ml-2">
+                        @csrf
+                        <button type="submit" title="Keluar" class="text-gray-400 hover:text-red-600 transition-colors p-1">
+                            <i class="fa-solid fa-arrow-right-from-bracket text-xs"></i>
+                        </button>
+                    </form>
+                </div>
+            @else
+                <button type="button" data-auth-trigger="login" class="text-sm font-semibold border border-gray-300 px-5 py-2 rounded-lg text-gray-700 hover:text-navy cursor-pointer">
+                    Masuk
+                </button>
+                <button type="button" data-auth-trigger="register" class="bg-blue text-white px-5 py-2 rounded-lg font-semibold text-sm hover:bg-blue-700 cursor-pointer shadow-sm transition-all active:scale-95">
+                    Daftar
+                </button>
+                <button type="button" data-auth-trigger="login" class="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-300 cursor-pointer transition">
+                    <i class="fa-regular fa-user"></i>
+                </button>
+            @endauth
         </div>
     </nav>
 
@@ -690,7 +716,7 @@
                 <div class="flex flex-col space-y-3 text-xs text-slate">
                     <a href="#" class="hover:text-blue">Buat Event</a>
                     <a href="#" class="hover:text-blue">Harga Tiket</a>
-                    <a href="#" class="hover:text-blue">Masuk Dashboard</a>
+                    <a href="#" data-auth-trigger="login" class="hover:text-blue">Masuk Dashboard</a>
                 </div>
             </div>
 
@@ -713,6 +739,9 @@
             </div>
         </div>
     </footer>
+
+    <!-- React Auth Modal Root -->
+    <div id="auth-modal-root"></div>
 
 </body>
 
