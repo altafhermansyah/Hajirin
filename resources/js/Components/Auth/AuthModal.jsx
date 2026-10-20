@@ -184,22 +184,20 @@ export default function AuthModal({
                     <button
                         type="button"
                         onClick={() => handleSwitchView('login')}
-                        className={`flex-1 py-2 text-center rounded-lg transition-all duration-200 cursor-pointer select-none text-xs sm:text-sm ${
-                            view === 'login'
+                        className={`flex-1 py-2 text-center rounded-lg transition-all duration-200 cursor-pointer select-none text-xs sm:text-sm ${view === 'login'
                                 ? 'bg-white text-gray-900 shadow-sm font-bold'
                                 : 'text-gray-500 hover:text-gray-900'
-                        }`}
+                            }`}
                     >
                         Masuk
                     </button>
                     <button
                         type="button"
                         onClick={() => handleSwitchView('register')}
-                        className={`flex-1 py-2 text-center rounded-lg transition-all duration-200 cursor-pointer select-none text-xs sm:text-sm ${
-                            view === 'register'
+                        className={`flex-1 py-2 text-center rounded-lg transition-all duration-200 cursor-pointer select-none text-xs sm:text-sm ${view === 'register'
                                 ? 'bg-white text-gray-900 shadow-sm font-bold'
                                 : 'text-gray-500 hover:text-gray-900'
-                        }`}
+                            }`}
                     >
                         Daftar Akun
                     </button>
@@ -255,16 +253,6 @@ export default function AuthModal({
                             <div>
                                 <div className="flex justify-between items-center mb-1.5">
                                     <Label htmlFor="login-password" className="mb-0">Kata Sandi</Label>
-                                    <a
-                                        href="#"
-                                        onClick={(e) => {
-                                            e.preventDefault();
-                                            alert('Fitur reset kata sandi akan segera hadir.');
-                                        }}
-                                        className="text-xs text-[#1D4ED8] hover:text-blue-800 hover:underline font-semibold"
-                                    >
-                                        Lupa sandi?
-                                    </a>
                                 </div>
                                 <InputGroup
                                     id="login-password"
