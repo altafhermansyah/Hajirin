@@ -94,71 +94,184 @@
 
     <!-- Hero Section -->
     <section class="px-10 py-6">
-        <div class="relative rounded-2xl overflow-hidden bg-gray-900 h-[480px]">
-            <!-- Background Image Placeholder -->
-            <img src="https://images.unsplash.com/photo-1540039155733-d7696d4eb98b?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80"
-                alt="Festival Musik" class="absolute inset-0 w-full h-full object-cover opacity-50">
-
-            <div class="absolute inset-0 bg-gradient-to-t from-navy/90 to-transparent"></div>
-
-            <div class="absolute bottom-0 left-0 right-0 p-10 flex justify-between items-end">
-                <div class="text-white max-w-3xl">
-                    <div class="flex items-center space-x-3 mb-4">
-                        <span
-                            class="bg-white/20 backdrop-blur-sm px-3 py-1 rounded border border-white/30 text-xs font-semibold uppercase tracking-wider">FESTIVAL
-                            MUSIK</span>
-                        <span
-                            class="bg-green-500/20 text-green-400 border border-green-500/30 px-3 py-1 rounded text-xs font-semibold"><i
-                                class="fa-solid fa-circle text-[8px] mr-1"></i> Tiket Tersedia</span>
-                    </div>
-                    <h1 class="text-4xl font-bold mb-3 leading-tight">Festival Musik Nusantara 2026: Merayakan Harmoni
-                        Musisi Indie & Elektronik</h1>
-
-                    <div class="flex items-center space-x-6 text-sm text-gray-300 mb-4">
-                        <span class="flex items-center"><i class="fa-regular fa-calendar mr-2"></i> 24 - 25 September
-                            2026</span>
-                        <span class="flex items-center"><i class="fa-solid fa-location-dot mr-2"></i> Stadion Gelora
-                            Bung Karno, Jakarta</span>
-                    </div>
-                    <p class="text-sm text-gray-400 mb-8 max-w-2xl">
-                        Dimeriahkan oleh lebih dari 50 musisi lokal di 3 panggung epik. Rasakan pengalaman festival
-                        musik yang belum pernah ada sebelumnya.
-                    </p>
-
-                    <div class="flex items-center space-x-6">
-                        <div>
-                            <p class="text-xs text-gray-400 mb-1">Harga Tiket Mulai</p>
-                            <p class="text-2xl font-bold">Mulai dari Rp75.000</p>
+        <div id="hero-carousel" class="relative rounded-2xl overflow-hidden bg-navy h-[480px] select-none group">
+            <!-- Carousel Slides Wrapper -->
+            <div id="hero-slides" class="relative w-full h-full">
+                <!-- Slide 1: Festival Musik -->
+                <div class="hero-slide absolute inset-0 transition-opacity duration-700 ease-in-out opacity-100 z-10" data-index="0">
+                    <img src="{{ asset('images/events/hero_festival.jpg') }}"
+                        alt="Festival Musik Nusantara 2026" class="absolute inset-0 w-full h-full object-cover">
+                    <div class="absolute inset-0 bg-gradient-to-t from-navy via-navy/60 to-transparent"></div>
+                    <div class="absolute bottom-0 left-0 right-0 p-10 flex justify-between items-end z-20">
+                        <div class="text-white max-w-3xl">
+                            <div class="flex items-center space-x-3 mb-4">
+                                <span class="bg-white/20 backdrop-blur-sm px-3 py-1 rounded border border-white/30 text-xs font-semibold uppercase tracking-wider">
+                                    FESTIVAL MUSIK
+                                </span>
+                                <span class="bg-green-500/20 text-green-400 border border-green-500/30 px-3 py-1 rounded text-xs font-semibold">
+                                    <i class="fa-solid fa-circle text-[8px] mr-1"></i> Tiket Tersedia
+                                </span>
+                            </div>
+                            <h1 class="text-4xl font-bold mb-3 leading-tight">Festival Musik Nusantara 2026: Merayakan Harmoni Musisi Indie & Elektronik</h1>
+                            <div class="flex items-center space-x-6 text-sm text-gray-300 mb-4">
+                                <span class="flex items-center"><i class="fa-regular fa-calendar mr-2"></i> 24 - 25 September 2026</span>
+                                <span class="flex items-center"><i class="fa-solid fa-location-dot mr-2"></i> Stadion Gelora Bung Karno, Jakarta</span>
+                            </div>
+                            <p class="text-sm text-gray-300 mb-8 max-w-2xl line-clamp-2">
+                                Dimeriahkan oleh lebih dari 50 musisi lokal di 3 panggung epik. Rasakan pengalaman festival musik yang belum pernah ada sebelumnya.
+                            </p>
+                            <div class="flex items-center space-x-6">
+                                <div>
+                                    <p class="text-xs text-gray-400 mb-1">Harga Tiket Mulai</p>
+                                    <p class="text-2xl font-bold">Mulai dari Rp75.000</p>
+                                </div>
+                                <button type="button" class="bg-blue text-white px-6 py-3 rounded-lg font-semibold text-sm flex items-center hover:bg-blue-700 transition active:scale-95 shadow-md cursor-pointer">
+                                    Lihat Event <i class="fa-solid fa-arrow-right ml-2"></i>
+                                </button>
+                                <button type="button" aria-label="Simpan Event" class="w-11 h-11 rounded-lg border border-white/30 flex items-center justify-center hover:bg-white/10 text-white transition active:scale-95 cursor-pointer">
+                                    <i class="fa-regular fa-bookmark"></i>
+                                </button>
+                            </div>
                         </div>
-                        <button
-                            class="bg-blue text-white px-6 py-3 rounded-lg font-semibold text-sm flex items-center hover:bg-blue-700">
-                            Lihat Event <i class="fa-solid fa-arrow-right ml-2"></i>
-                        </button>
-                        <button
-                            class="w-11 h-11 rounded-lg border border-white/30 flex items-center justify-center hover:bg-white/10 text-white">
-                            <i class="fa-regular fa-bookmark"></i>
-                        </button>
                     </div>
                 </div>
 
-                <!-- Carousel Controls -->
-                <div class="flex items-center space-x-4 mb-4">
-                    <button
-                        class="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md border border-white/20 flex items-center justify-center text-white hover:bg-white/20">
-                        <i class="fa-solid fa-chevron-left"></i>
-                    </button>
-                    <button
-                        class="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md border border-white/20 flex items-center justify-center text-white hover:bg-white/20">
-                        <i class="fa-solid fa-chevron-right"></i>
-                    </button>
+                <!-- Slide 2: Indonesia Tech Conference -->
+                <div class="hero-slide absolute inset-0 transition-opacity duration-700 ease-in-out opacity-0 pointer-events-none z-0" data-index="1">
+                    <img src="{{ asset('images/events/tech_hero.jpg') }}"
+                        alt="Indonesia Tech Conference 2026" class="absolute inset-0 w-full h-full object-cover">
+                    <div class="absolute inset-0 bg-gradient-to-t from-navy via-navy/60 to-transparent"></div>
+                    <div class="absolute bottom-0 left-0 right-0 p-10 flex justify-between items-end z-20">
+                        <div class="text-white max-w-3xl">
+                            <div class="flex items-center space-x-3 mb-4">
+                                <span class="bg-white/20 backdrop-blur-sm px-3 py-1 rounded border border-white/30 text-xs font-semibold uppercase tracking-wider">
+                                    KONFERENSI TEKNO
+                                </span>
+                                <span class="bg-green-500/20 text-green-400 border border-green-500/30 px-3 py-1 rounded text-xs font-semibold">
+                                    <i class="fa-solid fa-circle text-[8px] mr-1"></i> Tiket Tersedia
+                                </span>
+                            </div>
+                            <h1 class="text-4xl font-bold mb-3 leading-tight">Indonesia Tech Conference 2026: The Future of AI & Engineering</h1>
+                            <div class="flex items-center space-x-6 text-sm text-gray-300 mb-4">
+                                <span class="flex items-center"><i class="fa-regular fa-calendar mr-2"></i> 24 - 25 Oktober 2026</span>
+                                <span class="flex items-center"><i class="fa-solid fa-location-dot mr-2"></i> ICE BSD Hall 1, Tangerang</span>
+                            </div>
+                            <p class="text-sm text-gray-300 mb-8 max-w-2xl line-clamp-2">
+                                Menghadirkan lebih dari 500 praktisi teknologi, arsitek cloud, peneliti AI, dan pakar industri untuk membentuk masa depan ekosistem perangkat lunak global.
+                            </p>
+                            <div class="flex items-center space-x-6">
+                                <div>
+                                    <p class="text-xs text-gray-400 mb-1">Harga Tiket Mulai</p>
+                                    <p class="text-2xl font-bold">Mulai dari Rp150.000</p>
+                                </div>
+                                <button type="button" class="bg-blue text-white px-6 py-3 rounded-lg font-semibold text-sm flex items-center hover:bg-blue-700 transition active:scale-95 shadow-md cursor-pointer">
+                                    Lihat Event <i class="fa-solid fa-arrow-right ml-2"></i>
+                                </button>
+                                <button type="button" aria-label="Simpan Event" class="w-11 h-11 rounded-lg border border-white/30 flex items-center justify-center hover:bg-white/10 text-white transition active:scale-95 cursor-pointer">
+                                    <i class="fa-regular fa-bookmark"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Slide 3: Jakarta Sunrise Marathon -->
+                <div class="hero-slide absolute inset-0 transition-opacity duration-700 ease-in-out opacity-0 pointer-events-none z-0" data-index="2">
+                    <img src="{{ asset('images/events/marathon_hero.jpg') }}"
+                        alt="Jakarta Sunrise Marathon 2026" class="absolute inset-0 w-full h-full object-cover">
+                    <div class="absolute inset-0 bg-gradient-to-t from-navy via-navy/60 to-transparent"></div>
+                    <div class="absolute bottom-0 left-0 right-0 p-10 flex justify-between items-end z-20">
+                        <div class="text-white max-w-3xl">
+                            <div class="flex items-center space-x-3 mb-4">
+                                <span class="bg-white/20 backdrop-blur-sm px-3 py-1 rounded border border-white/30 text-xs font-semibold uppercase tracking-wider">
+                                    OLAHRAGA
+                                </span>
+                                <span class="bg-green-500/20 text-green-400 border border-green-500/30 px-3 py-1 rounded text-xs font-semibold">
+                                    <i class="fa-solid fa-circle text-[8px] mr-1"></i> Tiket Tersedia
+                                </span>
+                            </div>
+                            <h1 class="text-4xl font-bold mb-3 leading-tight">Jakarta Sunrise Marathon 2026: Run for Green Planet</h1>
+                            <div class="flex items-center space-x-6 text-sm text-gray-300 mb-4">
+                                <span class="flex items-center"><i class="fa-regular fa-calendar mr-2"></i> 01 November 2026</span>
+                                <span class="flex items-center"><i class="fa-solid fa-location-dot mr-2"></i> Plaza FX Sudirman, Jakarta</span>
+                            </div>
+                            <p class="text-sm text-gray-300 mb-8 max-w-2xl line-clamp-2">
+                                Berlari bersama ribuan penggiat kebugaran menyusuri fajar kota Jakarta. Setiap kilometer donasi untuk reboisasi hutan nusantara.
+                            </p>
+                            <div class="flex items-center space-x-6">
+                                <div>
+                                    <p class="text-xs text-gray-400 mb-1">Harga Tiket Mulai</p>
+                                    <p class="text-2xl font-bold">Mulai dari Rp125.000</p>
+                                </div>
+                                <button type="button" class="bg-blue text-white px-6 py-3 rounded-lg font-semibold text-sm flex items-center hover:bg-blue-700 transition active:scale-95 shadow-md cursor-pointer">
+                                    Lihat Event <i class="fa-solid fa-arrow-right ml-2"></i>
+                                </button>
+                                <button type="button" aria-label="Simpan Event" class="w-11 h-11 rounded-lg border border-white/30 flex items-center justify-center hover:bg-white/10 text-white transition active:scale-95 cursor-pointer">
+                                    <i class="fa-regular fa-bookmark"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Slide 4: Startup Growth Festival -->
+                <div class="hero-slide absolute inset-0 transition-opacity duration-700 ease-in-out opacity-0 pointer-events-none z-0" data-index="3">
+                    <img src="{{ asset('images/events/startup.jpg') }}"
+                        alt="Startup Growth Festival 2026" class="absolute inset-0 w-full h-full object-cover">
+                    <div class="absolute inset-0 bg-gradient-to-t from-navy via-navy/60 to-transparent"></div>
+                    <div class="absolute bottom-0 left-0 right-0 p-10 flex justify-between items-end z-20">
+                        <div class="text-white max-w-3xl">
+                            <div class="flex items-center space-x-3 mb-4">
+                                <span class="bg-white/20 backdrop-blur-sm px-3 py-1 rounded border border-white/30 text-xs font-semibold uppercase tracking-wider">
+                                    BISNIS & STARTUP
+                                </span>
+                                <span class="bg-blue/30 text-blue-300 border border-blue/40 px-3 py-1 rounded text-xs font-semibold">
+                                    <i class="fa-solid fa-fire text-[8px] mr-1"></i> Populer
+                                </span>
+                            </div>
+                            <h1 class="text-4xl font-bold mb-3 leading-tight">Startup Growth Festival 2026: Scale Up Beyond Boundaries</h1>
+                            <div class="flex items-center space-x-6 text-sm text-gray-300 mb-4">
+                                <span class="flex items-center"><i class="fa-regular fa-calendar mr-2"></i> 14 - 15 November 2026</span>
+                                <span class="flex items-center"><i class="fa-solid fa-location-dot mr-2"></i> JCC Senayan, Jakarta</span>
+                            </div>
+                            <p class="text-sm text-gray-300 mb-8 max-w-2xl line-clamp-2">
+                                Akselerasi bisnismu ke level berikutnya bersama para venture capital, unicorn founders, dan praktisi growth marketing terbaik di Asia Tenggara.
+                            </p>
+                            <div class="flex items-center space-x-6">
+                                <div>
+                                    <p class="text-xs text-gray-400 mb-1">Harga Tiket Mulai</p>
+                                    <p class="text-2xl font-bold">Mulai dari Rp75.000</p>
+                                </div>
+                                <button type="button" class="bg-blue text-white px-6 py-3 rounded-lg font-semibold text-sm flex items-center hover:bg-blue-700 transition active:scale-95 shadow-md cursor-pointer">
+                                    Lihat Event <i class="fa-solid fa-arrow-right ml-2"></i>
+                                </button>
+                                <button type="button" aria-label="Simpan Event" class="w-11 h-11 rounded-lg border border-white/30 flex items-center justify-center hover:bg-white/10 text-white transition active:scale-95 cursor-pointer">
+                                    <i class="fa-regular fa-bookmark"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <!-- Pagination Dots -->
-            <div class="absolute bottom-6 left-10 flex space-x-2">
-                <div class="w-6 h-1.5 rounded-full bg-blue"></div>
-                <div class="w-2 h-1.5 rounded-full bg-white/40"></div>
-                <div class="w-2 h-1.5 rounded-full bg-white/40"></div>
-                <div class="w-2 h-1.5 rounded-full bg-white/40"></div>
+
+            <!-- Carousel Controls (Previous / Next Arrows on bottom right) -->
+            <div class="absolute bottom-10 right-10 flex items-center space-x-3 z-30">
+                <button id="hero-prev-btn" type="button" aria-label="Slide Sebelumnya"
+                    class="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md border border-white/20 flex items-center justify-center text-white hover:bg-white/20 active:scale-90 transition cursor-pointer">
+                    <i class="fa-solid fa-chevron-left text-sm"></i>
+                </button>
+                <button id="hero-next-btn" type="button" aria-label="Slide Selanjutnya"
+                    class="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md border border-white/20 flex items-center justify-center text-white hover:bg-white/20 active:scale-90 transition cursor-pointer">
+                    <i class="fa-solid fa-chevron-right text-sm"></i>
+                </button>
+            </div>
+
+            <!-- Pagination Dots (Bottom left) -->
+            <div id="hero-dots" class="absolute bottom-6 left-10 flex items-center space-x-2 z-30">
+                <button type="button" aria-label="Slide 1" data-dot="0" class="h-1.5 rounded-full transition-all duration-300 w-7 bg-blue cursor-pointer"></button>
+                <button type="button" aria-label="Slide 2" data-dot="1" class="h-1.5 rounded-full transition-all duration-300 w-2 bg-white/40 hover:bg-white/70 cursor-pointer"></button>
+                <button type="button" aria-label="Slide 3" data-dot="2" class="h-1.5 rounded-full transition-all duration-300 w-2 bg-white/40 hover:bg-white/70 cursor-pointer"></button>
+                <button type="button" aria-label="Slide 4" data-dot="3" class="h-1.5 rounded-full transition-all duration-300 w-2 bg-white/40 hover:bg-white/70 cursor-pointer"></button>
             </div>
         </div>
     </section>
@@ -166,36 +279,58 @@
     <!-- Search Section -->
     <section class="px-10 py-4">
         <div class="bg-white rounded-2xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border border-gray-100 p-6">
-            <h2 class="text-lg font-bold mb-4">Ada event apa yang ingin kamu datangi?</h2>
-            <div class="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
-                <div class="flex-1 relative">
-                    <i
-                        class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                    <input type="text" placeholder="Cari nama event, artis, atau penyelenggara..."
-                        class="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-blue">
+            <h2 class="text-lg font-bold mb-4 text-navy">Ada event apa yang ingin kamu datangi?</h2>
+            <div class="flex flex-col md:flex-row items-center gap-4">
+                <!-- Search Keyword -->
+                <div class="relative flex-1 w-full">
+                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
+                        <i class="fa-solid fa-magnifying-glass text-sm"></i>
+                    </div>
+                    <input type="text"
+                        placeholder="Cari nama event, artis, atau penyelenggara..."
+                        class="w-full h-12 pl-11 pr-4 bg-gray-50 border border-gray-200 rounded-lg text-sm text-navy placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue/20 focus:border-blue transition">
                 </div>
-                <div class="w-full md:w-64 relative">
-                    <i
-                        class="fa-solid fa-location-dot absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+
+                <!-- Location Filter -->
+                <div class="relative w-full md:w-64">
+                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
+                        <i class="fa-solid fa-location-dot text-sm"></i>
+                    </div>
                     <select
-                        class="w-full pl-10 pr-8 py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm appearance-none focus:outline-none focus:ring-1 focus:ring-blue">
+                        class="w-full h-12 pl-11 pr-10 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700 font-medium appearance-none focus:outline-none focus:ring-2 focus:ring-blue/20 focus:border-blue cursor-pointer transition">
                         <option>Jakarta</option>
+                        <option>Surabaya</option>
+                        <option>Bandung</option>
+                        <option>Yogyakarta</option>
+                        <option>Bali</option>
                     </select>
-                    <i
-                        class="fa-solid fa-chevron-down absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs"></i>
+                    <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-gray-400">
+                        <i class="fa-solid fa-chevron-down text-xs"></i>
+                    </div>
                 </div>
-                <div class="w-full md:w-64 relative">
-                    <i
-                        class="fa-regular fa-calendar absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+
+                <!-- Date Filter -->
+                <div class="relative w-full md:w-64">
+                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
+                        <i class="fa-regular fa-calendar text-sm"></i>
+                    </div>
                     <select
-                        class="w-full pl-10 pr-8 py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm appearance-none focus:outline-none focus:ring-1 focus:ring-blue">
+                        class="w-full h-12 pl-11 pr-10 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700 font-medium appearance-none focus:outline-none focus:ring-2 focus:ring-blue/20 focus:border-blue cursor-pointer transition">
                         <option>Semua Waktu</option>
+                        <option>Hari Ini</option>
+                        <option>Akhir Pekan Ini</option>
+                        <option>Bulan Ini</option>
+                        <option>Bulan Depan</option>
                     </select>
-                    <i
-                        class="fa-solid fa-chevron-down absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs"></i>
+                    <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-gray-400">
+                        <i class="fa-solid fa-chevron-down text-xs"></i>
+                    </div>
                 </div>
+
+                <!-- Submit Button -->
                 <button
-                    class="bg-blue text-white px-8 py-3 rounded-lg font-semibold text-sm flex items-center justify-center hover:bg-blue-700">
+                    type="button"
+                    class="w-full md:w-auto h-12 bg-blue text-white px-8 rounded-lg font-semibold text-sm flex items-center justify-center hover:bg-blue-700 transition shadow-sm cursor-pointer shrink-0 active:scale-95">
                     <i class="fa-solid fa-magnifying-glass mr-2"></i> Cari Event
                 </button>
             </div>
@@ -215,6 +350,7 @@
         </div>
     </section>
 
+
     <!-- Event Pilihan Untukmu -->
     <section class="px-10 py-8">
         <div class="flex justify-between items-end mb-6">
@@ -231,14 +367,14 @@
             <div
                 class="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition flex flex-col h-full group">
                 <div class="relative h-48 bg-gray-200 overflow-hidden">
-                    <img src="https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=600&q=80"
-                        alt="Event"
+                    <img src="{{ asset('images/events/tech_hero.jpg') }}"
+                        alt="Indonesia Tech Conference 2026"
                         class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
                     <div
                         class="absolute top-3 left-3 bg-white px-2 py-1 rounded text-[10px] font-bold tracking-wide shadow-sm">
                         KONFERENSI TEKNO</div>
                     <button
-                        class="absolute top-3 right-3 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-sm text-gray-400 hover:text-navy"><i
+                        class="absolute top-3 right-3 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-sm text-gray-400 hover:text-navy cursor-pointer"><i
                             class="fa-regular fa-bookmark"></i></button>
                 </div>
                 <div class="p-4 flex flex-col flex-grow">
@@ -260,7 +396,7 @@
                         <p class="font-bold text-blue text-lg">Rp150.000</p>
                     </div>
                     <button
-                        class="border border-gray-300 text-sm font-semibold px-4 py-1.5 rounded-lg hover:bg-gray-100">Beli
+                        class="border border-gray-300 text-sm font-semibold px-4 py-1.5 rounded-lg hover:bg-gray-100 cursor-pointer">Beli
                         Tiket</button>
                 </div>
             </div>
@@ -269,14 +405,14 @@
             <div
                 class="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition flex flex-col h-full group">
                 <div class="relative h-48 bg-gray-200 overflow-hidden">
-                    <img src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=600&q=80"
-                        alt="Event"
+                    <img src="{{ asset('images/events/design_hero.jpg') }}"
+                        alt="UI/UX Masterclass"
                         class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
                     <div
                         class="absolute top-3 left-3 bg-white px-2 py-1 rounded text-[10px] font-bold tracking-wide shadow-sm">
                         WORKSHOP</div>
                     <button
-                        class="absolute top-3 right-3 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-sm text-gray-400 hover:text-navy"><i
+                        class="absolute top-3 right-3 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-sm text-gray-400 hover:text-navy cursor-pointer"><i
                             class="fa-regular fa-bookmark"></i></button>
                 </div>
                 <div class="p-4 flex flex-col flex-grow">
@@ -298,7 +434,7 @@
                         <p class="font-bold text-blue text-lg">Rp50.000</p>
                     </div>
                     <button
-                        class="border border-gray-300 text-sm font-semibold px-4 py-1.5 rounded-lg hover:bg-gray-100">Beli
+                        class="border border-gray-300 text-sm font-semibold px-4 py-1.5 rounded-lg hover:bg-gray-100 cursor-pointer">Beli
                         Tiket</button>
                 </div>
             </div>
@@ -307,14 +443,14 @@
             <div
                 class="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition flex flex-col h-full group">
                 <div class="relative h-48 bg-gray-200 overflow-hidden">
-                    <img src="https://images.unsplash.com/photo-1551632811-561732d1e306?auto=format&fit=crop&w=600&q=80"
-                        alt="Event"
+                    <img src="{{ asset('images/events/marathon_hero.jpg') }}"
+                        alt="Jakarta Sunrise Marathon 2026"
                         class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
                     <div
                         class="absolute top-3 left-3 bg-white px-2 py-1 rounded text-[10px] font-bold tracking-wide shadow-sm">
                         OLAHRAGA</div>
                     <button
-                        class="absolute top-3 right-3 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-sm text-gray-400 hover:text-navy"><i
+                        class="absolute top-3 right-3 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-sm text-gray-400 hover:text-navy cursor-pointer"><i
                             class="fa-regular fa-bookmark"></i></button>
                 </div>
                 <div class="p-4 flex flex-col flex-grow">
@@ -336,23 +472,23 @@
                         <p class="font-bold text-blue text-lg">Rp125.000</p>
                     </div>
                     <button
-                        class="border border-gray-300 text-sm font-semibold px-4 py-1.5 rounded-lg hover:bg-gray-100">Beli
+                        class="border border-gray-300 text-sm font-semibold px-4 py-1.5 rounded-lg hover:bg-gray-100 cursor-pointer">Beli
                         Tiket</button>
                 </div>
             </div>
 
-            <!-- Card 4 -->
+            <!-- Card 4: Soundscapes -->
             <div
                 class="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition flex flex-col h-full group">
                 <div class="relative h-48 bg-gray-200 overflow-hidden">
-                    <img src="https://images.unsplash.com/photo-1470229722913-7c092bcebf4f?auto=format&fit=crop&w=600&q=80"
-                        alt="Event"
+                    <img src="{{ asset('images/events/soundscapes.jpg') }}"
+                        alt="Soundscapes Indie & Electronic Music Night"
                         class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
                     <div
                         class="absolute top-3 left-3 bg-white px-2 py-1 rounded text-[10px] font-bold tracking-wide shadow-sm">
                         FESTIVAL MUSIK</div>
                     <button
-                        class="absolute top-3 right-3 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-sm text-gray-400 hover:text-navy"><i
+                        class="absolute top-3 right-3 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-sm text-gray-400 hover:text-navy cursor-pointer"><i
                             class="fa-regular fa-bookmark"></i></button>
                 </div>
                 <div class="p-4 flex flex-col flex-grow">
@@ -374,7 +510,7 @@
                         <p class="font-bold text-blue text-lg">Rp85.000</p>
                     </div>
                     <button
-                        class="border border-gray-300 text-sm font-semibold px-4 py-1.5 rounded-lg hover:bg-gray-100">Beli
+                        class="border border-gray-300 text-sm font-semibold px-4 py-1.5 rounded-lg hover:bg-gray-100 cursor-pointer">Beli
                         Tiket</button>
                 </div>
             </div>
@@ -393,11 +529,11 @@
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <!-- Populer 1 -->
+            <!-- Populer 1: Startup Growth Festival -->
             <div class="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition group">
                 <div class="relative h-40 bg-gray-200 overflow-hidden">
-                    <img src="https://images.unsplash.com/photo-1556761175-5973dc0f32d7?auto=format&fit=crop&w=600&q=80"
-                        alt="Event"
+                    <img src="{{ asset('images/events/startup.jpg') }}"
+                        alt="Startup Growth Festival 2026"
                         class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
                     <div
                         class="absolute top-3 left-3 bg-blue text-white px-2 py-1 rounded text-[10px] font-bold tracking-wide shadow-sm">
@@ -408,7 +544,7 @@
                     <h3 class="font-bold text-[15px] leading-tight mb-2 line-clamp-2">Startup Growth Festival 2026:
                         Scale Up Beyond...</h3>
                     <p class="text-slate text-xs mb-4 flex items-center"><i
-                            class="fa-solid fa-location-dot w-3 mr-1 text-gray-400"></i> JCC Senayan, Jakarta</p>
+                                class="fa-solid fa-location-dot w-3 mr-1 text-gray-400"></i> JCC Senayan, Jakarta</p>
                     <div class="flex justify-between items-center mt-2">
                         <p class="font-bold text-blue text-lg">Rp75.000</p>
                         <p class="text-xs text-gray-500 font-medium">Tersedia</p>
@@ -416,11 +552,11 @@
                 </div>
             </div>
 
-            <!-- Populer 2 -->
+            <!-- Populer 2: Nusantara Indie Soundwave -->
             <div class="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition group">
                 <div class="relative h-40 bg-gray-200 overflow-hidden">
-                    <img src="https://images.unsplash.com/photo-1459749411175-04bf5292ceea?auto=format&fit=crop&w=600&q=80"
-                        alt="Event"
+                    <img src="{{ asset('images/events/nusantara-indie.jpg') }}"
+                        alt="Nusantara Indie Soundwave"
                         class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
                     <div
                         class="absolute top-3 left-3 bg-orange-100 text-orange-600 px-2 py-1 rounded text-[10px] font-bold tracking-wide shadow-sm border border-orange-200">
@@ -442,11 +578,11 @@
                 </div>
             </div>
 
-            <!-- Populer 3 -->
+            <!-- Populer 3: AI Product Management -->
             <div class="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition group">
                 <div class="relative h-40 bg-gray-200 overflow-hidden">
-                    <img src="https://images.unsplash.com/photo-1531498860502-7c67cf02f657?auto=format&fit=crop&w=600&q=80"
-                        alt="Event"
+                    <img src="{{ asset('images/events/ai-product.jpg') }}"
+                        alt="AI Product Management"
                         class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
                     <div
                         class="absolute top-3 left-3 bg-emerald-100 text-emerald-600 px-2 py-1 rounded text-[10px] font-bold tracking-wide shadow-sm border border-emerald-200">
@@ -466,11 +602,11 @@
                 </div>
             </div>
 
-            <!-- Populer 4 -->
+            <!-- Populer 4: Bandung Creative & Typography -->
             <div class="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition group">
                 <div class="relative h-40 bg-gray-200 overflow-hidden">
-                    <img src="https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&fit=crop&w=600&q=80"
-                        alt="Event"
+                    <img src="{{ asset('images/events/bandung-creative.jpg') }}"
+                        alt="Bandung Creative & Typography Showcase 2026"
                         class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
                     <div
                         class="absolute top-3 left-3 bg-blue text-white px-2 py-1 rounded text-[10px] font-bold tracking-wide shadow-sm">
@@ -743,6 +879,98 @@
     <!-- React Auth Modal Root -->
     <div id="auth-modal-root"></div>
 
+    <!-- Hero Carousel Interactive Controller -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const carousel = document.getElementById('hero-carousel');
+            if (!carousel) return;
+
+            const slides = carousel.querySelectorAll('.hero-slide');
+            const dots = carousel.querySelectorAll('#hero-dots button');
+            const prevBtn = document.getElementById('hero-prev-btn');
+            const nextBtn = document.getElementById('hero-next-btn');
+
+            if (!slides.length) return;
+
+            let currentIndex = 0;
+            const totalSlides = slides.length;
+            let autoPlayTimer = null;
+            const autoPlayDelay = 5000;
+
+            function showSlide(index) {
+                currentIndex = ((index % totalSlides) + totalSlides) % totalSlides;
+
+                slides.forEach((slide, i) => {
+                    if (i === currentIndex) {
+                        slide.classList.remove('opacity-0', 'pointer-events-none', 'z-0');
+                        slide.classList.add('opacity-100', 'z-10');
+                    } else {
+                        slide.classList.remove('opacity-100', 'z-10');
+                        slide.classList.add('opacity-0', 'pointer-events-none', 'z-0');
+                    }
+                });
+
+                dots.forEach((dot, i) => {
+                    if (i === currentIndex) {
+                        dot.className = 'h-1.5 rounded-full transition-all duration-300 w-7 bg-blue cursor-pointer';
+                    } else {
+                        dot.className = 'h-1.5 rounded-full transition-all duration-300 w-2 bg-white/40 hover:bg-white/70 cursor-pointer';
+                    }
+                });
+            }
+
+            function nextSlide() {
+                showSlide(currentIndex + 1);
+            }
+
+            function prevSlide() {
+                showSlide(currentIndex - 1);
+            }
+
+            function startAutoPlay() {
+                stopAutoPlay();
+                autoPlayTimer = setInterval(nextSlide, autoPlayDelay);
+            }
+
+            function stopAutoPlay() {
+                if (autoPlayTimer) {
+                    clearInterval(autoPlayTimer);
+                    autoPlayTimer = null;
+                }
+            }
+
+            if (nextBtn) {
+                nextBtn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    nextSlide();
+                    startAutoPlay();
+                });
+            }
+
+            if (prevBtn) {
+                prevBtn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    prevSlide();
+                    startAutoPlay();
+                });
+            }
+
+            dots.forEach((dot, idx) => {
+                dot.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    showSlide(idx);
+                    startAutoPlay();
+                });
+            });
+
+            // Pause on hover, resume on mouse leave
+            carousel.addEventListener('mouseenter', stopAutoPlay);
+            carousel.addEventListener('mouseleave', startAutoPlay);
+
+            // Start initial timer
+            startAutoPlay();
+        });
+    </script>
 </body>
 
 </html>
