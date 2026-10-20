@@ -24,7 +24,6 @@ export default function AuthModal({
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [passwordConfirmation, setPasswordConfirmation] = useState('');
-    const [role, setRole] = useState('USER');
     const [remember, setRemember] = useState(false);
     const [agreedToTerms, setAgreedToTerms] = useState(false);
 
@@ -126,7 +125,6 @@ export default function AuthModal({
                     email,
                     password,
                     password_confirmation: passwordConfirmation,
-                    role,
                 }),
             });
 
@@ -297,20 +295,6 @@ export default function AuthModal({
                                 )}
                             </div>
 
-                            {/* Remember Me */}
-                            <div className="flex items-center pt-0.5">
-                                <input
-                                    id="login-remember"
-                                    type="checkbox"
-                                    checked={remember}
-                                    onChange={(e) => setRemember(e.target.checked)}
-                                    className="w-4 h-4 text-[#1D4ED8] border-gray-300 rounded focus:ring-[#1D4ED8] cursor-pointer"
-                                />
-                                <label htmlFor="login-remember" className="ml-2 text-xs text-gray-600 select-none cursor-pointer">
-                                    Ingat saya di perangkat ini
-                                </label>
-                            </div>
-
                             {/* Submit Button */}
                             <div className="pt-2">
                                 <Button
@@ -342,38 +326,9 @@ export default function AuthModal({
                 {view === 'register' && (
                     <div className="tab-enter">
                         <form onSubmit={handleRegisterSubmit} className="space-y-3.5">
-                            <div className="mb-1">
+                            <div className="mb-2">
                                 <h3 className="text-lg font-bold text-gray-900 tracking-tight">Buat Akun Baru</h3>
-                                <p className="text-xs text-gray-500">Daftar sekarang untuk pesan tiket atau kelola event</p>
-                            </div>
-
-                            {/* Role Selector */}
-                            <div>
-                                <Label>Daftar Sebagai</Label>
-                                <div className="grid grid-cols-2 gap-2">
-                                    <button
-                                        type="button"
-                                        onClick={() => setRole('USER')}
-                                        className={`py-2 px-3 text-xs font-semibold rounded-xl border text-center transition-all cursor-pointer ${
-                                            role === 'USER'
-                                                ? 'bg-blue-50/80 border-[#1D4ED8] text-[#1D4ED8] font-bold shadow-xs'
-                                                : 'border-gray-200 text-gray-600 hover:bg-gray-50'
-                                        }`}
-                                    >
-                                        Pengunjung (User)
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setRole('EO')}
-                                        className={`py-2 px-3 text-xs font-semibold rounded-xl border text-center transition-all cursor-pointer ${
-                                            role === 'EO'
-                                                ? 'bg-blue-50/80 border-[#1D4ED8] text-[#1D4ED8] font-bold shadow-xs'
-                                                : 'border-gray-200 text-gray-600 hover:bg-gray-50'
-                                        }`}
-                                    >
-                                        Penyelenggara (EO)
-                                    </button>
-                                </div>
+                                <p className="text-xs text-gray-500">Daftar sekarang untuk mulai pesan tiket event seru</p>
                             </div>
 
                             {/* Name */}
