@@ -5,18 +5,22 @@ namespace Tests\Feature;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 class AuthenticationTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_login_modal_page_can_be_rendered(): void
+    public function test_home_page_can_be_rendered(): void
     {
         $response = $this->get('/');
 
         $response->assertStatus(200);
-        $response->assertSee('auth-modal-root');
+        $response->assertInertia(fn (Assert $page) => $page
+            ->component('Home')
+            ->has('auth.user')
+        );
     }
 
     public function test_users_can_authenticate_using_the_login_endpoint(): void

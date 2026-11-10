@@ -1,11 +1,15 @@
-<html>
+<!DOCTYPE html>
+<html lang="id">
     <head>
-        <meta charset="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        @vite('resources/js/app.js')
-        <x-inertia::head />
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="csrf-token" content="{{ csrf_token() }}">
+        <link rel="icon" type="image/svg+xml" href="/hajirin_icon.svg">
+        @viteReactRefresh
+        @vite(['resources/css/app.css', 'resources/js/app.jsx'])
+        @inertiaHead
     </head>
-    <body>
-        <x-inertia::app />
+    <body class="bg-white font-sans text-navy antialiased">
+        @inertia
     </body>
 </html>
