@@ -46,4 +46,3 @@ class TicketType extends Model
         return $this->hasOne(TicketPrice::class)->where('status', 'ACTIVE')->latest();
     }
 }
-

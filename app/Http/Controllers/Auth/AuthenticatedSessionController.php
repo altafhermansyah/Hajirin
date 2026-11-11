@@ -37,15 +37,18 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
+        $redirectUrl = Auth::user()->role === 'ADMIN' ? '/admin/dashboard' : '/';
+
         if ($request->expectsJson() || $request->ajax()) {
             return response()->json([
                 'success' => true,
                 'message' => 'Berhasil masuk!',
                 'user' => Auth::user(),
+                'redirect_url' => $redirectUrl,
             ]);
         }
 
-        return redirect()->intended('/');
+        return redirect()->intended($redirectUrl);
     }
 
     /**

@@ -34,4 +34,3 @@ class TicketPrice extends Model
         return $this->belongsTo(TicketType::class);
     }
 }
-

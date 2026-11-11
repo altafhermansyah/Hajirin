@@ -152,4 +152,3 @@ class TicketCheckoutTest extends TestCase
         $response->assertSessionHasErrors(['quantity']);
     }
 }
-

@@ -17,9 +17,34 @@ class DatabaseSeeder extends Seeder
     {
         // User::factory(10)->create();
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
+        // Admin Account
+        User::updateOrCreate(
+            ['email' => 'admin@hajirin.com'],
+            [
+                'name' => 'Altaf Muhammad Hermansyah',
+                'password' => 'password',
+                'role' => 'ADMIN',
+            ]
+        );
+
+        // Event Organizer Account
+        User::updateOrCreate(
+            ['email' => 'eo@hajirin.com'],
+            [
+                'name' => 'Shobiburrahmat Al Fahruz',
+                'password' => 'password',
+                'role' => 'EO',
+            ]
+        );
+
+        // Peserta / User Account
+        User::updateOrCreate(
+            ['email' => 'peserta@hajirin.com'],
+            [
+                'name' => 'Ahmad Maulana Nugroho',
+                'password' => 'password',
+                'role' => 'USER',
+            ]
+        );
     }
 }

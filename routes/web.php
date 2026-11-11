@@ -1,11 +1,12 @@
 <?php
 
+use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CheckoutController;
-use App\Http\Controllers\EventController; // Pastikan EventController di-import
-use App\Http\Controllers\UserDashboardController; // Wajib di-import agar database terbaca
+use App\Http\Controllers\EventController;
+use App\Http\Controllers\UserDashboardController;
 use App\Models\Category;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -33,6 +34,12 @@ Route::get('/kategori/{type?}', [CategoryController::class, 'index'])->name('kat
 
 // Route Detail Event
 Route::get('/event/{slug}', [EventController::class, 'show'])->name('event.show');
+
+// Route Admin Dashboard
+Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/', fn () => redirect()->route('admin.dashboard'));
+    Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+});
 
 // Route Autentikasi (Guest)
 Route::middleware('guest')->group(function () {

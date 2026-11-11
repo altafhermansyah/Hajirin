@@ -42,4 +42,19 @@ class User extends Authenticatable
     {
         return $this->hasManyThrough(Ticket::class, Order::class);
     }
+
+    public function isAdmin(): bool
+    {
+        return $this->role === 'ADMIN';
+    }
+
+    public function isEo(): bool
+    {
+        return $this->role === 'EO';
+    }
+
+    public function isUser(): bool
+    {
+        return $this->role === 'USER';
+    }
 }
