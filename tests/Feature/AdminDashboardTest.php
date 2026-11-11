@@ -76,16 +76,13 @@ class AdminDashboardTest extends TestCase
             'role' => 'ADMIN',
         ]);
 
-        $response = $this->postJson('/login', [
+        $response = $this->post('/login', [
             'email' => 'admin@example.com',
             'password' => 'secret123',
         ]);
 
-        $response->assertStatus(200);
-        $response->assertJson([
-            'success' => true,
-            'redirect_url' => '/admin/dashboard',
-        ]);
+        $this->assertAuthenticatedAs($admin);
+        $response->assertRedirect('/admin/dashboard');
     }
 
     public function test_admin_accessing_user_dashboard_is_redirected_to_admin_dashboard(): void

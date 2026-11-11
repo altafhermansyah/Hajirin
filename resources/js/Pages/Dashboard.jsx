@@ -1,10 +1,9 @@
 import { Head, Link } from '@inertiajs/react';
 import { useState } from 'react';
 import {
-    ArrowLeft, CalendarDays, ChevronRight, CircleHelp, Clock3,
+    ArrowLeft, CalendarDays, ChevronRight, Clock3,
     CreditCard, LayoutDashboard, LogOut, MapPin, Ticket, UserRound,
-    QrCode, Download, Printer, X, Check, Copy, Sparkles, ExternalLink,
-    ShieldCheck
+    QrCode, Printer, X, Check, Copy, Sparkles, ShieldCheck
 } from 'lucide-react';
 
 const currency = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 });
@@ -139,7 +138,7 @@ export default function Dashboard({ auth, dashboard }) {
                             <StatCard
                                 icon={CalendarDays}
                                 label="Event Mendatang"
-                                value={dashboard.upcomingEvents.length}
+                                value={dashboard.upcomingEventCount ?? 0}
                                 detail="Jadwal event yang belum berlangsung"
                             />
                             <StatCard
@@ -355,7 +354,7 @@ export default function Dashboard({ auth, dashboard }) {
 
                                 {/* Scannable QR Code Box */}
                                 <div className="rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 p-6 flex flex-col items-center justify-center text-center">
-                                    {/* SVG QR Code Pattern Mockup */}
+                                    {/* shortcut: static SVG QR placeholder, replace with real QR code generator once EO check-in system is implemented */}
                                     <div className="size-40 bg-white p-3 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-center">
                                         <svg viewBox="0 0 100 100" className="size-full">
                                             {/* Corner Markers */}

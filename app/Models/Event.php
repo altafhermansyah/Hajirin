@@ -13,7 +13,20 @@ class Event extends Model
 {
     use HasFactory, HasUuids;
 
-    protected $guarded = [];
+    protected $fillable = [
+        'eo_id',
+        'category_id',
+        'title',
+        'slug',
+        'description',
+        'event_type',
+        'venue_name',
+        'address',
+        'online_url',
+        'starts_at',
+        'ends_at',
+        'banner_path',
+    ];
 
     protected function casts(): array
     {

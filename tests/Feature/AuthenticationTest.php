@@ -30,49 +30,42 @@ class AuthenticationTest extends TestCase
             'password' => Hash::make('password123'),
         ]);
 
-        $response = $this->postJson('/login', [
+        $response = $this->post('/login', [
             'email' => 'test@example.com',
             'password' => 'password123',
         ]);
 
-        $this->assertAuthenticated();
-        $response->assertStatus(200);
-        $response->assertJson([
-            'success' => true,
-        ]);
+        $this->assertAuthenticatedAs($user);
+        $response->assertRedirect('/');
     }
 
     public function test_users_can_not_authenticate_with_invalid_password(): void
     {
-        $user = User::factory()->create([
+        User::factory()->create([
             'email' => 'test@example.com',
             'password' => Hash::make('password123'),
         ]);
 
-        $response = $this->postJson('/login', [
+        $response = $this->post('/login', [
             'email' => 'test@example.com',
             'password' => 'wrong-password',
         ]);
 
         $this->assertGuest();
-        $response->assertStatus(422);
+        $response->assertSessionHasErrors('email');
     }
 
     public function test_new_users_can_register(): void
     {
-        $response = $this->postJson('/register', [
+        $response = $this->post('/register', [
             'name' => 'John Doe',
             'email' => 'johndoe@example.com',
             'password' => 'password123',
             'password_confirmation' => 'password123',
-            'role' => 'USER',
         ]);
 
         $this->assertAuthenticated();
-        $response->assertStatus(200);
-        $response->assertJson([
-            'success' => true,
-        ]);
+        $response->assertRedirect('/');
 
         $this->assertDatabaseHas('users', [
             'email' => 'johndoe@example.com',
@@ -83,7 +76,7 @@ class AuthenticationTest extends TestCase
 
     public function test_registration_requires_password_confirmation(): void
     {
-        $response = $this->postJson('/register', [
+        $response = $this->post('/register', [
             'name' => 'John Doe',
             'email' => 'johndoe@example.com',
             'password' => 'password123',
@@ -91,18 +84,16 @@ class AuthenticationTest extends TestCase
         ]);
 
         $this->assertGuest();
-        $response->assertStatus(422);
-        $response->assertJsonValidationErrors(['password']);
+        $response->assertSessionHasErrors('password');
     }
 
     public function test_users_can_logout(): void
     {
         $user = User::factory()->create();
 
-        $response = $this->actingAs($user)->postJson('/logout');
+        $response = $this->actingAs($user)->post('/logout');
 
         $this->assertGuest();
-        $response->assertStatus(200);
-        $response->assertJson(['success' => true]);
+        $response->assertRedirect('/');
     }
 }

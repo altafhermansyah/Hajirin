@@ -89,12 +89,6 @@ export function DialogContent({ className, children, onClose, ...props }) {
     );
 }
 
-export function DialogHeader({ className, ...props }) {
-    return (
-        <div className={cn('flex flex-col space-y-1.5 text-left mb-6', className)} {...props} />
-    );
-}
-
 export function DialogTitle({ className, ...props }) {
     return (
         <h2 className={cn('text-xl font-bold tracking-tight text-gray-900', className)} {...props} />

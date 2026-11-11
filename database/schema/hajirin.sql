@@ -629,9 +629,6 @@ CREATE TABLE notifications (
 CREATE INDEX idx_users_role
     ON users(role);
 
-CREATE INDEX idx_users_email
-    ON users(email);
-
 
 -- EO APPLICATIONS
 CREATE INDEX idx_eo_applications_user
@@ -647,9 +644,6 @@ CREATE INDEX idx_events_eo
 
 CREATE INDEX idx_events_category
     ON events(category_id);
-
-CREATE INDEX idx_events_status
-    ON events(status);
 
 CREATE INDEX idx_events_starts_at
     ON events(starts_at);
@@ -683,9 +677,6 @@ CREATE INDEX idx_ticket_prices_period
 
 
 -- ORDERS
-CREATE INDEX idx_orders_user
-    ON orders(user_id);
-
 CREATE INDEX idx_orders_event
     ON orders(event_id);
 

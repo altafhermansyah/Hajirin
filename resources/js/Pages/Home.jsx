@@ -1,4 +1,4 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import {
     ArrowRight,
     Bookmark,
@@ -128,26 +128,22 @@ export default function Home({ auth, categories = [] }) {
         setActiveSlide((currentSlide) => (currentSlide + offset + heroEvents.length) % heroEvents.length);
     }
 
-    async function confirmLogout() {
-        setIsLoggingOut(true);
-        try {
-            const response = await fetch('/logout', {
-                method: 'POST',
-                headers: {
-                    Accept: 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '',
-                    'X-Requested-With': 'XMLHttpRequest',
+    function confirmLogout() {
+        router.post(
+            '/logout',
+            {},
+            {
+                onStart: () => setIsLoggingOut(true),
+                onSuccess: () => {
+                    setIsLogoutConfirmOpen(false);
+                    setLogoutToast({ type: 'success', message: 'Berhasil keluar dari akun.' });
                 },
-            });
-            if (!response.ok) throw new Error('Logout request failed');
-            setLogoutToast({ type: 'success', message: 'Berhasil keluar dari akun.' });
-            setIsLogoutConfirmOpen(false);
-            window.setTimeout(() => window.location.reload(), 1800);
-        } catch {
-            setLogoutToast({ type: 'error', message: 'Gagal keluar. Periksa koneksi lalu coba lagi.' });
-        } finally {
-            setIsLoggingOut(false);
-        }
+                onError: () => {
+                    setLogoutToast({ type: 'error', message: 'Gagal keluar. Periksa koneksi lalu coba lagi.' });
+                },
+                onFinish: () => setIsLoggingOut(false),
+            },
+        );
     }
 
     const getCategoryIcon = (slug) => {
@@ -171,7 +167,7 @@ export default function Home({ auth, categories = [] }) {
             <nav className="sticky top-0 z-50 flex items-center justify-between border-b border-gray-100 bg-white px-4 py-4 sm:px-8 lg:px-10">
                 <div className="flex items-center gap-5 sm:gap-8">
                     <Link href="/" className="flex items-center gap-2" aria-label="Beranda Hajirin">
-                        <img src="/logo hajirin ver 4.svg" alt="Logo Hajirin" className="h-8 w-auto" />
+                        <img src="/hajirin_icon.svg" alt="Logo Hajirin" className="h-8 w-auto" />
                         <span className="text-2xl font-bold tracking-tighter text-navy">HAJIRIN</span>
                     </Link>
                     <div className="hidden gap-6 text-sm font-medium text-gray-700 md:flex">
@@ -264,7 +260,16 @@ export default function Home({ auth, categories = [] }) {
                 <section className="px-4 pb-8 sm:px-8 lg:px-10">
                     <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
                         {featuredEvents.map((evt) => (
-                            <FeaturedCard key={evt.title} {...evt} onBuyTicket={(e) => { e.preventDefault(); if (!auth?.user) openAuthModal('login'); }} />
+                            <FeaturedCard
+                                key={evt.title}
+                                {...evt}
+                                onBuyTicket={(e) => {
+                                    if (!auth?.user) {
+                                        e.preventDefault();
+                                        openAuthModal('login');
+                                    }
+                                }}
+                            />
                         ))}
                     </div>
                 </section>
@@ -321,7 +326,7 @@ export default function Home({ auth, categories = [] }) {
                 <section className="px-4 py-10 sm:px-8 lg:px-10"><div className="relative flex flex-col items-center justify-between overflow-hidden rounded-2xl bg-navy p-8 text-center md:flex-row md:p-10 md:text-left"><div className="absolute -right-32 -top-32 size-64 rounded-full bg-brand-blue/10 blur-3xl" /><div className="relative z-10 max-w-2xl text-white"><p className="mb-3 text-xs font-bold uppercase tracking-widest text-yellow-400">Untuk Penyelenggara Acara</p><h2 className="mb-3 text-3xl font-bold">Punya acara yang ingin kamu selenggarakan?</h2><p className="text-sm text-gray-300">Kelola event, jual tiket secara digital dalam satu sistem, dan pantau secara real-time dari tingkat pengunjung hingga hasil penjualanmu!</p></div><div className="relative z-10 mt-6 flex flex-col items-center md:mt-0 md:items-end"><button type="button" className="inline-flex items-center rounded-lg bg-brand-blue px-8 py-3.5 text-sm font-semibold text-white shadow-lg shadow-brand-blue/30 hover:bg-blue-800"><PlusCircle className="mr-2 size-4" />Mulai Buat Event</button><a href="#" className="mt-3 inline-flex items-center text-xs text-gray-300 hover:text-white hover:underline">Pelajari lebih lanjut <ArrowRight className="ml-1 size-3" /></a></div></div></section>
             </main>
 
-            <footer className="border-t border-gray-100 bg-white px-4 pb-6 pt-12 sm:px-8 lg:px-10"><div className="mb-12 grid grid-cols-1 gap-8 md:grid-cols-4"><div className="pr-4"><div className="mb-4 flex items-center gap-2"><img src="/logo hajirin ver 4.svg" alt="" className="h-8 w-auto" /><span className="text-xl font-bold tracking-tighter">HAJIRIN</span></div><p className="mb-6 text-xs leading-relaxed text-slate">Platform e-ticketing aggregate komunitas dan ekosistem penyelenggara event terpercaya di Indonesia.</p><FooterLinks links={['Tentang Hajirin', 'Karir Kami', 'Kontak']} /></div><FooterColumn title="Untuk Pengunjung" links={['Jelajah Event', 'Kategori', 'Beli Tiket']} /><FooterColumn title="Untuk EO" links={['Buat Event', 'Harga Tiket']} onDashboardClick={() => openAuthModal('login')} /><FooterColumn title="Informasi" links={['Syarat & Ketentuan', 'Kebijakan Privasi', 'FAQ']} /></div><div className="flex flex-col items-center justify-between border-t border-gray-100 pt-6 text-[11px] text-gray-400 md:flex-row"><p>© 2026 Hajirin - Platform E-ticketing & Management Event Indonesia</p><span className="mt-4 md:mt-0">Pilih Bahasa: Bahasa Indonesia</span></div></footer>
+            <footer className="border-t border-gray-100 bg-white px-4 pb-6 pt-12 sm:px-8 lg:px-10"><div className="mb-12 grid grid-cols-1 gap-8 md:grid-cols-4"><div className="pr-4"><div className="mb-4 flex items-center gap-2"><img src="/hajirin_icon.svg" alt="" className="h-8 w-auto" /><span className="text-xl font-bold tracking-tighter">HAJIRIN</span></div><p className="mb-6 text-xs leading-relaxed text-slate">Platform e-ticketing aggregate komunitas dan ekosistem penyelenggara event terpercaya di Indonesia.</p><FooterLinks links={['Tentang Hajirin', 'Karir Kami', 'Kontak']} /></div><FooterColumn title="Untuk Pengunjung" links={['Jelajah Event', 'Kategori', 'Beli Tiket']} /><FooterColumn title="Untuk EO" links={['Buat Event', 'Harga Tiket']} onDashboardClick={() => openAuthModal('login')} /><FooterColumn title="Informasi" links={['Syarat & Ketentuan', 'Kebijakan Privasi', 'FAQ']} /></div><div className="flex flex-col items-center justify-between border-t border-gray-100 pt-6 text-[11px] text-gray-400 md:flex-row"><p>© 2026 Hajirin - Platform E-ticketing & Management Event Indonesia</p><span className="mt-4 md:mt-0">Pilih Bahasa: Bahasa Indonesia</span></div></footer>
 
             <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} initialView={authView} />
 

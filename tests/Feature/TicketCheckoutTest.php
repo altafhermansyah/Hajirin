@@ -151,4 +151,26 @@ class TicketCheckoutTest extends TestCase
 
         $response->assertSessionHasErrors(['quantity']);
     }
+
+    public function test_user_cannot_order_tickets_for_unpublished_event_or_inactive_price(): void
+    {
+        $user = User::factory()->create();
+        $event = Event::where('slug', 'indonesia-tech-conference-2026')->firstOrFail();
+        $ticketType = TicketType::where('event_id', $event->id)->where('quota', '>', 0)->firstOrFail();
+        $activePrice = $ticketType->activePrice;
+
+        $activePrice->update(['status' => 'INACTIVE']);
+
+        $response = $this->actingAs($user)->post('/checkout', [
+            'event_id' => $event->id,
+            'ticket_type_id' => $ticketType->id,
+            'ticket_price_id' => $activePrice->id,
+            'quantity' => 1,
+            'payment_method' => 'qris',
+            'attendee_name' => 'John Doe',
+            'attendee_email' => 'john@example.com',
+        ]);
+
+        $response->assertStatus(404);
+    }
 }

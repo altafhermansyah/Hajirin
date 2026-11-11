@@ -14,7 +14,9 @@ use Inertia\Inertia;
 // Route Checkout (Membutuhkan Login)
 Route::middleware('auth')->group(function () {
     Route::get('/checkout', [CheckoutController::class, 'show'])->name('checkout');
-    Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
+    Route::post('/checkout', [CheckoutController::class, 'store'])
+        ->middleware('throttle:20,1')
+        ->name('checkout.store');
 });
 
 // Route Home (Mengirimkan data categories dari database)
@@ -42,7 +44,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
 });
 
 // Route Autentikasi (Guest)
-Route::middleware('guest')->group(function () {
+Route::middleware(['guest', 'throttle:5,1'])->group(function () {
     Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('login');
     Route::post('/register', [RegisteredUserController::class, 'store'])->name('register');
 });

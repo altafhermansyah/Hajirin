@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\RegisterRequest;
 use App\Models\User;
 use Illuminate\Auth\Events\Registered;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -16,14 +15,15 @@ class RegisteredUserController extends Controller
     /**
      * Handle an incoming registration request.
      */
-    public function store(RegisterRequest $request): JsonResponse|RedirectResponse
+    public function store(RegisterRequest $request): RedirectResponse
     {
-        $user = User::create([
+        $user = new User([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
-            'role' => 'USER',
         ]);
+        $user->role = 'USER';
+        $user->save();
 
         event(new Registered($user));
 
@@ -31,14 +31,6 @@ class RegisteredUserController extends Controller
 
         $request->session()->regenerate();
 
-        if ($request->expectsJson() || $request->ajax()) {
-            return response()->json([
-                'success' => true,
-                'message' => 'Pendaftaran berhasil!',
-                'user' => $user,
-            ]);
-        }
-
-        return redirect()->intended('/');
+        return redirect()->intended(url()->previous() ?: '/');
     }
 }

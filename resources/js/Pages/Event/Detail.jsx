@@ -791,10 +791,6 @@ export default function EventDetail({ auth, eventSlug, eventData, relatedEvents 
                 isOpen={isAuthModalOpen}
                 onClose={() => setIsAuthModalOpen(false)}
                 initialView={authView}
-                onSuccess={() => {
-                    setIsAuthModalOpen(false);
-                    router.reload();
-                }}
             />
         </>
     );

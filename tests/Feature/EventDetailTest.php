@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Event;
 use Database\Seeders\CategorySeeder;
 use Database\Seeders\EventSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -37,6 +38,16 @@ class EventDetailTest extends TestCase
     public function test_non_existent_event_returns_404(): void
     {
         $response = $this->get('/event/event-tidak-ada-123456');
+
+        $response->assertStatus(404);
+    }
+
+    public function test_unpublished_event_returns_404(): void
+    {
+        Event::where('slug', 'indonesia-tech-conference-2026')
+            ->update(['status' => 'DRAFT']);
+
+        $response = $this->get('/event/indonesia-tech-conference-2026');
 
         $response->assertStatus(404);
     }

@@ -15,36 +15,41 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
+        User::unguarded(function (): void {
+            // Admin Account
+            User::updateOrCreate(
+                ['email' => 'admin@hajirin.com'],
+                [
+                    'name' => 'Altaf Muhammad Hermansyah',
+                    'password' => 'password',
+                    'role' => 'ADMIN',
+                ]
+            );
 
-        // Admin Account
-        User::updateOrCreate(
-            ['email' => 'admin@hajirin.com'],
-            [
-                'name' => 'Altaf Muhammad Hermansyah',
-                'password' => 'password',
-                'role' => 'ADMIN',
-            ]
-        );
+            // Event Organizer Account
+            User::updateOrCreate(
+                ['email' => 'eo@hajirin.com'],
+                [
+                    'name' => 'Shobiburrahmat Al Fahruz',
+                    'password' => 'password',
+                    'role' => 'EO',
+                ]
+            );
 
-        // Event Organizer Account
-        User::updateOrCreate(
-            ['email' => 'eo@hajirin.com'],
-            [
-                'name' => 'Shobiburrahmat Al Fahruz',
-                'password' => 'password',
-                'role' => 'EO',
-            ]
-        );
+            // Peserta / User Account
+            User::updateOrCreate(
+                ['email' => 'peserta@hajirin.com'],
+                [
+                    'name' => 'Ahmad Maulana Nugroho',
+                    'password' => 'password',
+                    'role' => 'USER',
+                ]
+            );
+        });
 
-        // Peserta / User Account
-        User::updateOrCreate(
-            ['email' => 'peserta@hajirin.com'],
-            [
-                'name' => 'Ahmad Maulana Nugroho',
-                'password' => 'password',
-                'role' => 'USER',
-            ]
-        );
+        $this->call([
+            CategorySeeder::class,
+            EventSeeder::class,
+        ]);
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreCheckoutRequest;
 use App\Models\Event;
 use App\Models\Order;
 use App\Models\OrderItem;
@@ -10,6 +11,7 @@ use App\Models\Ticket;
 use App\Models\TicketPrice;
 use App\Models\TicketType;
 use Carbon\Carbon;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -26,44 +28,31 @@ class CheckoutController extends Controller
     {
         $eventSlug = $request->query('event');
         $ticketTypeId = $request->query('ticket_id');
+        $priceId = $request->query('price_id');
         $requestedQty = (int) $request->query('qty', 1);
 
-        // 1. Cari data event dari database
+        // 1. Cari data event yang berstatus PUBLISHED dari database
         $event = Event::with('category')
             ->where('slug', $eventSlug)
             ->where('status', 'PUBLISHED')
-            ->first();
+            ->firstOrFail();
 
-        // Jika slug tidak ditemukan, ambil event pertama yang dipublikasikan sebagai fallback
-        if (! $event) {
-            $event = Event::with('category')->where('status', 'PUBLISHED')->firstOrFail();
-        }
-
-        // 2. Cari tipe tiket dari database
-        $ticketType = null;
-        if ($ticketTypeId) {
-            $ticketType = TicketType::where('id', $ticketTypeId)
-                ->where('event_id', $event->id)
-                ->first();
-        }
-
-        // Jika tidak ada ticketTypeId yang valid, ambil tiket pertama yang tersedia
-        if (! $ticketType) {
-            $ticketType = TicketType::where('event_id', $event->id)
-                ->where('status', 'ACTIVE')
-                ->where('quota', '>', 0)
-                ->first();
-        }
-
-        // Jika semua habis, ambil tiket pertama apapun
-        if (! $ticketType) {
-            $ticketType = TicketType::where('event_id', $event->id)->firstOrFail();
-        }
-
-        // 3. Ambil harga tiket aktif
-        $ticketPrice = TicketPrice::where('ticket_type_id', $ticketType->id)
+        // 2. Cari tipe tiket aktif yang masih memiliki kuota
+        $ticketTypeQuery = TicketType::where('event_id', $event->id)
             ->where('status', 'ACTIVE')
-            ->first();
+            ->where('quota', '>', 0);
+
+        $ticketType = $ticketTypeId
+            ? $ticketTypeQuery->where('id', $ticketTypeId)->firstOrFail()
+            : $ticketTypeQuery->firstOrFail();
+
+        // 3. Ambil harga tiket aktif sesuai price_id (jika ada)
+        $ticketPriceQuery = TicketPrice::where('ticket_type_id', $ticketType->id)
+            ->where('status', 'ACTIVE');
+
+        $ticketPrice = $priceId
+            ? $ticketPriceQuery->where('id', $priceId)->firstOrFail()
+            : $ticketPriceQuery->first();
 
         $unitPrice = (float) ($ticketPrice?->price ?? 0);
         $maxQty = $ticketType->quota > 0 ? min($ticketType->quota, 5) : 1;
@@ -105,28 +94,24 @@ class CheckoutController extends Controller
     /**
      * Proses transaksi pemesanan tiket dan simpan ke database.
      */
-    public function store(Request $request)
+    public function store(StoreCheckoutRequest $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'event_id' => ['required', 'string', 'exists:events,id'],
-            'ticket_type_id' => ['required', 'string', 'exists:ticket_types,id'],
-            'ticket_price_id' => ['nullable', 'string', 'exists:ticket_prices,id'],
-            'quantity' => ['required', 'integer', 'min:1', 'max:5'],
-            'payment_method' => ['required', 'string', 'in:qris,transfer,card'],
-            'attendee_name' => ['required', 'string', 'max:100'],
-            'attendee_email' => ['required', 'email', 'max:255'],
-            'attendee_phone' => ['nullable', 'string', 'max:25'],
-        ]);
+        $validated = $request->validated();
 
         $user = $request->user();
 
         $orderData = DB::transaction(function () use ($user, $validated) {
-            // 1. Ambil Event
-            $event = Event::findOrFail($validated['event_id']);
+            // 1. Ambil Event yang berstatus PUBLISHED
+            $event = Event::where('id', $validated['event_id'])
+                ->where('status', 'PUBLISHED')
+                ->firstOrFail();
 
-            // 2. Kunci (lock) baris ticket_type agar aman dari race condition kuota
+            // 2. Kunci (lock) baris ticket_type yang ACTIVE dan dalam periode penjualan
             $ticketType = TicketType::where('id', $validated['ticket_type_id'])
                 ->where('event_id', $event->id)
+                ->where('status', 'ACTIVE')
+                ->where(fn ($query) => $query->whereNull('sale_start')->orWhere('sale_start', '<=', now()))
+                ->where(fn ($query) => $query->whereNull('sale_end')->orWhere('sale_end', '>=', now()))
                 ->lockForUpdate()
                 ->firstOrFail();
 
@@ -136,19 +121,15 @@ class CheckoutController extends Controller
                 ]);
             }
 
-            // 3. Ambil Harga Tiket
-            $ticketPrice = null;
-            if (! empty($validated['ticket_price_id'])) {
-                $ticketPrice = TicketPrice::where('id', $validated['ticket_price_id'])
-                    ->where('ticket_type_id', $ticketType->id)
-                    ->first();
-            }
+            // 3. Ambil Harga Tiket yang ACTIVE dan dalam periode berlaku
+            $ticketPriceQuery = TicketPrice::where('ticket_type_id', $ticketType->id)
+                ->where('status', 'ACTIVE')
+                ->where(fn ($query) => $query->whereNull('starts_at')->orWhere('starts_at', '<=', now()))
+                ->where(fn ($query) => $query->whereNull('ends_at')->orWhere('ends_at', '>=', now()));
 
-            if (! $ticketPrice) {
-                $ticketPrice = TicketPrice::where('ticket_type_id', $ticketType->id)
-                    ->where('status', 'ACTIVE')
-                    ->first();
-            }
+            $ticketPrice = ! empty($validated['ticket_price_id'])
+                ? $ticketPriceQuery->where('id', $validated['ticket_price_id'])->firstOrFail()
+                : $ticketPriceQuery->first();
 
             $unitPrice = (float) ($ticketPrice?->price ?? 0);
             $totalAmount = $unitPrice * $validated['quantity'];

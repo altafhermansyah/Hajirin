@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { useForm } from '@inertiajs/react';
 import { Dialog, DialogContent } from '../ui/Dialog';
 import { Button } from '../ui/Button';
 import { InputGroup } from '../ui/Input';
 import { Label } from '../ui/Label';
-import { Mail, Lock, User, Eye, EyeOff, AlertCircle, CheckCircle2, ArrowRight } from 'lucide-react';
+import { Mail, Lock, User, Eye, EyeOff, AlertCircle, ArrowRight } from 'lucide-react';
 
 export default function AuthModal({
     isOpen,
@@ -14,150 +15,63 @@ export default function AuthModal({
     const [view, setView] = useState(initialView);
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-    const [loading, setLoading] = useState(false);
-    const [errors, setErrors] = useState({});
-    const [generalError, setGeneralError] = useState('');
-    const [successMessage, setSuccessMessage] = useState('');
-
-    // Form fields
-    const [name, setName] = useState('');
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [passwordConfirmation, setPasswordConfirmation] = useState('');
-    const [remember, setRemember] = useState(false);
     const [agreedToTerms, setAgreedToTerms] = useState(false);
 
-    // Sync initial view when modal opens
+    const loginForm = useForm({
+        email: '',
+        password: '',
+        remember: false,
+    });
+
+    const registerForm = useForm({
+        name: '',
+        email: '',
+        password: '',
+        password_confirmation: '',
+    });
+
     useEffect(() => {
         if (isOpen) {
             setView(initialView);
-            setErrors({});
-            setGeneralError('');
-            setSuccessMessage('');
+            loginForm.clearErrors();
+            registerForm.clearErrors();
         }
     }, [isOpen, initialView]);
 
     const handleSwitchView = (newView) => {
         if (newView === view) return;
         setView(newView);
-        setErrors({});
-        setGeneralError('');
-        setSuccessMessage('');
+        loginForm.clearErrors();
+        registerForm.clearErrors();
     };
 
-    const getCsrfToken = () => {
-        const tokenMeta = document.querySelector('meta[name="csrf-token"]');
-        return tokenMeta ? tokenMeta.getAttribute('content') : '';
-    };
-
-    const handleLoginSubmit = async (e) => {
+    const handleLoginSubmit = (e) => {
         e.preventDefault();
-        setLoading(true);
-        setErrors({});
-        setGeneralError('');
-        setSuccessMessage('');
-
-        try {
-            const response = await fetch('/login', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': getCsrfToken(),
-                    'X-Requested-With': 'XMLHttpRequest',
-                },
-                body: JSON.stringify({
-                    email,
-                    password,
-                    remember,
-                }),
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                if (response.status === 422 && data.errors) {
-                    setErrors(data.errors);
-                } else {
-                    setGeneralError(data.message || 'Email atau kata sandi tidak cocok.');
-                }
-                setLoading(false);
-                return;
-            }
-
-            setSuccessMessage('Berhasil masuk! Mengalihkan...');
-            if (onSuccess) {
-                onSuccess(data.user);
-            }
-
-            const targetUrl = data.redirect_url || (data.user?.role === 'ADMIN' ? '/admin/dashboard' : null);
-
-            setTimeout(() => {
-                if (targetUrl) {
-                    window.location.href = targetUrl;
-                } else {
-                    window.location.reload();
-                }
-            }, 800);
-        } catch (err) {
-            setGeneralError('Terjadi gangguan koneksi. Silakan coba kembali.');
-            setLoading(false);
-        }
+        loginForm.post('/login', {
+            preserveScroll: true,
+            onSuccess: () => {
+                loginForm.reset('password');
+                onClose();
+                onSuccess?.();
+            },
+        });
     };
 
-    const handleRegisterSubmit = async (e) => {
+    const handleRegisterSubmit = (e) => {
         e.preventDefault();
         if (!agreedToTerms) {
-            setErrors(prev => ({ ...prev, terms: ['Harap setujui Syarat & Ketentuan'] }));
+            registerForm.setError('terms', 'Harap setujui Syarat & Ketentuan');
             return;
         }
 
-        setLoading(true);
-        setErrors({});
-        setGeneralError('');
-        setSuccessMessage('');
-
-        try {
-            const response = await fetch('/register', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': getCsrfToken(),
-                    'X-Requested-With': 'XMLHttpRequest',
-                },
-                body: JSON.stringify({
-                    name,
-                    email,
-                    password,
-                    password_confirmation: passwordConfirmation,
-                }),
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                if (response.status === 422 && data.errors) {
-                    setErrors(data.errors);
-                } else {
-                    setGeneralError(data.message || 'Gagal mendaftar. Periksa data Anda.');
-                }
-                setLoading(false);
-                return;
-            }
-
-            setSuccessMessage('Pendaftaran berhasil! Mengalihkan...');
-            if (onSuccess) {
-                onSuccess(data.user);
-            }
-
-            setTimeout(() => {
-                window.location.reload();
-            }, 800);
-        } catch (err) {
-            setGeneralError('Terjadi kesalahan server saat mendaftar.');
-            setLoading(false);
-        }
+        registerForm.post('/register', {
+            preserveScroll: true,
+            onSuccess: () => {
+                registerForm.reset('password', 'password_confirmation');
+                onClose();
+                onSuccess?.();
+            },
+        });
     };
 
     return (
@@ -190,39 +104,26 @@ export default function AuthModal({
                     <button
                         type="button"
                         onClick={() => handleSwitchView('login')}
-                        className={`flex-1 py-2 text-center rounded-lg transition-all duration-200 cursor-pointer select-none text-xs sm:text-sm ${view === 'login'
+                        className={`flex-1 py-2 text-center rounded-lg transition-all duration-200 cursor-pointer select-none text-xs sm:text-sm ${
+                            view === 'login'
                                 ? 'bg-white text-gray-900 shadow-sm font-bold'
                                 : 'text-gray-500 hover:text-gray-900'
-                            }`}
+                        }`}
                     >
                         Masuk
                     </button>
                     <button
                         type="button"
                         onClick={() => handleSwitchView('register')}
-                        className={`flex-1 py-2 text-center rounded-lg transition-all duration-200 cursor-pointer select-none text-xs sm:text-sm ${view === 'register'
+                        className={`flex-1 py-2 text-center rounded-lg transition-all duration-200 cursor-pointer select-none text-xs sm:text-sm ${
+                            view === 'register'
                                 ? 'bg-white text-gray-900 shadow-sm font-bold'
                                 : 'text-gray-500 hover:text-gray-900'
-                            }`}
+                        }`}
                     >
                         Daftar Akun
                     </button>
                 </div>
-
-                {/* Alerts */}
-                {generalError && (
-                    <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-100 flex items-start space-x-2.5 text-xs text-red-600">
-                        <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                        <span>{generalError}</span>
-                    </div>
-                )}
-
-                {successMessage && (
-                    <div className="mb-4 p-3 rounded-xl bg-emerald-50 border border-emerald-100 flex items-start space-x-2.5 text-xs text-emerald-700">
-                        <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />
-                        <span>{successMessage}</span>
-                    </div>
-                )}
 
                 {/* VIEW: LOGIN */}
                 {view === 'login' && (
@@ -241,16 +142,16 @@ export default function AuthModal({
                                     icon={Mail}
                                     type="email"
                                     placeholder="nama@email.com"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
+                                    value={loginForm.data.email}
+                                    onChange={(e) => loginForm.setData('email', e.target.value)}
                                     required
                                     autoFocus
-                                    error={!!errors.email}
+                                    error={!!loginForm.errors.email}
                                 />
-                                {errors.email && (
+                                {loginForm.errors.email && (
                                     <p className="text-[11px] text-red-500 mt-1.5 flex items-center gap-1 font-medium">
                                         <AlertCircle className="w-3 h-3" />
-                                        {errors.email[0]}
+                                        {loginForm.errors.email}
                                     </p>
                                 )}
                             </div>
@@ -265,10 +166,10 @@ export default function AuthModal({
                                     icon={Lock}
                                     type={showPassword ? 'text' : 'password'}
                                     placeholder="Masukkan kata sandi"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
+                                    value={loginForm.data.password}
+                                    onChange={(e) => loginForm.setData('password', e.target.value)}
                                     required
-                                    error={!!errors.password}
+                                    error={!!loginForm.errors.password}
                                     rightElement={
                                         <button
                                             type="button"
@@ -281,10 +182,10 @@ export default function AuthModal({
                                         </button>
                                     }
                                 />
-                                {errors.password && (
+                                {loginForm.errors.password && (
                                     <p className="text-[11px] text-red-500 mt-1.5 flex items-center gap-1 font-medium">
                                         <AlertCircle className="w-3 h-3" />
-                                        {errors.password[0]}
+                                        {loginForm.errors.password}
                                     </p>
                                 )}
                             </div>
@@ -293,11 +194,11 @@ export default function AuthModal({
                             <div className="pt-2">
                                 <Button
                                     type="submit"
-                                    loading={loading}
+                                    loading={loginForm.processing}
                                     className="w-full h-11 text-sm font-bold flex items-center justify-center gap-2"
                                 >
                                     <span>Masuk Sekarang</span>
-                                    {!loading && <ArrowRight className="w-4 h-4" />}
+                                    {!loginForm.processing && <ArrowRight className="w-4 h-4" />}
                                 </Button>
                             </div>
 
@@ -333,14 +234,14 @@ export default function AuthModal({
                                     icon={User}
                                     type="text"
                                     placeholder="Nama lengkap kamu"
-                                    value={name}
-                                    onChange={(e) => setName(e.target.value)}
+                                    value={registerForm.data.name}
+                                    onChange={(e) => registerForm.setData('name', e.target.value)}
                                     required
                                     autoFocus
-                                    error={!!errors.name}
+                                    error={!!registerForm.errors.name}
                                 />
-                                {errors.name && (
-                                    <p className="text-[11px] text-red-500 mt-1 font-medium">{errors.name[0]}</p>
+                                {registerForm.errors.name && (
+                                    <p className="text-[11px] text-red-500 mt-1 font-medium">{registerForm.errors.name}</p>
                                 )}
                             </div>
 
@@ -352,13 +253,13 @@ export default function AuthModal({
                                     icon={Mail}
                                     type="email"
                                     placeholder="nama@email.com"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
+                                    value={registerForm.data.email}
+                                    onChange={(e) => registerForm.setData('email', e.target.value)}
                                     required
-                                    error={!!errors.email}
+                                    error={!!registerForm.errors.email}
                                 />
-                                {errors.email && (
-                                    <p className="text-[11px] text-red-500 mt-1 font-medium">{errors.email[0]}</p>
+                                {registerForm.errors.email && (
+                                    <p className="text-[11px] text-red-500 mt-1 font-medium">{registerForm.errors.email}</p>
                                 )}
                             </div>
 
@@ -370,10 +271,10 @@ export default function AuthModal({
                                     icon={Lock}
                                     type={showPassword ? 'text' : 'password'}
                                     placeholder="Minimal 8 karakter"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
+                                    value={registerForm.data.password}
+                                    onChange={(e) => registerForm.setData('password', e.target.value)}
                                     required
-                                    error={!!errors.password}
+                                    error={!!registerForm.errors.password}
                                     rightElement={
                                         <button
                                             type="button"
@@ -385,8 +286,8 @@ export default function AuthModal({
                                         </button>
                                     }
                                 />
-                                {errors.password && (
-                                    <p className="text-[11px] text-red-500 mt-1 font-medium">{errors.password[0]}</p>
+                                {registerForm.errors.password && (
+                                    <p className="text-[11px] text-red-500 mt-1 font-medium">{registerForm.errors.password}</p>
                                 )}
                             </div>
 
@@ -398,8 +299,8 @@ export default function AuthModal({
                                     icon={Lock}
                                     type={showConfirmPassword ? 'text' : 'password'}
                                     placeholder="Ulangi kata sandi"
-                                    value={passwordConfirmation}
-                                    onChange={(e) => setPasswordConfirmation(e.target.value)}
+                                    value={registerForm.data.password_confirmation}
+                                    onChange={(e) => registerForm.setData('password_confirmation', e.target.value)}
                                     required
                                     rightElement={
                                         <button
@@ -421,15 +322,20 @@ export default function AuthModal({
                                         id="reg-terms"
                                         type="checkbox"
                                         checked={agreedToTerms}
-                                        onChange={(e) => setAgreedToTerms(e.target.checked)}
+                                        onChange={(e) => {
+                                            setAgreedToTerms(e.target.checked);
+                                            if (e.target.checked) {
+                                                registerForm.clearErrors('terms');
+                                            }
+                                        }}
                                         className="w-4 h-4 mt-0.5 text-[#1D4ED8] border-gray-300 rounded focus:ring-[#1D4ED8] cursor-pointer"
                                     />
                                     <label htmlFor="reg-terms" className="ml-2 text-xs text-gray-600 cursor-pointer select-none leading-relaxed">
                                         Saya menyetujui <a href="#" className="text-[#1D4ED8] font-medium hover:underline">Ketentuan Layanan</a> & <a href="#" className="text-[#1D4ED8] font-medium hover:underline">Kebijakan Privasi</a>
                                     </label>
                                 </div>
-                                {errors.terms && (
-                                    <p className="text-[11px] text-red-500 mt-1 font-medium">{errors.terms[0]}</p>
+                                {registerForm.errors.terms && (
+                                    <p className="text-[11px] text-red-500 mt-1 font-medium">{registerForm.errors.terms}</p>
                                 )}
                             </div>
 
@@ -437,11 +343,11 @@ export default function AuthModal({
                             <div className="pt-2">
                                 <Button
                                     type="submit"
-                                    loading={loading}
+                                    loading={registerForm.processing}
                                     className="w-full h-11 text-sm font-bold flex items-center justify-center gap-2"
                                 >
                                     <span>Daftar Sekarang</span>
-                                    {!loading && <ArrowRight className="w-4 h-4" />}
+                                    {!registerForm.processing && <ArrowRight className="w-4 h-4" />}
                                 </Button>
                             </div>
 

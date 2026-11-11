@@ -23,6 +23,6 @@ class CategorySeeder extends Seeder
             ['name' => 'Lainnya', 'slug' => 'lainnya', 'created_at' => $now, 'updated_at' => $now],
         ];
 
-        DB::table('categories')->insert($categories);
+        DB::table('categories')->upsert($categories, ['slug'], ['name', 'updated_at']);
     }
 }

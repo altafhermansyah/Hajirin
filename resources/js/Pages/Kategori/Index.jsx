@@ -1,17 +1,25 @@
 import { Head, Link } from '@inertiajs/react';
 import { useState } from 'react';
 import {
-    Search, ChevronRight, ChevronDown, ChevronLeft,
+    Search, ChevronRight,
     Headphones, Bookmark, CalendarDays, MapPin, CircleUserRound,
     Users, Palette, Volleyball, UserRound, TentTree, LayoutGrid, Menu,
     Compass
 } from 'lucide-react';
+import AuthModal from '../../Components/Auth/AuthModal';
 
-export default function CategoryIndex({ auth, initialCategory = 'Semua' }) {
+export default function CategoryIndex({ auth, initialCategory = 'Semua', events = [] }) {
     // Normalisasi huruf pertama agar selalu sesuai dengan data kategori (misal: 'seminar' jadi 'Seminar')
     const formattedInitial = initialCategory ? initialCategory.charAt(0).toUpperCase() + initialCategory.slice(1).toLowerCase() : 'Semua';
     
     const [activeCategory, setActiveCategory] = useState(formattedInitial);
+    const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+    const [authView, setAuthView] = useState('login');
+
+    function openAuthModal(view) {
+        setAuthView(view);
+        setIsAuthModalOpen(true);
+    }
 
     // Daftar semua kategori beserta icon-nya
     const categoryList = [
@@ -26,17 +34,19 @@ export default function CategoryIndex({ auth, initialCategory = 'Semua' }) {
         { name: 'Lainnya', icon: Menu },
     ];
 
-    // Dummy Database Event (Semua Kategori Digabung)
-    const allEvents = [
-        { id: 1, category: "Musik", tag: "FESTIVAL", title: "Festival Musik Nusantara 2026: Merayakan Harmoni", date: "Sab, 24 Sep 2026 • 15:00 WIB", location: "Stadion Gelora Bung Karno", organizer: "LiveNation Indonesia", price: "Rp75.000", image: "/images/events/hero_festival.jpg" },
-        { id: 2, category: "Musik", tag: "KONSER", title: "Soundscapes Indie & Electronic Music Night", date: "Jum, 15 Okt 2026 • 19:30 WIB", location: "Campus Center Timur, Surabaya", organizer: "Nusantara Live", price: "Rp85.000", image: "/images/events/soundscapes.jpg", badge: "Hampir Habis" },
-        { id: 3, category: "Seminar", tag: "KONFERENSI", title: "Indonesia Tech Conference 2026: The Future of AI", date: "Sab, 24 Okt 2026 • 09:00 WIB", location: "ICE BSD Hall 1, Tangerang", organizer: "Tech Innovation", price: "Rp150.000", image: "/images/events/tech_hero.jpg" },
-        { id: 4, category: "Seminar", tag: "SEMINAR", title: "FinTech Indonesia Leadership Summit 2026", date: "Sen, 21 Okt 2026 • 14:00 WIB", location: "Senayan, Jakarta", organizer: "Asosiasi FinTech Indo", price: "Rp200.000", image: "/images/events/startup.jpg" },
-        { id: 5, category: "Workshop", tag: "WORKSHOP", title: "Creative Design & Typography Workshop 2026", date: "Sab, 25 Okt 2026 • 10:00 WIB", location: "Margo City, Bandung", organizer: "Kreator Nusantara", price: "Rp50.000", image: "/images/events/design_hero.jpg" },
-        { id: 6, category: "Olahraga", tag: "MARATHON", title: "Jakarta Sunrise Marathon 2026: Run for Green", date: "Min, 01 Nov 2026 • 05:30 WIB", location: "Plaza FX Sudirman, Jakarta", organizer: "IndoRunners", price: "Rp125.000", image: "/images/events/marathon_hero.jpg" },
-        { id: 7, category: "Festival", tag: "BUDAYA", title: "Jakarta Art & Culture Installation Weekend", date: "Sab, 24 Okt 2026 • 10:00 WIB", location: "Museum Nasional, Jakarta", organizer: "Dinas Pariwisata", price: "Rp45.000", image: "/images/events/nusantara-indie.jpg" },
-        { id: 8, category: "Pameran", tag: "EXPO", title: "Indie Coffee & Culinary Expo", date: "Sab, 24 Okt 2026 • 15:00 WIB", location: "GBK Area, Jakarta", organizer: "Kopi Nusantara", price: "Rp35.000", image: "/images/events/bandung-creative.jpg" },
+    // Fallback daftar event apabila database belum di-seed
+    const fallbackEvents = [
+        { id: 1, slug: 'festival-musik-nusantara-2026', category: 'Musik', tag: 'FESTIVAL', title: 'Festival Musik Nusantara 2026: Merayakan Harmoni', date: 'Sab, 24 Sep 2026 • 15:00 WIB', location: 'Stadion Gelora Bung Karno', organizer: 'LiveNation Indonesia', price: 'Rp75.000', image: '/images/events/hero_festival.jpg' },
+        { id: 2, slug: 'soundscapes-indie-electronic-music-night', category: 'Musik', tag: 'KONSER', title: 'Soundscapes Indie & Electronic Music Night', date: 'Jum, 15 Okt 2026 • 19:30 WIB', location: 'Campus Center Timur, Surabaya', organizer: 'Nusantara Live', price: 'Rp85.000', image: '/images/events/soundscapes.jpg', badge: 'Hampir Habis' },
+        { id: 3, slug: 'indonesia-tech-conference-2026', category: 'Seminar', tag: 'KONFERENSI', title: 'Indonesia Tech Conference 2026: The Future of AI', date: 'Sab, 24 Okt 2026 • 09:00 WIB', location: 'ICE BSD Hall 1, Tangerang', organizer: 'Tech Innovation', price: 'Rp150.000', image: '/images/events/tech_hero.jpg' },
+        { id: 4, slug: 'fintech-indonesia-leadership-summit-2026', category: 'Seminar', tag: 'SEMINAR', title: 'FinTech Indonesia Leadership Summit 2026', date: 'Sen, 21 Okt 2026 • 14:00 WIB', location: 'Senayan, Jakarta', organizer: 'Asosiasi FinTech Indo', price: 'Rp200.000', image: '/images/events/startup.jpg' },
+        { id: 5, slug: 'creative-design-typography-workshop-2026', category: 'Workshop', tag: 'WORKSHOP', title: 'Creative Design & Typography Workshop 2026', date: 'Sab, 25 Okt 2026 • 10:00 WIB', location: 'Margo City, Bandung', organizer: 'Kreator Nusantara', price: 'Rp50.000', image: '/images/events/design_hero.jpg' },
+        { id: 6, slug: 'jakarta-sunrise-marathon-2026', category: 'Olahraga', tag: 'MARATHON', title: 'Jakarta Sunrise Marathon 2026: Run for Green', date: 'Min, 01 Nov 2026 • 05:30 WIB', location: 'Plaza FX Sudirman, Jakarta', organizer: 'IndoRunners', price: 'Rp125.000', image: '/images/events/marathon_hero.jpg' },
+        { id: 7, slug: 'jakarta-art-culture-installation-weekend', category: 'Festival', tag: 'BUDAYA', title: 'Jakarta Art & Culture Installation Weekend', date: 'Sab, 24 Okt 2026 • 10:00 WIB', location: 'Museum Nasional, Jakarta', organizer: 'Dinas Pariwisata', price: 'Rp45.000', image: '/images/events/nusantara-indie.jpg' },
+        { id: 8, slug: 'indie-coffee-culinary-expo', category: 'Pameran', tag: 'EXPO', title: 'Indie Coffee & Culinary Expo', date: 'Sab, 24 Okt 2026 • 15:00 WIB', location: 'GBK Area, Jakarta', organizer: 'Kopi Nusantara', price: 'Rp35.000', image: '/images/events/bandung-creative.jpg' },
     ];
+
+    const allEvents = events.length > 0 ? events : fallbackEvents;
 
     // Proses Filtering
     const filteredEvents = activeCategory === 'Semua' 
@@ -71,15 +81,15 @@ export default function CategoryIndex({ auth, initialCategory = 'Semua' }) {
                     </div>
                     
                     <div className="flex items-center gap-2 sm:gap-4">
-                        <Link href="/buat-event" className="hidden rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold hover:bg-gray-50 sm:block text-gray-700">Buat Event</Link>
-                        <button className="p-2 text-gray-500 hover:text-navy"><Search className="size-5" /></button>
+                        <button type="button" className="hidden rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold hover:bg-gray-50 sm:block text-gray-700">Buat Event</button>
+                        <button type="button" aria-label="Cari event" className="p-2 text-gray-500 hover:text-navy"><Search className="size-5" /></button>
                         
                         {auth?.user ? (
                             <div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-3 py-2 ml-2">
                                 <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-blue-50 text-sm font-bold uppercase text-brand-blue">
                                     {auth.user.name.charAt(0)}
                                 </span>
-                                <Link href="/dashboard" className="hidden min-w-0 text-left sm:block">
+                                <Link href={auth.user.role === 'ADMIN' ? '/admin/dashboard' : '/dashboard'} className="hidden min-w-0 text-left sm:block">
                                     <p className="max-w-32 truncate text-sm font-semibold leading-tight text-navy">{auth.user.name}</p>
                                     <p className="max-w-32 truncate text-xs text-gray-500">{auth.user.email}</p>
                                 </Link>
@@ -88,8 +98,8 @@ export default function CategoryIndex({ auth, initialCategory = 'Semua' }) {
                             </div>
                         ) : (
                             <>
-                                <Link href="/login" className="hidden rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:text-navy sm:block ml-2">Masuk</Link>
-                                <Link href="/register" className="rounded-lg bg-brand-blue px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-800">Daftar</Link>
+                                <button type="button" onClick={() => openAuthModal('login')} className="hidden rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:text-navy sm:block ml-2">Masuk</button>
+                                <button type="button" onClick={() => openAuthModal('register')} className="rounded-lg bg-brand-blue px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-800">Daftar</button>
                             </>
                         )}
                     </div>
@@ -158,7 +168,11 @@ export default function CategoryIndex({ auth, initialCategory = 'Semua' }) {
                     {filteredEvents.length > 0 ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                             {filteredEvents.map((event) => (
-                                <article key={event.id} className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition flex flex-col h-full group">
+                                <Link
+                                    key={event.id}
+                                    href={`/event/${event.slug}`}
+                                    className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition flex flex-col h-full group"
+                                >
                                     <div className="relative h-48 bg-gray-200 overflow-hidden">
                                         <img src={event.image} alt={event.title} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" />
                                         <div className="absolute top-3 left-3 bg-white px-2 py-1 rounded text-[10px] font-bold tracking-wide shadow-sm uppercase">
@@ -169,7 +183,7 @@ export default function CategoryIndex({ auth, initialCategory = 'Semua' }) {
                                                 {event.badge}
                                             </div>
                                         )}
-                                        <button className="absolute top-3 right-3 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-sm text-gray-400 hover:text-navy">
+                                        <button type="button" onClick={(e) => e.preventDefault()} className="absolute top-3 right-3 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-sm text-gray-400 hover:text-navy">
                                             <Bookmark className="size-4" />
                                         </button>
                                     </div>
@@ -177,7 +191,7 @@ export default function CategoryIndex({ auth, initialCategory = 'Semua' }) {
                                         <p className="text-brand-blue text-[11px] font-semibold mb-2 flex items-center">
                                             <CalendarDays className="mr-1.5 size-3" /> {event.date}
                                         </p>
-                                        <h3 className="font-bold text-[15px] leading-tight mb-3 line-clamp-2">{event.title}</h3>
+                                        <h3 className="font-bold text-[15px] leading-tight mb-3 line-clamp-2 group-hover:text-brand-blue transition-colors">{event.title}</h3>
                                         <div className="mt-auto space-y-1.5">
                                             <p className="text-slate text-xs flex items-center">
                                                 <MapPin className="mr-1.5 size-3 text-gray-400" /> {event.location}
@@ -192,9 +206,20 @@ export default function CategoryIndex({ auth, initialCategory = 'Semua' }) {
                                             <p className="text-[10px] text-gray-500">Mulai dari</p>
                                             <p className="font-bold text-brand-blue text-lg">{event.price}</p>
                                         </div>
-                                        <button className="border border-gray-300 bg-white text-sm font-semibold px-4 py-1.5 rounded-lg hover:bg-gray-50 shadow-sm text-navy">Beli Tiket</button>
+                                        <button
+                                            type="button"
+                                            onClick={(e) => {
+                                                if (!auth?.user) {
+                                                    e.preventDefault();
+                                                    openAuthModal('login');
+                                                }
+                                            }}
+                                            className="border border-gray-300 bg-white text-sm font-semibold px-4 py-1.5 rounded-lg hover:bg-gray-50 shadow-sm text-navy"
+                                        >
+                                            Beli Tiket
+                                        </button>
                                     </div>
-                                </article>
+                                </Link>
                             ))}
                         </div>
                     ) : (
@@ -211,6 +236,8 @@ export default function CategoryIndex({ auth, initialCategory = 'Semua' }) {
                     <div className="text-center text-xs text-gray-400">© 2026 Hajirin - Platform E-ticketing & Management Event Indonesia</div>
                 </footer>
             </div>
+
+            <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} initialView={authView} />
         </>
     );
 }

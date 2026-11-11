@@ -19,19 +19,15 @@ class UserDashboardController extends Controller
 
         $userId = $request->user()->id;
 
-        $upcomingEvents = DB::table('tickets')
+        $upcomingEventCount = DB::table('tickets')
             ->join('orders', 'orders.id', '=', 'tickets.order_id')
             ->join('events', 'events.id', '=', 'orders.event_id')
             ->where('orders.user_id', $userId)
             ->where('orders.status', 'PAID')
             ->where('tickets.status', 'ACTIVE')
             ->where('events.starts_at', '>=', now())
-            ->select('events.id', 'events.title', 'events.slug', 'events.starts_at', 'events.venue_name', 'events.event_type')
-            ->selectRaw('COUNT(tickets.id) AS ticket_count')
-            ->groupBy('events.id', 'events.title', 'events.slug', 'events.starts_at', 'events.venue_name', 'events.event_type')
-            ->orderBy('events.starts_at')
-            ->limit(5)
-            ->get();
+            ->distinct()
+            ->count('events.id');
 
         $recentOrders = DB::table('orders')
             ->join('events', 'events.id', '=', 'orders.event_id')
@@ -54,6 +50,7 @@ class UserDashboardController extends Controller
             ->join('order_items', 'order_items.id', '=', 'tickets.order_item_id')
             ->join('ticket_types', 'ticket_types.id', '=', 'order_items.ticket_type_id')
             ->where('orders.user_id', $userId)
+            ->where('orders.status', 'PAID')
             ->select(
                 'tickets.id',
                 'tickets.ticket_code',
@@ -102,7 +99,7 @@ class UserDashboardController extends Controller
                     ->where('orders.status', 'PAID')
                     ->where('tickets.status', 'ACTIVE')
                     ->count(),
-                'upcomingEvents' => $upcomingEvents,
+                'upcomingEventCount' => $upcomingEventCount,
                 'recentOrders' => $recentOrders,
                 'myTickets' => $myTickets,
             ],

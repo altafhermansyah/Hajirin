@@ -22,11 +22,12 @@ class EventController extends Controller
                 'users.email as organizer_email'
             )
             ->where('events.slug', $slug)
+            ->where('events.status', 'PUBLISHED')
             ->first();
 
         abort_if(! $event, 404);
 
-        // 2. Ambil Data Tipe Tiket beserta Harganya
+        // 2. Ambil Data Tipe Tiket beserta Harganya (1 harga aktif termurah per tipe tiket)
         $ticketsData = DB::table('ticket_types')
             ->leftJoin('ticket_prices', function ($join) {
                 $join->on('ticket_types.id', '=', 'ticket_prices.ticket_type_id')
@@ -44,6 +45,8 @@ class EventController extends Controller
             )
             ->orderBy('ticket_prices.price', 'asc')
             ->get()
+            ->unique('id')
+            ->values()
             ->map(function ($t) {
                 $numericPrice = (float) ($t->price ?? 0);
 
@@ -59,14 +62,8 @@ class EventController extends Controller
                 ];
             });
 
-        // 3. Cari harga tiket termurah untuk label "Mulai Dari"
-        $rawPrices = DB::table('ticket_prices')
-            ->join('ticket_types', 'ticket_types.id', '=', 'ticket_prices.ticket_type_id')
-            ->where('ticket_types.event_id', $event->id)
-            ->where('ticket_prices.status', 'ACTIVE')
-            ->pluck('ticket_prices.price');
-
-        $minPriceVal = $rawPrices->min();
+        // 3. Hitung harga tiket termurah untuk label "Mulai Dari" tanpa query tambahan
+        $minPriceVal = $ticketsData->whereNotNull('priceId')->min('rawPrice');
         $minPrice = $minPriceVal !== null
             ? ((float) $minPriceVal > 0 ? 'Rp'.number_format((float) $minPriceVal, 0, ',', '.') : 'Gratis')
             : 'Gratis';
@@ -87,7 +84,14 @@ class EventController extends Controller
             'Penyelenggara berhak menolak masuk pengunjung yang tidak mematuhi protokol keamanan atau tata tertib acara.',
         ];
 
-        // 6. Data Event Terkait / Rekomendasi
+        // 6. Data Event Terkait / Rekomendasi (Subquery harga aktif termurah tanpa N+1 query)
+        $minPriceSubquery = DB::table('ticket_prices')
+            ->join('ticket_types', 'ticket_types.id', '=', 'ticket_prices.ticket_type_id')
+            ->whereColumn('ticket_types.event_id', 'events.id')
+            ->where('ticket_types.status', 'ACTIVE')
+            ->where('ticket_prices.status', 'ACTIVE')
+            ->selectRaw('MIN(ticket_prices.price)');
+
         $relatedEvents = DB::table('events')
             ->join('categories', 'events.category_id', '=', 'categories.id')
             ->join('users', 'events.eo_id', '=', 'users.id')
@@ -103,13 +107,11 @@ class EventController extends Controller
                 'categories.name as category',
                 'users.name as organizer'
             )
+            ->addSelect(['min_price' => $minPriceSubquery])
             ->limit(4)
             ->get()
             ->map(function ($re) {
-                $rawMin = DB::table('ticket_prices')
-                    ->join('ticket_types', 'ticket_types.id', '=', 'ticket_prices.ticket_type_id')
-                    ->where('ticket_types.event_id', $re->id)
-                    ->min('ticket_prices.price');
+                $rawMin = $re->min_price;
 
                 $priceText = $rawMin !== null
                     ? ((float) $rawMin > 0 ? 'Rp'.number_format((float) $rawMin, 0, ',', '.') : 'Gratis')

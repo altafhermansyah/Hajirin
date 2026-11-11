@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { Head, Link } from '@inertiajs/react';
 import AdminLayout from '../../Layouts/AdminLayout';
 import {
     Users,
@@ -8,11 +7,8 @@ import {
     CalendarDays,
     UserPlus,
     Search,
-    ChevronDown,
-    ArrowUpRight,
     AlertCircle,
     CheckCircle2,
-    Clock,
 } from 'lucide-react';
 
 const dateFormatter = new Intl.DateTimeFormat('id-ID', {
@@ -24,8 +20,6 @@ const dateFormatter = new Intl.DateTimeFormat('id-ID', {
 export default function AdminDashboard({
     stats = {},
     recentUsers = [],
-    pendingEoList = [],
-    pendingEventsList = [],
 }) {
     const [selectedRoleFilter, setSelectedRoleFilter] = useState('ALL');
     const [searchQuery, setSearchQuery] = useState('');
@@ -33,10 +27,12 @@ export default function AdminDashboard({
     const filteredUsers = recentUsers.filter((user) => {
         const matchesRole =
             selectedRoleFilter === 'ALL' || user.role === selectedRoleFilter;
+        const query = searchQuery.toLowerCase();
         const matchesSearch =
-            searchQuery === '' ||
-            user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            user.email.toLowerCase().includes(searchQuery.toLowerCase());
+            query === '' ||
+            user.name.toLowerCase().includes(query) ||
+            user.email.toLowerCase().includes(query) ||
+            String(user.id).toLowerCase().includes(query);
         return matchesRole && matchesSearch;
     });
 
@@ -333,7 +329,7 @@ export default function AdminDashboard({
                                                             {item.name}
                                                         </p>
                                                         <span className="text-[11px] font-mono text-slate-400">
-                                                            ID: USR-{String(index + 1).padStart(3, '0')}
+                                                            ID: {String(item.id).slice(0, 8).toUpperCase()}
                                                         </span>
                                                     </div>
                                                 </div>
@@ -342,7 +338,6 @@ export default function AdminDashboard({
                                             {/* Kontak */}
                                             <td className="py-4 px-5">
                                                 <p className="text-slate-700 font-medium">{item.email}</p>
-                                                <p className="text-xs text-slate-400 font-mono">+62 812-3456-7890</p>
                                             </td>
 
                                             {/* Role Badge */}
