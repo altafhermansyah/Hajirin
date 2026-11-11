@@ -90,8 +90,14 @@ export default function AuthModal({
                 onSuccess(data.user);
             }
 
+            const targetUrl = data.redirect_url || (data.user?.role === 'ADMIN' ? '/admin/dashboard' : null);
+
             setTimeout(() => {
-                window.location.reload();
+                if (targetUrl) {
+                    window.location.href = targetUrl;
+                } else {
+                    window.location.reload();
+                }
             }, 800);
         } catch (err) {
             setGeneralError('Terjadi gangguan koneksi. Silakan coba kembali.');
