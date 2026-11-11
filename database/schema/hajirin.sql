@@ -833,10 +833,3 @@ CREATE TRIGGER trg_refunds_updated_at
 BEFORE UPDATE ON refunds
 FOR EACH ROW
 EXECUTE FUNCTION set_updated_at();
-
-
--- ============================================================
--- 18. COMMIT
--- ============================================================
-
-
