@@ -124,6 +124,22 @@ export default function Home({ auth, categories = [] }) {
         setIsAuthModalOpen(true);
     }
 
+    function handleCreateEventClick() {
+        if (!auth?.user) {
+            openAuthModal('login');
+            return;
+        }
+        if (auth.user.role === 'EO') {
+            router.visit('/eo/dashboard');
+            return;
+        }
+        if (auth.user.role === 'ADMIN') {
+            router.visit('/admin/dashboard');
+            return;
+        }
+        router.visit('/dashboard#pengajuan-eo');
+    }
+
     function changeSlide(offset) {
         setActiveSlide((currentSlide) => (currentSlide + offset + heroEvents.length) % heroEvents.length);
     }
@@ -177,17 +193,17 @@ export default function Home({ auth, categories = [] }) {
                 </div>
 
                 <div className="flex items-center gap-2 sm:gap-4">
-                    <button type="button" className="hidden rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold hover:bg-gray-50 sm:block">Buat Event</button>
+                    <button type="button" onClick={handleCreateEventClick} className="hidden rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold hover:bg-gray-50 sm:block">Buat Event</button>
                     <button type="button" aria-label="Cari event" className="p-2 text-gray-500 hover:text-navy"><Search className="size-5" /></button>
                     {auth?.user ? (
                         <div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-3 py-2">
-                            <span className={`flex size-9 shrink-0 items-center justify-center rounded-full text-sm font-bold uppercase ${auth.user.role === 'ADMIN' ? 'bg-purple-100 text-purple-700' : 'bg-blue-50 text-brand-blue'}`}>
+                            <span className={`flex size-9 shrink-0 items-center justify-center rounded-full text-sm font-bold uppercase ${auth.user.role === 'ADMIN' ? 'bg-purple-100 text-purple-700' : auth.user.role === 'EO' ? 'bg-indigo-100 text-indigo-700' : 'bg-blue-50 text-brand-blue'}`}>
                                 {auth.user.name.charAt(0)}
                             </span>
-                            <Link href={auth.user.role === 'ADMIN' ? '/admin/dashboard' : '/dashboard'} className="hidden min-w-0 text-left sm:block">
+                            <Link href={auth.user.role === 'ADMIN' ? '/admin/dashboard' : auth.user.role === 'EO' ? '/eo/dashboard' : '/dashboard'} className="hidden min-w-0 text-left sm:block">
                                 <p className="max-w-36 truncate text-sm font-semibold leading-tight text-navy">{auth.user.name}</p>
                                 <p className="max-w-36 truncate text-xs text-gray-500">
-                                    {auth.user.role === 'ADMIN' ? 'Dashboard Admin ↗' : auth.user.email}
+                                    {auth.user.role === 'ADMIN' ? 'Dashboard Admin ↗' : auth.user.role === 'EO' ? 'Dashboard EO ↗' : auth.user.email}
                                 </p>
                             </Link>
                             <span className="h-8 w-px bg-gray-200" aria-hidden="true" />
@@ -323,10 +339,10 @@ export default function Home({ auth, categories = [] }) {
                     </div>
                 </section>
 
-                <section className="px-4 py-10 sm:px-8 lg:px-10"><div className="relative flex flex-col items-center justify-between overflow-hidden rounded-2xl bg-navy p-8 text-center md:flex-row md:p-10 md:text-left"><div className="absolute -right-32 -top-32 size-64 rounded-full bg-brand-blue/10 blur-3xl" /><div className="relative z-10 max-w-2xl text-white"><p className="mb-3 text-xs font-bold uppercase tracking-widest text-yellow-400">Untuk Penyelenggara Acara</p><h2 className="mb-3 text-3xl font-bold">Punya acara yang ingin kamu selenggarakan?</h2><p className="text-sm text-gray-300">Kelola event, jual tiket secara digital dalam satu sistem, dan pantau secara real-time dari tingkat pengunjung hingga hasil penjualanmu!</p></div><div className="relative z-10 mt-6 flex flex-col items-center md:mt-0 md:items-end"><button type="button" className="inline-flex items-center rounded-lg bg-brand-blue px-8 py-3.5 text-sm font-semibold text-white shadow-lg shadow-brand-blue/30 hover:bg-blue-800"><PlusCircle className="mr-2 size-4" />Mulai Buat Event</button><a href="#" className="mt-3 inline-flex items-center text-xs text-gray-300 hover:text-white hover:underline">Pelajari lebih lanjut <ArrowRight className="ml-1 size-3" /></a></div></div></section>
+                <section className="px-4 py-10 sm:px-8 lg:px-10"><div className="relative flex flex-col items-center justify-between overflow-hidden rounded-2xl bg-navy p-8 text-center md:flex-row md:p-10 md:text-left"><div className="absolute -right-32 -top-32 size-64 rounded-full bg-brand-blue/10 blur-3xl" /><div className="relative z-10 max-w-2xl text-white"><p className="mb-3 text-xs font-bold uppercase tracking-widest text-yellow-400">Untuk Penyelenggara Acara</p><h2 className="mb-3 text-3xl font-bold">Punya acara yang ingin kamu selenggarakan?</h2><p className="text-sm text-gray-300">Kelola event, jual tiket secara digital dalam satu sistem, dan pantau secara real-time dari tingkat pengunjung hingga hasil penjualanmu!</p></div><div className="relative z-10 mt-6 flex flex-col items-center md:mt-0 md:items-end"><button type="button" onClick={handleCreateEventClick} className="inline-flex items-center rounded-lg bg-brand-blue px-8 py-3.5 text-sm font-semibold text-white shadow-lg shadow-brand-blue/30 hover:bg-blue-800"><PlusCircle className="mr-2 size-4" />Mulai Buat Event</button><a href="#event-unggulan" className="mt-3 inline-flex items-center text-xs text-gray-300 hover:text-white hover:underline">Pelajari lebih lanjut <ArrowRight className="ml-1 size-3" /></a></div></div></section>
             </main>
 
-            <footer className="border-t border-gray-100 bg-white px-4 pb-6 pt-12 sm:px-8 lg:px-10"><div className="mb-12 grid grid-cols-1 gap-8 md:grid-cols-4"><div className="pr-4"><div className="mb-4 flex items-center gap-2"><img src="/hajirin_icon.svg" alt="" className="h-8 w-auto" /><span className="text-xl font-bold tracking-tighter">HAJIRIN</span></div><p className="mb-6 text-xs leading-relaxed text-slate">Platform e-ticketing aggregate komunitas dan ekosistem penyelenggara event terpercaya di Indonesia.</p><FooterLinks links={['Tentang Hajirin', 'Karir Kami', 'Kontak']} /></div><FooterColumn title="Untuk Pengunjung" links={['Jelajah Event', 'Kategori', 'Beli Tiket']} /><FooterColumn title="Untuk EO" links={['Buat Event', 'Harga Tiket']} onDashboardClick={() => openAuthModal('login')} /><FooterColumn title="Informasi" links={['Syarat & Ketentuan', 'Kebijakan Privasi', 'FAQ']} /></div><div className="flex flex-col items-center justify-between border-t border-gray-100 pt-6 text-[11px] text-gray-400 md:flex-row"><p>© 2026 Hajirin - Platform E-ticketing & Management Event Indonesia</p><span className="mt-4 md:mt-0">Pilih Bahasa: Bahasa Indonesia</span></div></footer>
+            <footer className="border-t border-gray-100 bg-white px-4 pb-6 pt-12 sm:px-8 lg:px-10"><div className="mb-12 grid grid-cols-1 gap-8 md:grid-cols-4"><div className="pr-4"><div className="mb-4 flex items-center gap-2"><img src="/hajirin_icon.svg" alt="" className="h-8 w-auto" /><span className="text-xl font-bold tracking-tighter">HAJIRIN</span></div><p className="mb-6 text-xs leading-relaxed text-slate">Platform e-ticketing aggregate komunitas dan ekosistem penyelenggara event terpercaya di Indonesia.</p><FooterLinks links={['Tentang Hajirin', 'Karir Kami', 'Kontak']} /></div><FooterColumn title="Untuk Pengunjung" links={['Jelajah Event', 'Kategori', 'Beli Tiket']} /><FooterColumn title="Untuk EO" links={['Buat Event', 'Harga Tiket']} onDashboardClick={handleCreateEventClick} /><FooterColumn title="Informasi" links={['Syarat & Ketentuan', 'Kebijakan Privasi', 'FAQ']} /></div><div className="flex flex-col items-center justify-between border-t border-gray-100 pt-6 text-[11px] text-gray-400 md:flex-row"><p>© 2026 Hajirin - Platform E-ticketing & Management Event Indonesia</p><span className="mt-4 md:mt-0">Pilih Bahasa: Bahasa Indonesia</span></div></footer>
 
             <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} initialView={authView} />
 

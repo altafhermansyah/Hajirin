@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\EnsureUserIsAdmin;
+use App\Http\Middleware\EnsureUserIsEo;
 use App\Http\Middleware\HandleInertiaRequests;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -17,6 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->redirectGuestsTo('/');
         $middleware->alias([
             'admin' => EnsureUserIsAdmin::class,
+            'eo' => EnsureUserIsEo::class,
         ]);
         $middleware->web(append: [
             HandleInertiaRequests::class,

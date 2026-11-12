@@ -21,6 +21,7 @@ class EventSeeder extends Seeder
                 'id' => $eoId,
                 'name' => 'Tech Innovation Indonesia',
                 'email' => 'eo@techinnovation.com',
+                'phone' => '081210001001',
                 'password' => bcrypt('password'),
                 'role' => 'EO',
                 'created_at' => $now,
@@ -37,6 +38,7 @@ class EventSeeder extends Seeder
                 'id' => $eoKreatorId,
                 'name' => 'Kreator Nusantara Live',
                 'email' => 'eo@kreatornusantara.com',
+                'phone' => '081220002002',
                 'password' => bcrypt('password'),
                 'role' => 'EO',
                 'created_at' => $now,
@@ -44,6 +46,32 @@ class EventSeeder extends Seeder
             ]);
         } else {
             $eoKreatorId = $eoKreator->id;
+        }
+
+        foreach ([
+            [$eoId, 'Tech Innovation Indonesia', '081210001001', 'https://techinnovation.id'],
+            [$eoKreatorId, 'Kreator Nusantara Live', '081220002002', 'https://kreatornusantara.id'],
+        ] as [$seedEoId, $orgName, $orgPhone, $orgUrl]) {
+            $exists = DB::table('eo_applications')
+                ->where('user_id', $seedEoId)
+                ->where('status', 'APPROVED')
+                ->exists();
+
+            if (! $exists) {
+                DB::table('eo_applications')->insert([
+                    'id' => Str::uuid()->toString(),
+                    'user_id' => $seedEoId,
+                    'organization_name' => $orgName,
+                    'contact_phone' => $orgPhone,
+                    'portfolio_url' => $orgUrl,
+                    'document_path' => 'eo-documents/verified-seed-eo.pdf',
+                    'reason' => "Penyelenggara resmi {$orgName} di platform Hajirin.",
+                    'status' => 'APPROVED',
+                    'reviewed_at' => $now,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]);
+            }
         }
 
         $categories = DB::table('categories')->pluck('id', 'slug');
@@ -482,6 +510,13 @@ class EventSeeder extends Seeder
             $tickets = $data['tickets'];
             unset($data['tickets']);
 
+            if (($data['event_type'] ?? 'OFFLINE') === 'OFFLINE' && empty($data['city'])) {
+                $locationText = ($data['venue_name'] ?? '').' '.($data['address'] ?? '');
+                $data['city'] = str_contains($locationText, 'Bandung')
+                    ? 'Bandung'
+                    : (str_contains($locationText, 'Tangerang') ? 'Tangerang' : 'Jakarta');
+            }
+
             $existing = DB::table('events')->where('slug', $data['slug'])->first();
             if ($existing) {
                 $eventId = $existing->id;
@@ -496,6 +531,9 @@ class EventSeeder extends Seeder
             }
 
             foreach ($tickets as $tick) {
+                $initialQuota = max((int) $tick['quota'], (int) ($tick['initial_quota'] ?? ($tick['quota'] > 0 ? $tick['quota'] : 50)));
+                $maxPerOrder = (int) ($tick['max_per_order'] ?? 5);
+
                 $existingTicket = DB::table('ticket_types')
                     ->where('event_id', $eventId)
                     ->where('name', $tick['name'])
@@ -505,7 +543,9 @@ class EventSeeder extends Seeder
                     $ticketTypeId = $existingTicket->id;
                     DB::table('ticket_types')->where('id', $ticketTypeId)->update([
                         'description' => $tick['desc'],
+                        'initial_quota' => $initialQuota,
                         'quota' => $tick['quota'],
+                        'max_per_order' => $maxPerOrder,
                         'status' => 'ACTIVE',
                         'updated_at' => $now,
                     ]);
@@ -516,7 +556,9 @@ class EventSeeder extends Seeder
                         'event_id' => $eventId,
                         'name' => $tick['name'],
                         'description' => $tick['desc'],
+                        'initial_quota' => $initialQuota,
                         'quota' => $tick['quota'],
+                        'max_per_order' => $maxPerOrder,
                         'status' => 'ACTIVE',
                         'created_at' => $now,
                         'updated_at' => $now,

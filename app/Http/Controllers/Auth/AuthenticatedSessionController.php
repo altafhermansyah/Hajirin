@@ -30,6 +30,10 @@ class AuthenticatedSessionController extends Controller
             return redirect()->intended('/admin/dashboard');
         }
 
+        if (Auth::user()->role === 'EO') {
+            return redirect()->intended('/eo/dashboard');
+        }
+
         return redirect()->intended(url()->previous() ?: '/');
     }
 

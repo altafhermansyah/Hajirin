@@ -55,7 +55,8 @@ class CheckoutController extends Controller
             : $ticketPriceQuery->first();
 
         $unitPrice = (float) ($ticketPrice?->price ?? 0);
-        $maxQty = $ticketType->quota > 0 ? min($ticketType->quota, 5) : 1;
+        $maxPerOrder = max(1, (int) ($ticketType->max_per_order ?: 5));
+        $maxQty = $ticketType->quota > 0 ? min($ticketType->quota, $maxPerOrder) : 1;
         $quantity = max(1, min($requestedQty, $maxQty));
         $totalAmount = $unitPrice * $quantity;
 
@@ -121,6 +122,13 @@ class CheckoutController extends Controller
                 ]);
             }
 
+            $maxPerOrder = max(1, (int) ($ticketType->max_per_order ?: 5));
+            if ($validated['quantity'] > $maxPerOrder) {
+                throw ValidationException::withMessages([
+                    'quantity' => "Maksimal pembelian untuk tiket ini adalah {$maxPerOrder} tiket per transaksi.",
+                ]);
+            }
+
             // 3. Ambil Harga Tiket yang ACTIVE dan dalam periode berlaku
             $ticketPriceQuery = TicketPrice::where('ticket_type_id', $ticketType->id)
                 ->where('status', 'ACTIVE')
@@ -170,6 +178,7 @@ class CheckoutController extends Controller
                     'ticket_code' => $ticketCode,
                     'attendee_name' => $validated['attendee_name'],
                     'attendee_email' => $validated['attendee_email'],
+                    'attendee_phone' => $validated['attendee_phone'] ?? $user->phone,
                     'status' => 'ACTIVE',
                 ]);
 
@@ -177,13 +186,24 @@ class CheckoutController extends Controller
                     'code' => $ticket->ticket_code,
                     'attendee_name' => $ticket->attendee_name,
                     'attendee_email' => $ticket->attendee_email,
+                    'attendee_phone' => $ticket->attendee_phone,
                 ];
             }
 
             // 8. Catat Payment
+            $paymentMethod = $totalAmount <= 0
+                ? 'FREE'
+                : match ($validated['payment_method'] ?? 'qris') {
+                    'qris' => 'QRIS',
+                    'transfer' => 'BANK_TRANSFER',
+                    'card' => 'CARD',
+                    default => 'MOCK',
+                };
+
             Payment::create([
                 'order_id' => $order->id,
-                'method' => 'MOCK',
+                'payment_reference' => 'PAY-'.date('Ymd').'-'.strtoupper(Str::random(8)),
+                'method' => $paymentMethod,
                 'status' => 'SUCCESS',
                 'amount' => $totalAmount,
                 'paid_at' => now(),
@@ -196,6 +216,7 @@ class CheckoutController extends Controller
                 'type' => 'PAYMENT_SUCCESS',
                 'title' => 'Pembayaran Tiket Berhasil!',
                 'message' => 'Pesanan '.$order->order_reference.' untuk event '.$event->title.' telah berhasil dibayar. E-tiket sudah aktif.',
+                'action_url' => '/dashboard#tiket',
                 'created_at' => now(),
             ]);
 

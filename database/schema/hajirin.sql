@@ -7,6 +7,21 @@
 -- 2. ENUM TYPES
 -- ============================================================
 
+DROP TYPE IF EXISTS
+    notification_type,
+    refund_status,
+    payment_status,
+    payment_method,
+    ticket_status,
+    order_status,
+    ticket_price_status,
+    event_staff_role,
+    event_status,
+    event_type,
+    eo_application_status,
+    user_role
+CASCADE;
+
 DO $$ BEGIN
 CREATE TYPE user_role AS ENUM (
     'USER',
@@ -74,6 +89,10 @@ EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 DO $$ BEGIN
 CREATE TYPE payment_method AS ENUM (
+    'FREE',
+    'QRIS',
+    'BANK_TRANSFER',
+    'CARD',
     'MOCK'
 );
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
@@ -121,6 +140,10 @@ CREATE TABLE users (
 
     email VARCHAR(255) NOT NULL UNIQUE,
 
+    phone VARCHAR(25),
+
+    avatar_path TEXT,
+
     password VARCHAR(255) NOT NULL,
 
     role user_role NOT NULL DEFAULT 'USER',
@@ -139,9 +162,17 @@ CREATE TABLE eo_applications (
 
     user_id UUID NOT NULL,
 
-    status eo_application_status NOT NULL DEFAULT 'PENDING',
+    organization_name VARCHAR(150) NOT NULL,
 
-    reason TEXT,
+    contact_phone VARCHAR(25) NOT NULL,
+
+    portfolio_url TEXT,
+
+    document_path TEXT NOT NULL,
+
+    reason TEXT NOT NULL,
+
+    status eo_application_status NOT NULL DEFAULT 'PENDING',
 
     rejection_reason TEXT,
 
@@ -160,7 +191,14 @@ CREATE TABLE eo_applications (
     CONSTRAINT fk_eo_application_reviewer
         FOREIGN KEY (reviewed_by)
         REFERENCES users(id)
-        ON DELETE SET NULL
+        ON DELETE SET NULL,
+
+    CONSTRAINT chk_eo_application_rejection
+        CHECK (
+            (status = 'REJECTED' AND rejection_reason IS NOT NULL)
+            OR
+            (status <> 'REJECTED')
+        )
 );
 
 
@@ -175,6 +213,8 @@ CREATE TABLE categories (
     name VARCHAR(100) NOT NULL UNIQUE,
 
     slug VARCHAR(120) NOT NULL UNIQUE,
+
+    icon VARCHAR(50),
 
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -198,7 +238,11 @@ CREATE TABLE events (
 
     description TEXT NOT NULL,
 
+    terms_and_conditions TEXT,
+
     event_type event_type NOT NULL,
+
+    city VARCHAR(100),
 
     venue_name VARCHAR(200),
 
@@ -249,6 +293,7 @@ CREATE TABLE events (
         CHECK (
             (
                 event_type = 'OFFLINE'
+                AND city IS NOT NULL
                 AND venue_name IS NOT NULL
                 AND address IS NOT NULL
             )
@@ -256,6 +301,24 @@ CREATE TABLE events (
             (
                 event_type = 'ONLINE'
                 AND online_url IS NOT NULL
+            )
+        ),
+
+    CONSTRAINT chk_event_status_reason
+        CHECK (
+            (
+                status = 'REJECTED'
+                AND rejection_reason IS NOT NULL
+            )
+            OR
+            (
+                status = 'CANCELLED'
+                AND cancelled_at IS NOT NULL
+                AND cancellation_reason IS NOT NULL
+            )
+            OR
+            (
+                status NOT IN ('REJECTED', 'CANCELLED')
             )
         )
 );
@@ -305,7 +368,11 @@ CREATE TABLE ticket_types (
 
     description TEXT,
 
+    initial_quota INTEGER NOT NULL,
+
     quota INTEGER NOT NULL,
+
+    max_per_order INTEGER NOT NULL DEFAULT 5,
 
     sale_start TIMESTAMPTZ,
     sale_end TIMESTAMPTZ,
@@ -321,7 +388,10 @@ CREATE TABLE ticket_types (
         ON DELETE CASCADE,
 
     CONSTRAINT chk_ticket_type_quota
-        CHECK (quota >= 0),
+        CHECK (quota >= 0 AND initial_quota >= quota),
+
+    CONSTRAINT chk_ticket_type_max_per_order
+        CHECK (max_per_order > 0),
 
     CONSTRAINT chk_ticket_type_sale_period
         CHECK (
@@ -480,6 +550,8 @@ CREATE TABLE tickets (
 
     attendee_email VARCHAR(255) NOT NULL,
 
+    attendee_phone VARCHAR(25),
+
     status ticket_status NOT NULL DEFAULT 'ACTIVE',
 
     checked_in_at TIMESTAMPTZ,
@@ -528,6 +600,8 @@ CREATE TABLE payments (
 
     order_id UUID NOT NULL,
 
+    payment_reference VARCHAR(100),
+
     method payment_method NOT NULL DEFAULT 'MOCK',
 
     status payment_status NOT NULL DEFAULT 'PENDING',
@@ -566,6 +640,10 @@ CREATE TABLE refunds (
 
     reason TEXT NOT NULL,
 
+    proof_path TEXT,
+
+    resolution_note TEXT,
+
     status refund_status NOT NULL DEFAULT 'PENDING',
 
     requested_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -591,7 +669,14 @@ CREATE TABLE refunds (
         ON DELETE SET NULL,
 
     CONSTRAINT chk_refund_amount
-        CHECK (amount >= 0)
+        CHECK (amount >= 0),
+
+    CONSTRAINT chk_refund_rejection
+        CHECK (
+            (status = 'REJECTED' AND resolution_note IS NOT NULL)
+            OR
+            (status <> 'REJECTED')
+        )
 );
 
 
@@ -609,6 +694,8 @@ CREATE TABLE notifications (
     title VARCHAR(200) NOT NULL,
 
     message TEXT NOT NULL,
+
+    action_url TEXT,
 
     read_at TIMESTAMPTZ,
 
@@ -637,6 +724,14 @@ CREATE INDEX idx_eo_applications_user
 CREATE INDEX idx_eo_applications_status
     ON eo_applications(status);
 
+CREATE UNIQUE INDEX uq_eo_applications_pending_user
+    ON eo_applications(user_id)
+    WHERE status = 'PENDING';
+
+CREATE UNIQUE INDEX uq_eo_applications_approved_user
+    ON eo_applications(user_id)
+    WHERE status = 'APPROVED';
+
 
 -- EVENTS
 CREATE INDEX idx_events_eo
@@ -644,6 +739,9 @@ CREATE INDEX idx_events_eo
 
 CREATE INDEX idx_events_category
     ON events(category_id);
+
+CREATE INDEX idx_events_city
+    ON events(city);
 
 CREATE INDEX idx_events_starts_at
     ON events(starts_at);
@@ -729,6 +827,10 @@ CREATE INDEX idx_refunds_status
 
 CREATE INDEX idx_refunds_requested_by
     ON refunds(requested_by);
+
+CREATE UNIQUE INDEX uq_refunds_active_order
+    ON refunds(order_id)
+    WHERE status IN ('PENDING', 'APPROVED', 'COMPLETED');
 
 
 -- NOTIFICATIONS

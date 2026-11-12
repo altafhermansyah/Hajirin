@@ -14,11 +14,15 @@ class EventController extends Controller
         $event = DB::table('events')
             ->join('categories', 'events.category_id', '=', 'categories.id')
             ->join('users', 'events.eo_id', '=', 'users.id')
+            ->leftJoin('eo_applications', function ($join) {
+                $join->on('eo_applications.user_id', '=', 'users.id')
+                    ->where('eo_applications.status', '=', 'APPROVED');
+            })
             ->select(
                 'events.*',
                 'categories.name as category_name',
                 'categories.slug as category_slug',
-                'users.name as organizer',
+                DB::raw('COALESCE(eo_applications.organization_name, users.name) as organizer'),
                 'users.email as organizer_email'
             )
             ->where('events.slug', $slug)
@@ -75,8 +79,12 @@ class EventController extends Controller
         $formattedDate = $startDate->translatedFormat('l, d F Y');
         $formattedTime = $startDate->format('H:i').' - '.$endDate->format('H:i').' WIB';
 
-        // 5. Syarat dan Ketentuan Acara
-        $terms = [
+        // 5. Syarat dan Ketentuan Acara (gunakan terms_and_conditions dari DB jika diisi oleh EO)
+        $customTerms = ! empty($event->terms_and_conditions)
+            ? array_values(array_filter(array_map('trim', preg_split('/\r\n|\r|\n/', $event->terms_and_conditions))))
+            : [];
+
+        $terms = count($customTerms) > 0 ? $customTerms : [
             'E-tiket yang telah dibeli sah dan valid hanya untuk 1 orang per barcode/QR code.',
             'Tiket yang sudah dibeli bersifat non-refundable (tidak dapat diuangkan kembali) kecuali acara dibatalkan oleh penyelenggara.',
             'Peserta wajib menunjukkan e-tiket digital atau tercetak beserta kartu identitas (KTP/SIM/Paspor) saat check-in di lokasi.',

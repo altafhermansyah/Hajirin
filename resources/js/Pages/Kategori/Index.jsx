@@ -1,4 +1,4 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { useState } from 'react';
 import {
     Search, ChevronRight,
@@ -19,6 +19,22 @@ export default function CategoryIndex({ auth, initialCategory = 'Semua', events 
     function openAuthModal(view) {
         setAuthView(view);
         setIsAuthModalOpen(true);
+    }
+
+    function handleCreateEventClick() {
+        if (!auth?.user) {
+            openAuthModal('login');
+            return;
+        }
+        if (auth.user.role === 'EO') {
+            router.visit('/eo/dashboard');
+            return;
+        }
+        if (auth.user.role === 'ADMIN') {
+            router.visit('/admin/dashboard');
+            return;
+        }
+        router.visit('/dashboard#pengajuan-eo');
     }
 
     // Daftar semua kategori beserta icon-nya
@@ -81,17 +97,19 @@ export default function CategoryIndex({ auth, initialCategory = 'Semua', events 
                     </div>
                     
                     <div className="flex items-center gap-2 sm:gap-4">
-                        <button type="button" className="hidden rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold hover:bg-gray-50 sm:block text-gray-700">Buat Event</button>
+                        <button type="button" onClick={handleCreateEventClick} className="hidden rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold hover:bg-gray-50 sm:block text-gray-700">Buat Event</button>
                         <button type="button" aria-label="Cari event" className="p-2 text-gray-500 hover:text-navy"><Search className="size-5" /></button>
                         
                         {auth?.user ? (
                             <div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-3 py-2 ml-2">
-                                <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-blue-50 text-sm font-bold uppercase text-brand-blue">
+                                <span className={`flex size-9 shrink-0 items-center justify-center rounded-full text-sm font-bold uppercase ${auth.user.role === 'ADMIN' ? 'bg-purple-100 text-purple-700' : auth.user.role === 'EO' ? 'bg-indigo-100 text-indigo-700' : 'bg-blue-50 text-brand-blue'}`}>
                                     {auth.user.name.charAt(0)}
                                 </span>
-                                <Link href={auth.user.role === 'ADMIN' ? '/admin/dashboard' : '/dashboard'} className="hidden min-w-0 text-left sm:block">
+                                <Link href={auth.user.role === 'ADMIN' ? '/admin/dashboard' : auth.user.role === 'EO' ? '/eo/dashboard' : '/dashboard'} className="hidden min-w-0 text-left sm:block">
                                     <p className="max-w-32 truncate text-sm font-semibold leading-tight text-navy">{auth.user.name}</p>
-                                    <p className="max-w-32 truncate text-xs text-gray-500">{auth.user.email}</p>
+                                    <p className="max-w-32 truncate text-xs text-gray-500">
+                                        {auth.user.role === 'ADMIN' ? 'Dashboard Admin ↗' : auth.user.role === 'EO' ? 'Dashboard EO ↗' : auth.user.email}
+                                    </p>
                                 </Link>
                                 <span className="h-8 w-px bg-gray-200" aria-hidden="true" />
                                 <Link href="/logout" method="post" as="button" className="text-sm font-medium text-gray-500 transition hover:text-red-600">Keluar</Link>

@@ -18,6 +18,7 @@ class Ticket extends Model
         'ticket_code',
         'attendee_name',
         'attendee_email',
+        'attendee_phone',
         'status',
         'checked_in_at',
         'checked_in_by',

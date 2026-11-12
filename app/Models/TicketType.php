@@ -16,7 +16,9 @@ class TicketType extends Model
         'event_id',
         'name',
         'description',
+        'initial_quota',
         'quota',
+        'max_per_order',
         'sale_start',
         'sale_end',
         'status',
@@ -25,7 +27,9 @@ class TicketType extends Model
     protected function casts(): array
     {
         return [
+            'initial_quota' => 'integer',
             'quota' => 'integer',
+            'max_per_order' => 'integer',
             'sale_start' => 'datetime',
             'sale_end' => 'datetime',
         ];

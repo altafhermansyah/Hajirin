@@ -103,6 +103,7 @@ class TicketCheckoutTest extends TestCase
             $this->assertEquals('ACTIVE', $t->status);
             $this->assertEquals('Budi Santoso', $t->attendee_name);
             $this->assertEquals('budi@example.com', $t->attendee_email);
+            $this->assertEquals('081234567890', $t->attendee_phone);
             $this->assertStringStartsWith('HJR-TKT-', $t->ticket_code);
         }
 
@@ -110,7 +111,7 @@ class TicketCheckoutTest extends TestCase
         $this->assertDatabaseHas('payments', [
             'order_id' => $order->id,
             'status' => 'SUCCESS',
-            'method' => 'MOCK',
+            'method' => 'QRIS',
         ]);
 
         // 5. Verifikasi Kuota tiket berkurang

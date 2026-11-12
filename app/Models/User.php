@@ -22,6 +22,8 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'email',
+        'phone',
+        'avatar_path',
         'password',
     ];
 
@@ -49,6 +51,16 @@ class User extends Authenticatable
     public function orders(): HasMany
     {
         return $this->hasMany(Order::class);
+    }
+
+    public function events(): HasMany
+    {
+        return $this->hasMany(Event::class, 'eo_id');
+    }
+
+    public function eoApplications(): HasMany
+    {
+        return $this->hasMany(EoApplication::class);
     }
 
     public function tickets(): HasManyThrough

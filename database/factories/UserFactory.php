@@ -30,4 +30,24 @@ class UserFactory extends Factory
             'role' => 'USER',
         ];
     }
+
+    /**
+     * State untuk pengguna dengan role Event Organizer (EO).
+     */
+    public function eo(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role' => 'EO',
+        ]);
+    }
+
+    /**
+     * State untuk pengguna dengan role Admin.
+     */
+    public function admin(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role' => 'ADMIN',
+        ]);
+    }
 }
