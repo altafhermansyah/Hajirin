@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -44,6 +45,10 @@ class HandleInertiaRequests extends Middleware
                 'success' => fn () => $request->session()->get('success'),
                 'error' => fn () => $request->session()->get('error'),
             ],
+            'adminCounts' => fn () => $request->user()?->role === 'ADMIN' ? [
+                'pendingApplications' => DB::table('eo_applications')->where('status', 'PENDING')->count(),
+                'pendingEvents' => DB::table('events')->where('status', 'PENDING_REVIEW')->count(),
+            ] : null,
         ];
     }
 }

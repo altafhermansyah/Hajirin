@@ -5,7 +5,6 @@ import {
     Calendar,
     Building2,
     Ticket,
-    UserCheck,
     QrCode,
     Users,
     FileText,
@@ -24,12 +23,16 @@ import {
 } from 'lucide-react';
 
 export default function AdminLayout({ title, children }) {
-    const { auth } = usePage().props;
+    const { auth, adminCounts } = usePage().props;
     const user = auth?.user || { name: 'Admin', email: 'admin@hajirin.com', role: 'ADMIN' };
+
+    const currentPath = typeof window !== 'undefined' ? window.location.pathname : '/admin/dashboard';
 
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
-    const [openSubmenus, setOpenSubmenus] = useState({});
+    const [openSubmenus, setOpenSubmenus] = useState({
+        'Organizers (EO)': currentPath.startsWith('/admin/organizers'),
+    });
 
     const toggleSubmenu = (name) => {
         setOpenSubmenus((prev) => ({
@@ -52,7 +55,8 @@ export default function AdminLayout({ title, children }) {
             .toUpperCase()
         : 'AD';
 
-    const currentPath = typeof window !== 'undefined' ? window.location.pathname : '/admin/dashboard';
+    const pendingAppsCount = adminCounts?.pendingApplications || 0;
+    const pendingEventsCount = adminCounts?.pendingEvents || 0;
 
     const workspaceMenu = [
         {
@@ -66,15 +70,28 @@ export default function AdminLayout({ title, children }) {
             href: '/admin/events',
             icon: Calendar,
             active: currentPath.startsWith('/admin/events'),
+            badge: pendingEventsCount > 0 ? String(pendingEventsCount) : null,
+            badgeColor: 'bg-amber-100 text-amber-700',
         },
         {
             name: 'Organizers (EO)',
             icon: Building2,
-            active: false,
+            active: currentPath.startsWith('/admin/organizers'),
+            badge: pendingAppsCount > 0 ? String(pendingAppsCount) : null,
+            badgeColor: 'bg-amber-100 text-amber-700',
             children: [
-                { name: 'Daftar Penyelenggara', href: '#organizers' },
-                { name: 'Pengajuan & Verifikasi', href: '#organizer-applications', badge: '2', badgeColor: 'bg-amber-100 text-amber-700' },
-                { name: 'Laporan Performa EO', href: '#organizer-performance' },
+                {
+                    name: 'Daftar Penyelenggara',
+                    href: '/admin/organizers',
+                    active: currentPath === '/admin/organizers',
+                },
+                {
+                    name: 'Pengajuan & Verifikasi',
+                    href: '/admin/organizers/applications',
+                    active: currentPath.startsWith('/admin/organizers/applications'),
+                    badge: pendingAppsCount > 0 ? String(pendingAppsCount) : null,
+                    badgeColor: 'bg-amber-100 text-amber-700',
+                },
             ],
         },
         {
@@ -86,14 +103,6 @@ export default function AdminLayout({ title, children }) {
                 { name: 'Status Pembayaran', href: '#payments' },
                 { name: 'Pengembalian Dana (Refund)', href: '#refunds' },
             ],
-        },
-        {
-            name: 'Verifikasi EO',
-            href: '#verifikasi-eo',
-            icon: UserCheck,
-            badge: '2',
-            badgeColor: 'bg-amber-100 text-amber-700',
-            active: false,
         },
         {
             name: 'Check-in Scanner',

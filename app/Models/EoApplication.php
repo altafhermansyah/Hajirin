@@ -21,6 +21,10 @@ class EoApplication extends Model
         'portfolio_url',
         'document_path',
         'reason',
+        'status',
+        'rejection_reason',
+        'reviewed_by',
+        'reviewed_at',
     ];
 
     /**

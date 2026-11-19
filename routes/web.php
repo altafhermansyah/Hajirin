@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminEventController;
+use App\Http\Controllers\Admin\AdminOrganizerController;
 use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\RegisteredUserController;
@@ -157,6 +158,16 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/events/{id}/reject', [AdminEventController::class, 'reject'])->name('events.reject');
     Route::post('/events/{id}/cancel', [AdminEventController::class, 'cancel'])->name('events.cancel');
     Route::delete('/events/{id}', [AdminEventController::class, 'destroy'])->name('events.destroy');
+
+    // Manajemen Organizer (EO) & Verifikasi Dokumen
+    Route::get('/organizers', [AdminOrganizerController::class, 'index'])->name('organizers.index');
+    Route::get('/organizers/applications', [AdminOrganizerController::class, 'applications'])->name('organizers.applications');
+    Route::get('/verifikasi-eo', fn () => redirect()->route('admin.organizers.applications'))->name('verifikasi-eo');
+    Route::get('/organizers/applications/{id}/document', [AdminOrganizerController::class, 'showDocument'])->name('organizers.document');
+    Route::post('/organizers/applications/{id}/approve', [AdminOrganizerController::class, 'approveApplication'])->name('organizers.approve');
+    Route::post('/organizers/applications/{id}/reject', [AdminOrganizerController::class, 'rejectApplication'])->name('organizers.reject');
+    Route::patch('/organizers/{id}/toggle-status', [AdminOrganizerController::class, 'toggleStatus'])->name('organizers.toggle-status');
+    Route::post('/organizers/{id}/revoke', [AdminOrganizerController::class, 'revoke'])->name('organizers.revoke');
 
     // Kelola Pengguna (User Management)
     Route::get('/users', [AdminUserController::class, 'index'])->name('users.index');
