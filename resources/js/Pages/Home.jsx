@@ -24,9 +24,11 @@ import {
     Users,
     UserRound,
     Volleyball,
+    LogOut,
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import AuthModal from '../Components/Auth/AuthModal';
+import Navbar from '../Components/Navbar';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '../Components/ui/Dialog';
 
 const heroEvents = [
@@ -127,10 +129,30 @@ export default function Home({ auth, categories = [], events = [], bookmarkedEve
     }, [bookmarkedEventIds]);
 
     // State untuk fitur pencarian
-    const [searchQuery, setSearchQuery] = useState('');
+    const [searchQuery, setSearchQuery] = useState(() => {
+        if (typeof window !== 'undefined') {
+            const params = new URLSearchParams(window.location.search);
+            return params.get('q') || params.get('search') || '';
+        }
+        return '';
+    });
     const [selectedLocation, setSelectedLocation] = useState('Semua Kota');
     const [selectedTime, setSelectedTime] = useState('Semua Waktu');
     const searchInputRef = useRef(null);
+
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const params = new URLSearchParams(window.location.search);
+            const initialQ = params.get('q') || params.get('search');
+            if (initialQ) {
+                setSearchQuery(initialQ);
+                setTimeout(() => {
+                    const searchEl = document.getElementById('search-section') || document.getElementById('hasil-pencarian');
+                    if (searchEl) searchEl.scrollIntoView({ behavior: 'smooth' });
+                }, 350);
+            }
+        }
+    }, []);
 
     // Toggle bookmark event
     function handleToggleBookmark(eventId, eventSlug, eventTitle, e) {
@@ -185,19 +207,6 @@ export default function Home({ auth, categories = [], events = [], bookmarkedEve
             }
         );
     }
-
-    // State untuk filter lokasi Event Terdekat
-    const [nearbyCity, setNearbyCity] = useState('Semua Kota');
-
-    const filteredNearbyEvents = useMemo(() => {
-        if (nearbyCity === 'Semua Kota') {
-            return nearbyEvents;
-        }
-        return nearbyEvents.filter((item) => {
-            const loc = (item.place || '').toLowerCase();
-            return loc.includes(nearbyCity.toLowerCase());
-        });
-    }, [nearbyCity]);
 
     // Daftar semua event yang dapat dicari (gabungan dari database dan fallback data)
     const allSearchableEvents = useMemo(() => {
@@ -322,9 +331,6 @@ export default function Home({ auth, categories = [], events = [], bookmarkedEve
         setSelectedTime('Semua Waktu');
         searchInputRef.current?.focus();
     }
-    
-    // State untuk fitur Load More
-    const [visibleNearby, setVisibleNearby] = useState(4);
 
     useEffect(() => {
         if (isCarouselPaused) return undefined;
@@ -395,80 +401,12 @@ export default function Home({ auth, categories = [], events = [], bookmarkedEve
         <>
             <Head title="Hajirin - Event & Ticketing" />
 
-            <nav className="sticky top-0 z-50 flex items-center justify-between border-b border-gray-100 bg-white px-4 py-4 sm:px-8 lg:px-10">
-                <div className="flex items-center gap-5 sm:gap-8">
-                    <Link href="/" className="flex items-center gap-2" aria-label="Beranda Hajirin">
-                        <img src="/hajirin_icon.svg" alt="Logo Hajirin" className="h-8 w-auto" />
-                        <span className="text-2xl font-bold tracking-tighter text-navy">HAJIRIN</span>
-                    </Link>
-                    <div className="hidden gap-6 text-sm font-medium text-gray-700 md:flex">
-                        <a href="#event-unggulan" className="hover:text-brand-blue">Jelajah Event</a>
-                        <Link href="/kategori" className="hover:text-brand-blue">Kategori</Link>
-                    </div>
-                </div>
-
-                <div className="flex items-center gap-2 sm:gap-3">
-                    {/* Fitur Pencarian di Navbar */}
-                    <form onSubmit={handleNavbarSearchSubmit} className="relative hidden md:block w-44 lg:w-60">
-                        <Search className="pointer-events-none absolute left-3 top-2.5 size-4 text-gray-400" />
-                        <input
-                            type="text"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder="Cari event..."
-                            className="h-9 w-full rounded-lg border border-gray-200 bg-gray-50 pl-9 pr-7 text-xs placeholder:text-gray-400 transition focus:border-brand-blue focus:bg-white focus:outline-none focus:ring-1 focus:ring-brand-blue"
-                        />
-                        {searchQuery && (
-                            <button
-                                type="button"
-                                onClick={() => setSearchQuery('')}
-                                className="absolute right-2 top-2 text-gray-400 hover:text-gray-600"
-                            >
-                                <X className="size-3.5" />
-                            </button>
-                        )}
-                    </form>
-                    <button
-                        type="button"
-                        onClick={handleNavbarSearchClick}
-                        aria-label="Cari event"
-                        className="p-2 text-gray-500 hover:text-navy transition md:hidden"
-                    >
-                        <Search className="size-5" />
-                    </button>
-
-                    {/* Di sebelah kanan Fitur Pencarian ada Buat Event */}
-                    <button
-                        type="button"
-                        onClick={handleCreateEventClick}
-                        className="hidden rounded-lg border border-gray-300 px-3.5 py-1.5 text-xs font-semibold hover:bg-gray-50 sm:block transition"
-                    >
-                        Buat Event
-                    </button>
-
-                    {/* Di sebelah kanan Buat Event ada User / Menu Profil */}
-                    {auth?.user ? (
-                        <div className="flex items-center gap-2.5 rounded-xl border border-gray-200 bg-white px-2.5 py-1.5 shadow-2xs">
-                            <span className={`flex size-8 shrink-0 items-center justify-center rounded-full text-xs font-bold uppercase ${auth.user.role === 'ADMIN' ? 'bg-purple-100 text-purple-700' : auth.user.role === 'EO' ? 'bg-indigo-100 text-indigo-700' : 'bg-blue-50 text-brand-blue'}`}>
-                                {auth.user.name.charAt(0)}
-                            </span>
-                            <Link href={auth.user.role === 'ADMIN' ? '/admin/dashboard' : auth.user.role === 'EO' ? '/eo/dashboard' : '/dashboard'} className="hidden min-w-0 text-left sm:block">
-                                <p className="max-w-32 truncate text-xs font-bold leading-tight text-navy">{auth.user.name}</p>
-                                <p className="max-w-32 truncate text-[10px] text-gray-500">
-                                    {auth.user.role === 'ADMIN' ? 'Dashboard Admin ↗' : auth.user.role === 'EO' ? 'Dashboard EO ↗' : 'Profil & Tiket ↗'}
-                                </p>
-                            </Link>
-                            <span className="h-6 w-px bg-gray-200" aria-hidden="true" />
-                            <button type="button" onClick={() => setIsLogoutConfirmOpen(true)} className="text-xs font-medium text-gray-500 transition hover:text-red-600">Keluar</button>
-                        </div>
-                    ) : (
-                        <div className="flex items-center gap-2">
-                            <button type="button" onClick={() => openAuthModal('login')} className="hidden rounded-lg border border-gray-300 px-3.5 py-1.5 text-xs font-semibold text-gray-700 hover:text-navy sm:block">Masuk</button>
-                            <button type="button" onClick={() => openAuthModal('register')} className="rounded-lg bg-brand-blue px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-800">Daftar</button>
-                        </div>
-                    )}
-                </div>
-            </nav>
+            <Navbar
+                auth={auth}
+                onOpenAuthModal={openAuthModal}
+                initialSearchQuery={searchQuery}
+                onSearch={(q) => setSearchQuery(q)}
+            />
 
             <main>
                 <section className="px-4 py-6 sm:px-8 lg:px-10">
@@ -711,79 +649,6 @@ export default function Home({ auth, categories = [], events = [], bookmarkedEve
                                     );
                                 })}
                             </div>
-                        </section>
-
-                        <SectionHeading
-                            title="Event Terdekat"
-                            description="Temukan acara seru yang berlokasi dekat di sekitarmu"
-                            action="Lihat Semua Event"
-                            actionHref={`/event-terdekat?city=${encodeURIComponent(nearbyCity)}`}
-                        />
-                        <section className="px-4 pb-10 sm:px-8 lg:px-10">
-                            <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-                                <div className="flex items-center gap-2">
-                                    <span className="text-xs font-semibold text-slate">Pilih Lokasi:</span>
-                                    <div className="relative">
-                                        <select
-                                            value={nearbyCity}
-                                            onChange={(e) => {
-                                                setNearbyCity(e.target.value);
-                                                setVisibleNearby(4);
-                                            }}
-                                            className="appearance-none rounded-lg border border-gray-300 bg-white py-1.5 pl-8 pr-8 text-sm font-semibold text-gray-700 shadow-2xs hover:bg-gray-50 focus:border-brand-blue focus:outline-none"
-                                        >
-                                            <option value="Semua Kota">Semua Kota</option>
-                                            <option value="Jakarta">Jakarta</option>
-                                            <option value="Tangerang">Tangerang</option>
-                                            <option value="Bandung">Bandung</option>
-                                            <option value="Surabaya">Surabaya</option>
-                                            <option value="Yogyakarta">Yogyakarta</option>
-                                            <option value="Bali">Bali</option>
-                                        </select>
-                                        <MapPin className="pointer-events-none absolute left-2.5 top-2.5 size-4 text-red-500" />
-                                        <ChevronDown className="pointer-events-none absolute right-2.5 top-2.5 size-4 text-gray-400" />
-                                    </div>
-                                </div>
-                                <Link
-                                    href={`/event-terdekat?city=${encodeURIComponent(nearbyCity)}`}
-                                    className="inline-flex items-center text-xs font-semibold text-brand-blue hover:underline"
-                                >
-                                    Lihat Semua Event di {nearbyCity} <ArrowRight className="ml-1 size-3" />
-                                </Link>
-                            </div>
-                            
-                            {filteredNearbyEvents.length > 0 ? (
-                                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-                                    {filteredNearbyEvents.slice(0, visibleNearby).map((evt, index) => <NearbyCard key={index} {...evt} />)}
-                                </div>
-                            ) : (
-                                <div className="my-6 rounded-xl border border-dashed border-gray-200 bg-gray-50/50 p-8 text-center">
-                                    <MapPin className="mx-auto mb-2 size-6 text-gray-400" />
-                                    <p className="text-sm font-semibold text-navy">Belum ada event terdekat di kota {nearbyCity}.</p>
-                                    <p className="mt-1 text-xs text-slate">Coba pilih kota lain atau tampilkan semua event terdekat.</p>
-                                    <button
-                                        type="button"
-                                        onClick={() => setNearbyCity('Semua Kota')}
-                                        className="mt-4 rounded-lg bg-brand-blue px-4 py-2 text-xs font-semibold text-white hover:bg-blue-800 transition"
-                                    >
-                                        Tampilkan Semua Kota
-                                    </button>
-                                </div>
-                            )}
-                            
-                            {filteredNearbyEvents.length > 4 && (
-                                <div className="mt-6 text-center">
-                                    {visibleNearby < filteredNearbyEvents.length ? (
-                                        <button type="button" onClick={() => setVisibleNearby(visibleNearby + 4)} className="inline-flex items-center rounded-lg border border-gray-300 bg-white px-6 py-2.5 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50">
-                                            Lihat Lebih Banyak Event Terdekat <ChevronDown className="ml-2 size-4" />
-                                        </button>
-                                    ) : (
-                                        <button type="button" onClick={() => setVisibleNearby(4)} className="inline-flex items-center rounded-lg border border-gray-300 bg-white px-6 py-2.5 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50">
-                                            Tampilkan Lebih Sedikit <ChevronUp className="ml-2 size-4" />
-                                        </button>
-                                    )}
-                                </div>
-                            )}
                         </section>
                     </>
                 )}

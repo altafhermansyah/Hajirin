@@ -21,7 +21,9 @@ use App\Http\Controllers\Eo\EoProfileController;
 use App\Http\Controllers\EoApplicationController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\UserDashboardController;
+use App\Http\Controllers\UserOrderController;
 use App\Http\Controllers\UserProfileController;
+use App\Http\Controllers\UserTicketController;
 use App\Models\Category;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -49,7 +51,13 @@ Route::middleware('auth')->group(function () {
 
     // Route Profil User
     Route::get('/profile', [UserProfileController::class, 'show'])->name('profile');
-    Route::put('/profile', [UserProfileController::class, 'update'])->name('profile.update');
+    Route::match(['put', 'post'], '/profile', [UserProfileController::class, 'update'])->name('profile.update');
+
+    // Route Halaman Detail E-Tiket & Scan QR
+    Route::get('/my-tickets/{orderReference}', [UserTicketController::class, 'show'])->name('my-tickets.show');
+
+    // Route Halaman Detail Pesanan / Transaksi Invoice
+    Route::get('/orders/{orderReference}', [UserOrderController::class, 'show'])->name('orders.show');
 });
 
 // Route Home (Mengirimkan data categories dan events dari database)

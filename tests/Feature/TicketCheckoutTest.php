@@ -124,14 +124,87 @@ class TicketCheckoutTest extends TestCase
             'type' => 'PAYMENT_SUCCESS',
         ]);
 
-        // 7. Verifikasi tiket langsung tampil di Dashboard user
+        // 7. Verifikasi tiket langsung tampil di Dashboard user (1 tiket pass per event sesuai permintaan)
         $dashboardResponse = $this->actingAs($user)->get('/dashboard');
         $dashboardResponse->assertStatus(200);
         $dashboardResponse->assertInertia(fn (Assert $page) => $page
             ->component('Dashboard')
             ->where('dashboard.orderCount', 1)
             ->where('dashboard.ticketCount', 2)
-            ->has('dashboard.myTickets', 2)
+            ->has('dashboard.myTickets', 1)
+            ->where('dashboard.myTickets.0.quantity', 2)
+        );
+    }
+
+    public function test_user_cannot_checkout_if_phone_contains_letters(): void
+    {
+        $user = User::factory()->create();
+        $event = Event::where('slug', 'indonesia-tech-conference-2026')->firstOrFail();
+        $ticketType = TicketType::where('event_id', $event->id)->where('quota', '>', 0)->firstOrFail();
+
+        $response = $this->actingAs($user)->post('/checkout', [
+            'event_id' => $event->id,
+            'ticket_type_id' => $ticketType->id,
+            'quantity' => 1,
+            'payment_method' => 'qris',
+            'attendee_name' => 'Budi Santoso',
+            'attendee_email' => 'budi@example.com',
+            'attendee_phone' => '0812345ABCDE', // Mengandung huruf
+        ]);
+
+        $response->assertSessionHasErrors(['attendee_phone']);
+    }
+
+    public function test_user_can_checkout_multiple_different_ticket_types(): void
+    {
+        $user = User::factory()->create();
+        $event = Event::where('slug', 'indonesia-tech-conference-2026')->firstOrFail();
+
+        $tickets = TicketType::where('event_id', $event->id)->where('quota', '>=', 2)->get();
+        if ($tickets->count() < 2) {
+            $secondTicket = TicketType::create([
+                'event_id' => $event->id,
+                'name' => 'VIP Access Special',
+                'description' => 'Akses VIP',
+                'quota' => 20,
+                'status' => 'ACTIVE',
+            ]);
+            $secondTicket->prices()->create([
+                'name' => 'Harga VIP',
+                'price' => 350000,
+                'status' => 'ACTIVE',
+            ]);
+            $ticket1 = $tickets->first();
+            $ticket2 = $secondTicket;
+        } else {
+            $ticket1 = $tickets[0];
+            $ticket2 = $tickets[1];
+        }
+
+        $response = $this->actingAs($user)->post('/checkout', [
+            'event_id' => $event->id,
+            'items' => [
+                ['ticket_type_id' => $ticket1->id, 'quantity' => 1, 'ticket_price_id' => $ticket1->activePrice?->id],
+                ['ticket_type_id' => $ticket2->id, 'quantity' => 2, 'ticket_price_id' => $ticket2->activePrice?->id],
+            ],
+            'payment_method' => 'qris',
+            'attendee_name' => 'Multi Ticket User',
+            'attendee_email' => 'multi@example.com',
+            'attendee_phone' => '08987654321',
+        ]);
+
+        $response->assertSessionHasNoErrors();
+        $response->assertSessionHas('order_success');
+
+        $order = Order::where('user_id', $user->id)->firstOrFail();
+        $this->assertEquals(2, $order->items()->count());
+        $this->assertEquals(3, Ticket::where('order_id', $order->id)->count());
+
+        // Verifikasi dashboard hanya menampilkan 1 tiket pass untuk event tersebut
+        $dashboardResponse = $this->actingAs($user)->get('/dashboard');
+        $dashboardResponse->assertInertia(fn (Assert $page) => $page
+            ->has('dashboard.myTickets', 1)
+            ->where('dashboard.myTickets.0.quantity', 3)
         );
     }
 
@@ -173,5 +246,97 @@ class TicketCheckoutTest extends TestCase
         ]);
 
         $response->assertStatus(404);
+    }
+
+    public function test_user_can_view_dedicated_my_tickets_detail_page_with_individual_tickets_and_qr(): void
+    {
+        $user = User::factory()->create();
+        $event = Event::where('slug', 'indonesia-tech-conference-2026')->firstOrFail();
+        $ticketType = TicketType::where('event_id', $event->id)->where('quota', '>', 2)->firstOrFail();
+
+        $this->actingAs($user)->post('/checkout', [
+            'event_id' => $event->id,
+            'ticket_type_id' => $ticketType->id,
+            'ticket_price_id' => $ticketType->activePrice?->id,
+            'quantity' => 2,
+            'payment_method' => 'qris',
+            'attendee_name' => 'Alice',
+            'attendee_email' => 'alice@example.com',
+        ]);
+
+        $order = Order::where('user_id', $user->id)->latest('created_at')->firstOrFail();
+
+        $response = $this->actingAs($user)->get("/my-tickets/{$order->order_reference}");
+
+        $response->assertStatus(200);
+        $response->assertInertia(fn (Assert $page) => $page
+            ->component('Ticket/Detail')
+            ->has('order')
+            ->has('event')
+            ->has('tickets', 2)
+            ->where('order.orderReference', $order->order_reference)
+            ->where('tickets.0.ticketNumber', 1)
+            ->where('tickets.1.ticketNumber', 2)
+            ->has('tickets.0.ticketCode')
+        );
+    }
+
+    public function test_user_can_view_dedicated_order_detail_invoice_page(): void
+    {
+        $user = User::factory()->create();
+        $event = Event::where('slug', 'indonesia-tech-conference-2026')->firstOrFail();
+        $ticketType = TicketType::where('event_id', $event->id)->where('quota', '>', 0)->firstOrFail();
+
+        $this->actingAs($user)->post('/checkout', [
+            'event_id' => $event->id,
+            'ticket_type_id' => $ticketType->id,
+            'ticket_price_id' => $ticketType->activePrice?->id,
+            'quantity' => 1,
+            'payment_method' => 'qris',
+            'attendee_name' => 'Bob',
+            'attendee_email' => 'bob@example.com',
+        ]);
+
+        $order = Order::where('user_id', $user->id)->latest('created_at')->firstOrFail();
+
+        $response = $this->actingAs($user)->get("/orders/{$order->order_reference}");
+
+        $response->assertStatus(200);
+        $response->assertInertia(fn (Assert $page) => $page
+            ->component('Order/Detail')
+            ->has('order')
+            ->has('event')
+            ->has('items', 1)
+            ->where('order.orderReference', $order->order_reference)
+            ->where('items.0.ticketName', $ticketType->name)
+        );
+    }
+
+    public function test_user_cannot_view_another_users_tickets_or_order(): void
+    {
+        $user1 = User::factory()->create();
+        $user2 = User::factory()->create();
+        $event = Event::where('slug', 'indonesia-tech-conference-2026')->firstOrFail();
+        $ticketType = TicketType::where('event_id', $event->id)->where('quota', '>', 0)->firstOrFail();
+
+        $this->actingAs($user1)->post('/checkout', [
+            'event_id' => $event->id,
+            'ticket_type_id' => $ticketType->id,
+            'ticket_price_id' => $ticketType->activePrice?->id,
+            'quantity' => 1,
+            'payment_method' => 'qris',
+            'attendee_name' => 'Secret',
+            'attendee_email' => 'secret@example.com',
+        ]);
+
+        $order = Order::where('user_id', $user1->id)->latest('created_at')->firstOrFail();
+
+        // User2 mencoba melihat tiket user1
+        $responseTickets = $this->actingAs($user2)->get("/my-tickets/{$order->order_reference}");
+        $responseTickets->assertRedirect('/dashboard');
+
+        // User2 mencoba melihat order user1
+        $responseOrders = $this->actingAs($user2)->get("/orders/{$order->order_reference}");
+        $responseOrders->assertRedirect('/dashboard');
     }
 }

@@ -5,13 +5,14 @@ import {
     CircleUserRound, Info, Ticket, ChevronRight, Search,
     Clock, ShieldCheck, Globe, ExternalLink, CheckCircle2,
     Sparkles, ArrowRight, Minus, Plus, Building2, AlertCircle,
-    Copy, Award, Coffee, FileText, CheckCircle
+    Copy, Award, Coffee, FileText, CheckCircle, LogOut
 } from 'lucide-react';
 import AuthModal from '../../Components/Auth/AuthModal';
+import Navbar from '../../Components/Navbar';
 
 export default function EventDetail({ auth, eventSlug, eventData, relatedEvents = [], isBookmarked: initialBookmarked }) {
-    const [selectedTicket, setSelectedTicket] = useState(null);
-    const [ticketQuantity, setTicketQuantity] = useState(1);
+    // State untuk pemilihan banyak jenis tiket (multi-ticket items): { [ticketId]: quantity }
+    const [selectedTickets, setSelectedTickets] = useState({});
     const [isBookmarked, setIsBookmarked] = useState(initialBookmarked || false);
     const [toastMessage, setToastMessage] = useState('');
     const [showShareMenu, setShowShareMenu] = useState(false);
@@ -95,25 +96,43 @@ export default function EventDetail({ auth, eventSlug, eventData, relatedEvents 
         setShowShareMenu(false);
     };
 
-    const handleSelectTicket = (ticket) => {
+    const handleSetTicketQuantity = (ticket, qty) => {
         if (ticket.status === 'Habis') return;
-        setSelectedTicket(ticket);
-        setTicketQuantity(1);
+        const maxQuota = Math.min(ticket.quota || 10, 10);
+        const validQty = Math.max(0, Math.min(qty, maxQuota));
+        setSelectedTickets((prev) => {
+            const next = { ...prev };
+            if (validQty > 0) {
+                next[ticket.id] = validQty;
+            } else {
+                delete next[ticket.id];
+            }
+            return next;
+        });
     };
 
-    const handleQuantityChange = (delta) => {
-        if (!selectedTicket) return;
-        const newQty = ticketQuantity + delta;
-        const maxQuota = selectedTicket.quota ? Math.min(selectedTicket.quota, 5) : 5;
-        if (newQty >= 1 && newQty <= maxQuota) {
-            setTicketQuantity(newQty);
+    const handleQuickToggleTicket = (ticket) => {
+        if (ticket.status === 'Habis') return;
+        const currentQty = selectedTickets[ticket.id] || 0;
+        if (currentQty === 0) {
+            handleSetTicketQuantity(ticket, 1);
+        } else {
+            handleSetTicketQuantity(ticket, 0);
         }
     };
 
-    const calculateSubtotal = () => {
-        if (!selectedTicket) return 0;
-        return (selectedTicket.rawPrice || 0) * ticketQuantity;
-    };
+    const selectedList = (event?.tickets || []).filter(t => (selectedTickets[t.id] || 0) > 0);
+    const totalSelectedTicketsCount = selectedList.reduce((acc, t) => acc + (selectedTickets[t.id] || 0), 0);
+    const totalSubtotal = selectedList.reduce((acc, t) => acc + ((t.rawPrice || 0) * (selectedTickets[t.id] || 0)), 0);
+
+    const firstSelected = selectedList[0] || null;
+    const checkoutItems = selectedList.map(t => ({
+        ticket_id: t.id,
+        ticket_type_id: t.id,
+        price_id: t.priceId || '',
+        quantity: selectedTickets[t.id],
+        qty: selectedTickets[t.id],
+    }));
 
     const formatCurrency = (amount) => {
         return amount > 0
@@ -143,8 +162,8 @@ export default function EventDetail({ auth, eventSlug, eventData, relatedEvents 
         }
     };
 
-    const checkoutUrl = selectedTicket
-        ? `/checkout?event=${encodeURIComponent(eventSlug)}&ticket_id=${encodeURIComponent(selectedTicket.id)}&price_id=${encodeURIComponent(selectedTicket.priceId || '')}&ticket=${encodeURIComponent(selectedTicket.name)}&price=${encodeURIComponent(formatCurrency(calculateSubtotal()))}&qty=${ticketQuantity}`
+    const checkoutUrl = totalSelectedTicketsCount > 0
+        ? `/checkout?event=${encodeURIComponent(eventSlug)}&ticket_id=${encodeURIComponent(firstSelected?.id || '')}&price_id=${encodeURIComponent(firstSelected?.priceId || '')}&qty=${selectedTickets[firstSelected?.id] || 1}&items=${encodeURIComponent(JSON.stringify(checkoutItems))}`
         : '#pilih-tiket';
 
     return (
@@ -160,96 +179,7 @@ export default function EventDetail({ auth, eventSlug, eventData, relatedEvents 
             )}
 
             <div className="bg-[#f8fafc] text-navy font-sans min-h-screen">
-                {/* Navbar */}
-                <nav className="sticky top-0 z-40 flex items-center justify-between border-b border-gray-100 bg-white/95 px-4 py-3.5 backdrop-blur sm:px-8 lg:px-12">
-                    <div className="flex items-center gap-6 sm:gap-10">
-                        <Link href="/" className="flex items-center gap-2">
-                            <img src="/hajirin_icon.svg" alt="Logo Hajirin" className="h-8 w-auto" />
-                            <span className="text-2xl font-bold tracking-tighter text-navy">HAJIRIN</span>
-                        </Link>
-                        <div className="hidden gap-6 text-sm font-medium text-slate md:flex">
-                            <Link href="/#event-unggulan" className="hover:text-brand-blue transition">Jelajah Event</Link>
-                            <Link href="/kategori" className="hover:text-brand-blue transition">Kategori</Link>
-                        </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 sm:gap-3">
-                        <Link
-                            href="/#search-section"
-                            className="hidden items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-semibold text-slate hover:bg-gray-100 sm:flex"
-                        >
-                            <Search className="size-3.5" />
-                            <span>Cari Event</span>
-                        </Link>
-
-                        <button
-                            type="button"
-                            onClick={() => {
-                                if (!auth?.user) {
-                                    setAuthView('login');
-                                    setIsAuthModalOpen(true);
-                                    return;
-                                }
-                                if (auth.user.role === 'EO') {
-                                    router.visit('/eo/dashboard');
-                                    return;
-                                }
-                                if (auth.user.role === 'ADMIN') {
-                                    router.visit('/admin/dashboard');
-                                    return;
-                                }
-                                router.visit('/eo-applications/create');
-                            }}
-                            className="hidden rounded-lg border border-gray-300 px-3.5 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 sm:block transition"
-                        >
-                            Buat Event
-                        </button>
-
-                        {auth?.user ? (
-                            <div className="flex items-center gap-2.5 rounded-xl border border-gray-200 bg-white px-2.5 py-1.5 shadow-2xs">
-                                <span className={`flex size-8 shrink-0 items-center justify-center rounded-full text-xs font-bold uppercase ${auth.user.role === 'ADMIN' ? 'bg-purple-100 text-purple-700' : auth.user.role === 'EO' ? 'bg-indigo-100 text-indigo-700' : 'bg-blue-50 text-brand-blue'}`}>
-                                    {auth.user.name.charAt(0)}
-                                </span>
-                                <Link href={auth.user.role === 'ADMIN' ? '/admin/dashboard' : auth.user.role === 'EO' ? '/eo/dashboard' : '/dashboard'} className="hidden min-w-0 text-left sm:block">
-                                    <p className="max-w-28 truncate text-xs font-bold leading-tight text-navy">{auth.user.name}</p>
-                                    <p className="max-w-28 truncate text-[10px] text-gray-500">
-                                        {auth.user.role === 'ADMIN' ? 'Dashboard Admin ↗' : auth.user.role === 'EO' ? 'Dashboard EO ↗' : 'Profil & Tiket ↗'}
-                                    </p>
-                                </Link>
-                                <span className="h-6 w-px bg-gray-200 hidden sm:block" />
-                                <Link
-                                    href="/logout"
-                                    method="post"
-                                    as="button"
-                                    className="text-xs font-medium text-slate hover:text-red-600 transition"
-                                >
-                                    Keluar
-                                </Link>
-                            </div>
-                        ) : (
-                            <div className="flex items-center gap-2">
-                                <button
-                                    onClick={() => {
-                                        setAuthView('login');
-                                        setIsAuthModalOpen(true);
-                                    }}
-                                    className="rounded-lg border border-gray-300 px-3.5 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 sm:text-sm"
-                                >
-                                    Masuk
-                                </button>
-                                <button
-                                    onClick={() => {
-                                        setAuthView('register');
-                                        setIsAuthModalOpen(true);
-                                    }}
-                                    className="rounded-lg bg-brand-blue px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-800 sm:text-sm"
-                                >
-                                    Daftar
-                                </button>
-                            </div>
-                        )}
-                    </div>
-                </nav>
+                <Navbar auth={auth} onOpenAuthModal={(view) => { setAuthView(view); setIsAuthModalOpen(true); }} />
 
                 <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
                     {/* Breadcrumbs */}
@@ -464,11 +394,11 @@ export default function EventDetail({ auth, eventSlug, eventData, relatedEvents 
                                             <Ticket className="mr-2.5 size-5 text-brand-blue" />
                                             Pilih Tiket
                                         </h2>
-                                        <p className="text-xs text-slate mt-1">Pilih kategori tiket yang sesuai untuk melanjutkan pemesanan.</p>
+                                        <p className="text-xs text-slate mt-1">Pilih jenis dan jumlah tiket yang kamu inginkan (bisa memilih jenis tiket yang berbeda).</p>
                                     </div>
-                                    {selectedTicket && (
+                                    {totalSelectedTicketsCount > 0 && (
                                         <span className="hidden sm:inline-flex text-xs font-semibold text-brand-blue bg-blue-50 px-3 py-1 rounded-full border border-blue-200">
-                                            1 Tiket Terpilih
+                                            {totalSelectedTicketsCount} Tiket Terpilih ({selectedList.length} Jenis)
                                         </span>
                                     )}
                                 </div>
@@ -477,17 +407,19 @@ export default function EventDetail({ auth, eventSlug, eventData, relatedEvents 
                                     {event.tickets && event.tickets.length > 0 ? (
                                         event.tickets.map((ticket) => {
                                             const isHabis = ticket.status === 'Habis';
-                                            const isSelected = selectedTicket?.id === ticket.id;
+                                            const currentQty = selectedTickets[ticket.id] || 0;
+                                            const isSelected = currentQty > 0;
+                                            const maxQuota = Math.min(ticket.quota || 10, 10);
 
                                             return (
                                                 <div
                                                     key={ticket.id}
-                                                    onClick={() => !isHabis && handleSelectTicket(ticket)}
+                                                    onClick={() => !isHabis && currentQty === 0 && handleSetTicketQuantity(ticket, 1)}
                                                     className={`relative border rounded-2xl p-5 sm:p-6 transition-all duration-200 ${
                                                         isHabis
                                                             ? 'bg-gray-50/80 border-gray-200 opacity-60 cursor-not-allowed'
                                                             : isSelected
-                                                            ? 'bg-blue-50/40 border-brand-blue ring-2 ring-brand-blue/30 shadow-md cursor-pointer'
+                                                            ? 'bg-blue-50/40 border-brand-blue ring-2 ring-brand-blue/30 shadow-md'
                                                             : 'bg-white border-gray-200 hover:border-brand-blue/60 hover:shadow-sm cursor-pointer'
                                                     }`}
                                                 >
@@ -522,60 +454,61 @@ export default function EventDetail({ auth, eventSlug, eventData, relatedEvents 
                                                             </div>
 
                                                             <div className="mt-2">
-                                                                <button
-                                                                    type="button"
-                                                                    disabled={isHabis}
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        if (!isHabis) handleSelectTicket(ticket);
-                                                                    }}
-                                                                    className={`px-5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition ${
-                                                                        isHabis
-                                                                            ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                                                                            : isSelected
-                                                                            ? 'bg-brand-blue text-white shadow-sm'
-                                                                            : 'bg-white border border-brand-blue text-brand-blue hover:bg-blue-50'
-                                                                    }`}
-                                                                >
-                                                                    {isHabis ? 'Habis' : isSelected ? 'Tiket Dipilih' : 'Pilih Tiket'}
-                                                                </button>
+                                                                {isSelected ? (
+                                                                    <div className="flex items-center gap-2 bg-white rounded-xl border border-brand-blue/40 p-1 shadow-2xs">
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                handleSetTicketQuantity(ticket, currentQty - 1);
+                                                                            }}
+                                                                            className="flex size-7 items-center justify-center rounded-lg bg-gray-100 hover:bg-gray-200 text-navy transition"
+                                                                        >
+                                                                            <Minus className="size-3.5" />
+                                                                        </button>
+                                                                        <span className="w-6 text-center text-sm font-bold text-navy">
+                                                                            {currentQty}
+                                                                        </span>
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                handleSetTicketQuantity(ticket, currentQty + 1);
+                                                                            }}
+                                                                            disabled={currentQty >= maxQuota}
+                                                                            className="flex size-7 items-center justify-center rounded-lg bg-brand-blue text-white hover:bg-blue-800 disabled:opacity-40 transition"
+                                                                        >
+                                                                            <Plus className="size-3.5" />
+                                                                        </button>
+                                                                    </div>
+                                                                ) : (
+                                                                    <button
+                                                                        type="button"
+                                                                        disabled={isHabis}
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            if (!isHabis) handleSetTicketQuantity(ticket, 1);
+                                                                        }}
+                                                                        className={`px-5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition ${
+                                                                            isHabis
+                                                                                ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                                                                                : 'bg-white border border-brand-blue text-brand-blue hover:bg-blue-50'
+                                                                        }`}
+                                                                    >
+                                                                        {isHabis ? 'Habis' : '+ Pilih Tiket'}
+                                                                    </button>
+                                                                )}
                                                             </div>
                                                         </div>
                                                     </div>
 
-                                                    {/* Quantity adjustment if selected */}
-                                                    {isSelected && !isHabis && (
-                                                        <div className="mt-4 pt-4 border-t border-blue-100 flex flex-wrap items-center justify-between gap-3">
-                                                            <p className="text-xs font-semibold text-slate">
-                                                                Jumlah Tiket (Maks. {Math.min(ticket.quota || 5, 5)} per transaksi):
-                                                            </p>
-                                                            <div className="flex items-center gap-3">
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        handleQuantityChange(-1);
-                                                                    }}
-                                                                    disabled={ticketQuantity <= 1}
-                                                                    className="flex size-7 items-center justify-center rounded-lg border border-gray-300 bg-white text-navy hover:bg-gray-100 disabled:opacity-40 transition"
-                                                                >
-                                                                    <Minus className="size-3.5" />
-                                                                </button>
-                                                                <span className="w-8 text-center text-sm font-bold text-navy">
-                                                                    {ticketQuantity}
-                                                                </span>
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        handleQuantityChange(1);
-                                                                    }}
-                                                                    disabled={ticketQuantity >= Math.min(ticket.quota || 5, 5)}
-                                                                    className="flex size-7 items-center justify-center rounded-lg border border-gray-300 bg-white text-navy hover:bg-gray-100 disabled:opacity-40 transition"
-                                                                >
-                                                                    <Plus className="size-3.5" />
-                                                                </button>
-                                                            </div>
+                                                    {/* Subtotal info per item if selected */}
+                                                    {isSelected && (
+                                                        <div className="mt-3 pt-3 border-t border-blue-100/80 flex items-center justify-between text-xs">
+                                                            <span className="text-slate font-medium">Subtotal untuk jenis tiket ini:</span>
+                                                            <span className="font-bold text-brand-blue">
+                                                                {formatCurrency((ticket.rawPrice || 0) * currentQty)}
+                                                            </span>
                                                         </div>
                                                     )}
                                                 </div>
@@ -667,20 +600,19 @@ export default function EventDetail({ auth, eventSlug, eventData, relatedEvents 
                                 </div>
 
                                 {/* Selected ticket summary */}
-                                <div className="py-4 border-b border-gray-100">
-                                    {selectedTicket ? (
-                                        <div className="rounded-xl bg-blue-50/60 p-3.5 border border-blue-100">
-                                            <div className="flex items-center justify-between">
-                                                <p className="text-xs font-bold text-navy">{selectedTicket.name}</p>
-                                                <span className="text-xs font-semibold text-brand-blue">
-                                                    {ticketQuantity}x
+                                <div className="py-4 border-b border-gray-100 space-y-2">
+                                    {selectedList.length > 0 ? (
+                                        selectedList.map((t) => (
+                                            <div key={t.id} className="rounded-xl bg-blue-50/60 p-3 border border-blue-100 flex items-center justify-between">
+                                                <div>
+                                                    <p className="text-xs font-bold text-navy">{t.name}</p>
+                                                    <p className="text-[11px] text-slate">{t.price} x {selectedTickets[t.id]}</p>
+                                                </div>
+                                                <span className="text-xs font-bold text-brand-blue">
+                                                    {formatCurrency((t.rawPrice || 0) * selectedTickets[t.id])}
                                                 </span>
                                             </div>
-                                            <div className="mt-1 flex items-center justify-between text-xs text-slate">
-                                                <span>Harga satuan</span>
-                                                <span>{selectedTicket.price}</span>
-                                            </div>
-                                        </div>
+                                        ))
                                     ) : (
                                         <div className="text-center py-2 text-xs text-slate">
                                             Belum ada tiket yang dipilih.
@@ -691,9 +623,9 @@ export default function EventDetail({ auth, eventSlug, eventData, relatedEvents 
                                 {/* Price Calculation */}
                                 <div className="py-4 space-y-1.5">
                                     <div className="flex items-center justify-between text-xs text-slate">
-                                        <span>Subtotal Tiket</span>
+                                        <span>Subtotal Tiket ({totalSelectedTicketsCount} Tiket)</span>
                                         <span className="font-semibold text-navy">
-                                            {selectedTicket ? formatCurrency(calculateSubtotal()) : '-'}
+                                            {totalSelectedTicketsCount > 0 ? formatCurrency(totalSubtotal) : '-'}
                                         </span>
                                     </div>
                                     <div className="flex items-center justify-between text-xs text-slate">
@@ -703,19 +635,19 @@ export default function EventDetail({ auth, eventSlug, eventData, relatedEvents 
                                     <div className="pt-2 flex items-baseline justify-between border-t border-gray-100">
                                         <span className="text-sm font-bold text-navy">Total Bayar</span>
                                         <span className="text-2xl font-extrabold text-brand-blue">
-                                            {selectedTicket ? formatCurrency(calculateSubtotal()) : event.price}
+                                            {totalSelectedTicketsCount > 0 ? formatCurrency(totalSubtotal) : event.price}
                                         </span>
                                     </div>
                                 </div>
 
                                 {/* Action Button */}
-                                {selectedTicket ? (
+                                {totalSelectedTicketsCount > 0 ? (
                                     <Link
                                         href={checkoutUrl}
                                         onClick={handleProceedCheckout}
                                         className="w-full flex items-center justify-center gap-2 rounded-xl bg-brand-blue py-3.5 text-sm font-bold text-white shadow-md hover:bg-blue-800 transition duration-150"
                                     >
-                                        <span>Lanjut ke Pembayaran</span>
+                                        <span>Lanjut ke Pembayaran ({totalSelectedTicketsCount} Tiket)</span>
                                         <ArrowRight className="size-4" />
                                     </Link>
                                 ) : (
@@ -800,14 +732,14 @@ export default function EventDetail({ auth, eventSlug, eventData, relatedEvents 
                 <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200 px-4 py-3 shadow-2xl flex items-center justify-between">
                     <div>
                         <p className="text-[11px] text-slate">
-                            {selectedTicket ? `${selectedTicket.name} (${ticketQuantity}x)` : 'Harga Mulai'}
+                            {totalSelectedTicketsCount > 0 ? `${totalSelectedTicketsCount} Tiket Dipilih` : 'Harga Mulai'}
                         </p>
                         <p className="text-lg font-bold text-brand-blue">
-                            {selectedTicket ? formatCurrency(calculateSubtotal()) : event.price}
+                            {totalSelectedTicketsCount > 0 ? formatCurrency(totalSubtotal) : event.price}
                         </p>
                     </div>
 
-                    {selectedTicket ? (
+                    {totalSelectedTicketsCount > 0 ? (
                         <Link
                             href={checkoutUrl}
                             onClick={handleProceedCheckout}

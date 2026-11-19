@@ -1,4 +1,5 @@
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
+import Navbar from '../../Components/Navbar';
 import {
     AlertCircle,
     ArrowLeft,
@@ -39,38 +40,7 @@ export default function EoRegister({ auth, eoApplication = null }) {
         <>
             <Head title="Daftar Jadi Event Organizer (EO) — Hajirin" />
             <div className="min-h-screen bg-[#f8fafc] text-slate-900 font-sans flex flex-col">
-                {/* Top Header */}
-                <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-slate-200 bg-white/95 px-4 backdrop-blur sm:px-8">
-                    <div className="flex items-center gap-4">
-                        <Link href="/" className="flex items-center gap-2">
-                            <img src="/hajirin_icon.svg" alt="Hajirin" className="h-8 w-auto" />
-                            <span className="text-lg font-bold tracking-tight text-navy">HAJIRIN</span>
-                        </Link>
-                        <span className="hidden h-5 w-px bg-slate-200 sm:inline-block" aria-hidden="true" />
-                        <span className="hidden text-xs font-semibold text-slate-500 sm:inline">
-                            Pendaftaran Event Organizer (EO)
-                        </span>
-                    </div>
-
-                    <div className="flex items-center gap-3">
-                        <Link
-                            href="/dashboard"
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
-                        >
-                            <ArrowLeft className="size-3.5" />
-                            Kembali ke Dashboard
-                        </Link>
-                        <Link
-                            href="/logout"
-                            method="post"
-                            as="button"
-                            className="hidden sm:inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-500 hover:bg-red-50 hover:text-red-600 transition"
-                        >
-                            <LogOut className="size-3.5" />
-                            Keluar
-                        </Link>
-                    </div>
-                </header>
+                <Navbar auth={auth} />
 
                 {/* Main Content */}
                 <main className="mx-auto w-full max-w-4xl flex-1 space-y-6 px-4 py-8 sm:px-8 sm:py-10">

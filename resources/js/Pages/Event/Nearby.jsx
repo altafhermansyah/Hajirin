@@ -2,9 +2,10 @@ import { Head, Link, router } from '@inertiajs/react';
 import { useState, useMemo, useEffect } from 'react';
 import {
     Search, MapPin, CalendarDays, CircleUserRound, Bookmark,
-    ArrowRight, CheckCircle2, CircleAlert, X, ChevronRight, RotateCcw
+    ArrowRight, CheckCircle2, CircleAlert, X, ChevronRight, RotateCcw, LogOut
 } from 'lucide-react';
 import AuthModal from '../../Components/Auth/AuthModal';
+import Navbar from '../../Components/Navbar';
 
 export default function Nearby({
     auth,
@@ -125,66 +126,7 @@ export default function Nearby({
             <Head title={`Event Terdekat di ${selectedCity} - Hajirin`} />
 
             <div className="min-h-screen bg-[#f8fafc] text-navy font-sans antialiased">
-                {/* Navbar */}
-                <nav className="sticky top-0 z-50 flex items-center justify-between border-b border-gray-100 bg-white px-4 py-4 sm:px-8 lg:px-10">
-                    <div className="flex items-center gap-5 sm:gap-8">
-                        <Link href="/" className="flex items-center gap-2" aria-label="Beranda Hajirin">
-                            <img src="/hajirin_icon.svg" alt="Logo Hajirin" className="h-8 w-auto" />
-                            <span className="text-2xl font-bold tracking-tighter text-navy">HAJIRIN</span>
-                        </Link>
-                        <div className="hidden gap-6 text-sm font-medium text-gray-700 md:flex">
-                            <Link href="/#event-unggulan" className="hover:text-brand-blue">Jelajah Event</Link>
-                            <Link href="/kategori" className="hover:text-brand-blue">Kategori</Link>
-                            <Link href="/event-terdekat" className="text-brand-blue font-bold">Event Terdekat</Link>
-                        </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 sm:gap-3">
-                        <Link
-                            href="/#search-section"
-                            className="hidden items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-semibold text-slate hover:bg-gray-100 sm:flex"
-                        >
-                            <Search className="size-3.5" />
-                            <span>Cari Acara</span>
-                        </Link>
-
-                        <button
-                            type="button"
-                            onClick={handleCreateEventClick}
-                            className="hidden rounded-lg border border-gray-300 px-3.5 py-1.5 text-xs font-semibold hover:bg-gray-50 sm:block text-gray-700 transition"
-                        >
-                            Buat Event
-                        </button>
-
-                        {auth?.user ? (
-                            <div className="flex items-center gap-2.5 rounded-xl border border-gray-200 bg-white px-2.5 py-1.5 shadow-2xs">
-                                <span className={`flex size-8 shrink-0 items-center justify-center rounded-full text-xs font-bold uppercase ${auth.user.role === 'ADMIN' ? 'bg-purple-100 text-purple-700' : auth.user.role === 'EO' ? 'bg-indigo-100 text-indigo-700' : 'bg-blue-50 text-brand-blue'}`}>
-                                    {auth.user.name.charAt(0)}
-                                </span>
-                                <Link href={auth.user.role === 'ADMIN' ? '/admin/dashboard' : auth.user.role === 'EO' ? '/eo/dashboard' : '/dashboard'} className="hidden min-w-0 text-left sm:block">
-                                    <p className="max-w-32 truncate text-xs font-bold leading-tight text-navy">{auth.user.name}</p>
-                                    <p className="max-w-32 truncate text-[10px] text-gray-500">
-                                        {auth.user.role === 'ADMIN' ? 'Admin ↗' : auth.user.role === 'EO' ? 'EO ↗' : 'Profil & Tiket ↗'}
-                                    </p>
-                                </Link>
-                                <span className="h-6 w-px bg-gray-200 hidden sm:block" />
-                                <Link
-                                    href="/logout"
-                                    method="post"
-                                    as="button"
-                                    className="text-xs font-medium text-gray-500 hover:text-red-600 transition"
-                                >
-                                    Keluar
-                                </Link>
-                            </div>
-                        ) : (
-                            <div className="flex items-center gap-2">
-                                <button type="button" onClick={() => openAuthModal('login')} className="hidden rounded-lg border border-gray-300 px-3.5 py-1.5 text-xs font-semibold text-gray-700 hover:text-navy sm:block">Masuk</button>
-                                <button type="button" onClick={() => openAuthModal('register')} className="rounded-lg bg-brand-blue px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-800">Daftar</button>
-                            </div>
-                        )}
-                    </div>
-                </nav>
+                <Navbar auth={auth} onOpenAuthModal={openAuthModal} />
 
                 {/* Header Banner */}
                 <header className="border-b border-gray-100 bg-white py-8">

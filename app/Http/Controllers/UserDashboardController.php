@@ -33,8 +33,9 @@ class UserDashboardController extends Controller
             ->distinct()
             ->count('events.id');
 
-        $recentOrders = DB::table('orders')
+        $ordersQuery = DB::table('orders')
             ->join('events', 'events.id', '=', 'orders.event_id')
+            ->leftJoin('payments', 'payments.order_id', '=', 'orders.id')
             ->where('orders.user_id', $userId)
             ->select(
                 'orders.id',
@@ -42,13 +43,78 @@ class UserDashboardController extends Controller
                 'orders.status',
                 'orders.total_amount',
                 'orders.created_at',
-                'events.title'
+                'orders.paid_at',
+                'events.title as event_title',
+                'events.slug as event_slug',
+                'events.starts_at as event_starts_at',
+                'events.venue_name',
+                'events.event_type',
+                'events.address as event_address',
+                'events.banner_path as event_banner',
+                'payments.method as payment_method',
+                'payments.payment_reference'
             )
             ->latest('orders.created_at')
-            ->limit(10)
+            ->limit(20)
             ->get();
 
-        $myTickets = DB::table('tickets')
+        $orderIds = $ordersQuery->pluck('id')->toArray();
+        $orderItemsByOrder = DB::table('order_items')
+            ->join('ticket_types', 'ticket_types.id', '=', 'order_items.ticket_type_id')
+            ->whereIn('order_items.order_id', $orderIds)
+            ->select(
+                'order_items.id',
+                'order_items.order_id',
+                'order_items.quantity',
+                'order_items.unit_price',
+                'order_items.subtotal',
+                'ticket_types.name as ticket_name'
+            )
+            ->get()
+            ->groupBy('order_id');
+
+        $recentOrders = $ordersQuery->map(function ($order) use ($orderItemsByOrder) {
+            $items = ($orderItemsByOrder[$order->id] ?? collect())->map(function ($it) {
+                $unitPrice = (float) $it->unit_price;
+                $subtotal = (float) $it->subtotal;
+
+                return [
+                    'id' => $it->id,
+                    'ticketName' => $it->ticket_name,
+                    'quantity' => (int) $it->quantity,
+                    'unitPrice' => $unitPrice,
+                    'formattedUnitPrice' => $unitPrice > 0 ? 'Rp'.number_format($unitPrice, 0, ',', '.') : 'Gratis',
+                    'subtotal' => $subtotal,
+                    'formattedSubtotal' => $subtotal > 0 ? 'Rp'.number_format($subtotal, 0, ',', '.') : 'Gratis',
+                ];
+            })->values()->all();
+
+            $totalAmount = (float) $order->total_amount;
+
+            return [
+                'id' => $order->id,
+                'orderReference' => $order->order_reference,
+                'order_reference' => $order->order_reference,
+                'status' => $order->status,
+                'title' => $order->event_title,
+                'total_amount' => $totalAmount,
+                'formattedTotalAmount' => $totalAmount > 0 ? 'Rp'.number_format($totalAmount, 0, ',', '.') : 'Gratis',
+                'createdAt' => Carbon::parse($order->created_at)->locale('id')->translatedFormat('l, d F Y • H:i').' WIB',
+                'created_at' => $order->created_at,
+                'paidAt' => $order->paid_at ? Carbon::parse($order->paid_at)->locale('id')->translatedFormat('l, d F Y • H:i').' WIB' : '-',
+                'eventTitle' => $order->event_title,
+                'eventSlug' => $order->event_slug,
+                'eventDate' => Carbon::parse($order->event_starts_at)->locale('id')->translatedFormat('l, d F Y • H:i').' WIB',
+                'eventLocation' => $order->venue_name ?: ($order->event_type === 'ONLINE' ? 'Online Event' : 'Lokasi Diumumkan'),
+                'eventAddress' => $order->event_address,
+                'eventBanner' => $order->event_banner ?: '/images/events/tech_hero.jpg',
+                'paymentMethod' => $order->payment_method ?: ($totalAmount <= 0 ? 'FREE' : 'QRIS'),
+                'paymentReference' => $order->payment_reference ?: '-',
+                'items' => $items,
+            ];
+        });
+
+        $rawTickets = DB::table('tickets')
             ->join('orders', 'orders.id', '=', 'tickets.order_id')
             ->join('events', 'events.id', '=', 'orders.event_id')
             ->join('order_items', 'order_items.id', '=', 'tickets.order_item_id')
@@ -57,6 +123,7 @@ class UserDashboardController extends Controller
             ->where('orders.status', 'PAID')
             ->select(
                 'tickets.id',
+                'tickets.order_id',
                 'tickets.ticket_code',
                 'tickets.attendee_name',
                 'tickets.attendee_email',
@@ -75,24 +142,47 @@ class UserDashboardController extends Controller
                 'ticket_types.name as ticket_type_name'
             )
             ->orderByDesc('tickets.created_at')
-            ->get()
-            ->map(function ($ticket) {
-                return [
-                    'id' => $ticket->id,
-                    'ticketCode' => $ticket->ticket_code,
-                    'attendeeName' => $ticket->attendee_name,
-                    'attendeeEmail' => $ticket->attendee_email,
-                    'status' => $ticket->ticket_status,
-                    'orderReference' => $ticket->order_reference,
-                    'eventTitle' => $ticket->event_title,
-                    'eventSlug' => $ticket->event_slug,
-                    'eventDate' => Carbon::parse($ticket->starts_at)->locale('id')->translatedFormat('l, d F Y • H:i').' WIB',
-                    'eventLocation' => $ticket->venue_name ?: ($ticket->event_type === 'ONLINE' ? 'Online Event' : 'Lokasi Diumumkan'),
-                    'eventAddress' => $ticket->address,
-                    'banner' => $ticket->banner_path ?: '/images/events/tech_hero.jpg',
-                    'ticketType' => $ticket->ticket_type_name,
-                ];
-            });
+            ->get();
+
+        // Mengelompokkan tiket berdasarkan pesanan sehingga jika membeli 2 atau 100 tiket,
+        // yang tampil adalah 1 tiket pass per event sesuai pesanan pengguna.
+        $myTickets = $rawTickets->groupBy('order_reference')->map(function ($orderTickets) {
+            $first = $orderTickets->first();
+            $totalCount = $orderTickets->count();
+            $typeCounts = $orderTickets->groupBy('ticket_type_name')->map->count();
+            $typesSummary = $typeCounts->map(fn ($cnt, $name) => "{$name} ({$cnt}x)")->implode(', ');
+            $hasActive = $orderTickets->contains('ticket_status', 'ACTIVE');
+
+            return [
+                'id' => $first->id,
+                'orderId' => $first->order_id,
+                'orderReference' => $first->order_reference,
+                'ticketCode' => $first->ticket_code,
+                'primaryTicketCode' => $first->ticket_code,
+                'attendeeName' => $first->attendee_name,
+                'attendeeEmail' => $first->attendee_email,
+                'status' => $hasActive ? 'ACTIVE' : 'USED',
+                'quantity' => $totalCount,
+                'ticketType' => $typesSummary ?: $first->ticket_type_name,
+                'eventTitle' => $first->event_title,
+                'eventSlug' => $first->event_slug,
+                'eventDate' => Carbon::parse($first->starts_at)->locale('id')->translatedFormat('l, d F Y • H:i').' WIB',
+                'eventLocation' => $first->venue_name ?: ($first->event_type === 'ONLINE' ? 'Online Event' : 'Lokasi Diumumkan'),
+                'eventAddress' => $first->address,
+                'banner' => $first->banner_path ?: '/images/events/tech_hero.jpg',
+                'allTickets' => $orderTickets->map(function ($t, $idx) {
+                    return [
+                        'id' => $t->id,
+                        'ticketNumber' => $idx + 1,
+                        'code' => $t->ticket_code,
+                        'attendeeName' => $t->attendee_name,
+                        'attendeeEmail' => $t->attendee_email,
+                        'type' => $t->ticket_type_name,
+                        'status' => $t->ticket_status,
+                    ];
+                })->values()->all(),
+            ];
+        })->values();
 
         $minPrices = DB::table('ticket_prices')
             ->join('ticket_types', 'ticket_types.id', '=', 'ticket_prices.ticket_type_id')

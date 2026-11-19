@@ -227,4 +227,27 @@ class UserBookmarkAndProfileTest extends TestCase
             ->has('events')
         );
     }
+
+    public function test_user_profile_phone_must_be_numeric_and_rejects_letters(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user)->put('/profile', [
+            'name' => 'Budi Baru',
+            'phone' => '081234abcd',
+        ]);
+
+        $response->assertSessionHasErrors(['phone']);
+
+        $validResponse = $this->actingAs($user)->put('/profile', [
+            'name' => 'Budi Baru',
+            'phone' => '081234567890',
+        ]);
+
+        $validResponse->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('users', [
+            'id' => $user->id,
+            'phone' => '081234567890',
+        ]);
+    }
 }

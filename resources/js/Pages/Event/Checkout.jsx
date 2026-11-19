@@ -1,17 +1,19 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 import QrCodeSvg from '../../Components/QrCodeSvg';
+import Navbar from '../../Components/Navbar';
 import {
     ShieldCheck, CreditCard, QrCode, Building2,
     ArrowLeft, CheckCircle2, AlertCircle, Ticket,
     CalendarDays, MapPin, Clock, ArrowRight, Loader2,
-    Copy, Check, Sparkles
+    Copy, Check, Sparkles, Search, LogOut
 } from 'lucide-react';
 
 export default function Checkout({
     auth,
     event,
     ticket,
+    ticketTypes = [],
     initialQuantity = 1,
     formatted_total_amount = 'Rp0',
     total_amount = 0,
@@ -19,16 +21,38 @@ export default function Checkout({
 }) {
     const [copiedCode, setCopiedCode] = useState(null);
 
+    // Siapkan daftar item tiket jika ada pilihan multi-tiket
+    const activeItems = (ticketTypes || []).filter((t) => (t.selected_quantity || 0) > 0);
+    const defaultItems = activeItems.length > 0 ? activeItems.map((t) => ({
+        ticket_type_id: t.id,
+        ticket_price_id: t.price_id || '',
+        name: t.name,
+        unit_price: t.unit_price,
+        quantity: t.selected_quantity,
+    })) : [
+        {
+            ticket_type_id: ticket?.id || '',
+            ticket_price_id: ticket?.price_id || '',
+            name: ticket?.name || 'Tiket',
+            unit_price: ticket?.unit_price || 0,
+            quantity: initialQuantity,
+        },
+    ];
+
+    const computedTotalAmount = defaultItems.reduce((acc, it) => acc + ((it.unit_price || 0) * (it.quantity || 0)), 0);
+    const computedTotalQty = defaultItems.reduce((acc, it) => acc + (it.quantity || 0), 0);
+
     // Inertia form
     const { data, setData, post, processing, errors } = useForm({
         event_id: event?.id || '',
-        ticket_type_id: ticket?.id || '',
-        ticket_price_id: ticket?.price_id || '',
-        quantity: initialQuantity,
+        items: defaultItems,
+        ticket_type_id: defaultItems[0]?.ticket_type_id || '',
+        ticket_price_id: defaultItems[0]?.ticket_price_id || '',
+        quantity: computedTotalQty,
         payment_method: 'qris',
         attendee_name: auth?.user?.name || '',
         attendee_email: auth?.user?.email || '',
-        attendee_phone: '',
+        attendee_phone: auth?.user?.phone || '',
     });
 
     const handleCopyCode = (code) => {
@@ -46,8 +70,11 @@ export default function Checkout({
         });
     };
 
-    // Tampilan Berhasil / Sukses Pembayaran
+    // Tampilan Berhasil / Sukses Pembayaran:
+    // Menampilkan CUMAN 1 TIKET DOANG sesuai dengan event yang dibeli (meskipun membeli 2 atau 100 tiket)
     if (orderSuccess) {
+        const primaryCode = orderSuccess.primary_ticket_code || orderSuccess.tickets?.[0]?.code || orderSuccess.order_reference;
+
         return (
             <div className="bg-[#f8fafc] min-h-screen py-12 px-4 font-sans text-navy flex items-center justify-center">
                 <Head title="Pemesanan Tiket Berhasil - Hajirin" />
@@ -63,83 +90,118 @@ export default function Checkout({
 
                     <h1 className="text-2xl sm:text-3xl font-bold mb-2">Terima Kasih, Pesananmu Berhasil!</h1>
                     <p className="text-slate text-sm max-w-md mx-auto mb-6">
-                        E-tiket untuk acara <span className="font-semibold text-navy">{orderSuccess.event_title}</span> telah diterbitkan dan tersimpan di akun Hajirin kamu.
+                        E-tiket resmi untuk acara <span className="font-semibold text-navy">{orderSuccess.event_title}</span> telah diterbitkan dan tersimpan di akun Hajirin kamu.
                     </p>
 
-                    {/* Ringkasan Kode Pesanan */}
-                    <div className="bg-slate-50 rounded-2xl p-5 text-left text-xs text-slate space-y-3 mb-6 border border-slate-100">
-                        <div className="flex justify-between items-center pb-2 border-b border-gray-200">
-                            <span className="font-medium text-slate">Nomor Referensi Pesanan:</span>
-                            <span className="font-mono font-bold text-sm text-brand-blue">{orderSuccess.order_reference}</span>
+                    {/* TAMPILAN CUMAN 1 E-TIKET RESMI SESUAI EVENT */}
+                    <div className="rounded-2xl border-2 border-dashed border-blue-300 bg-gradient-to-b from-blue-50/70 to-white p-6 text-left shadow-sm mb-6">
+                        <div className="flex items-center justify-between pb-3 border-b border-blue-100">
+                            <span className="text-xs font-bold uppercase tracking-wider text-brand-blue flex items-center gap-1.5">
+                                <Ticket className="size-4" /> E-Tiket Resmi Hajirin
+                            </span>
+                            <span className="rounded-full bg-emerald-100 px-3 py-0.5 text-xs font-bold text-emerald-800">
+                                Total {orderSuccess.quantity} Tiket Masuk
+                            </span>
                         </div>
-                        <div className="flex justify-between">
-                            <span className="font-medium">Kategori Tiket:</span>
-                            <span className="font-bold text-navy">{orderSuccess.ticket_name}</span>
-                        </div>
-                        <div className="flex justify-between">
-                            <span className="font-medium">Jumlah Tiket:</span>
-                            <span className="font-bold text-navy">{orderSuccess.quantity} Tiket</span>
-                        </div>
-                        <div className="flex justify-between">
-                            <span className="font-medium">Total Dibayar:</span>
-                            <span className="font-bold text-emerald-700 text-sm">{orderSuccess.total_amount}</span>
-                        </div>
-                    </div>
 
-                    {/* Daftar Tiket yang Diterbitkan */}
-                    {orderSuccess.tickets && orderSuccess.tickets.length > 0 && (
-                        <div className="mb-8 text-left">
-                            <p className="text-xs font-bold uppercase tracking-wider text-slate mb-3">Kode E-Tiket Kamu</p>
-                            <div className="space-y-2">
-                                {orderSuccess.tickets.map((t, idx) => (
-                                    <div
-                                        key={idx}
-                                        className="flex items-center justify-between p-3.5 rounded-xl border border-blue-100 bg-blue-50/50"
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <div className="shrink-0 rounded-lg bg-white p-1 border border-blue-200">
-                                                <QrCodeSvg value={t.code} className="size-12" />
-                                            </div>
-                                            <div>
-                                                <p className="font-mono font-bold text-sm text-navy">{t.code}</p>
-                                                <p className="text-[11px] text-slate">{t.attendee_name}</p>
-                                            </div>
-                                        </div>
-
-                                        <button
-                                            type="button"
-                                            onClick={() => handleCopyCode(t.code)}
-                                            className="inline-flex items-center gap-1 text-xs font-semibold text-brand-blue hover:text-blue-800 bg-white border border-blue-200 px-2.5 py-1.5 rounded-lg transition shadow-2xs"
-                                        >
-                                            {copiedCode === t.code ? (
-                                                <>
-                                                    <Check className="size-3 text-emerald-600" />
-                                                    <span className="text-emerald-600">Disalin</span>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <Copy className="size-3" />
-                                                    <span>Salin</span>
-                                                </>
-                                            )}
-                                        </button>
-                                    </div>
-                                ))}
+                        <div className="py-4">
+                            <h3 className="text-lg font-bold text-navy leading-snug">{orderSuccess.event_title}</h3>
+                            <p className="text-xs text-slate mt-1.5 flex items-center gap-1.5">
+                                <CalendarDays className="size-3.5 text-slate-400 shrink-0" />
+                                <span>{orderSuccess.event_date}</span>
+                            </p>
+                            <p className="text-xs text-slate mt-1 flex items-center gap-1.5">
+                                <MapPin className="size-3.5 text-slate-400 shrink-0" />
+                                <span>{orderSuccess.event_location}</span>
+                            </p>
+                            <div className="mt-3 rounded-lg bg-white p-3 border border-blue-100 text-xs space-y-1">
+                                <div className="flex justify-between">
+                                    <span className="text-slate">Jenis Tiket:</span>
+                                    <span className="font-bold text-navy">{orderSuccess.ticket_name}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-slate">Nama Pemesan:</span>
+                                    <span className="font-semibold text-navy">{orderSuccess.tickets?.[0]?.attendee_name || auth?.user?.name}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-slate">Nomor Pesanan:</span>
+                                    <span className="font-mono font-semibold text-brand-blue">{orderSuccess.order_reference}</span>
+                                </div>
                             </div>
                         </div>
-                    )}
+
+                        {/* 1 QR Code & Kode Tiket Utama */}
+                        <div className="pt-3 border-t border-blue-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-white rounded-xl border border-blue-200 shadow-2xs shrink-0">
+                                    <QrCodeSvg value={primaryCode} className="size-16" />
+                                </div>
+                                <div>
+                                    <p className="text-[10px] uppercase font-bold text-slate">Kode E-Tiket</p>
+                                    <p className="font-mono text-sm font-extrabold text-brand-blue">{primaryCode}</p>
+                                    <p className="text-[11px] text-emerald-700 font-semibold mt-0.5">✓ Siap discan di lokasi acara</p>
+                                </div>
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={() => handleCopyCode(primaryCode)}
+                                className="inline-flex items-center gap-1 text-xs font-semibold text-brand-blue hover:text-blue-800 bg-white border border-blue-200 px-3 py-1.5 rounded-lg transition shrink-0"
+                            >
+                                {copiedCode === primaryCode ? (
+                                    <>
+                                        <Check className="size-3.5 text-emerald-600" />
+                                        <span className="text-emerald-600">Disalin</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Copy className="size-3.5" />
+                                        <span>Salin Kode</span>
+                                    </>
+                                )}
+                            </button>
+                        </div>
+
+                        {orderSuccess.quantity > 1 && (
+                            <p className="mt-4 text-[11px] text-blue-800 bg-blue-100/70 p-2.5 rounded-xl text-center font-medium">
+                                ℹ️ E-tiket ini berlaku untuk {orderSuccess.quantity} orang peserta sekaligus. Cukup tunjukkan 1 e-tiket ini saat registrasi di venue.
+                            </p>
+                        )}
+                    </div>
 
                     <div className="space-y-3">
                         <Link
-                            href="/dashboard"
+                            href={`/my-tickets/${orderSuccess.order_reference}`}
                             className="w-full flex items-center justify-center gap-2 py-3.5 bg-brand-blue text-white font-bold rounded-xl text-sm shadow-md hover:bg-blue-800 transition"
                         >
                             <Ticket className="size-4" />
-                            <span>Buka E-Tiket di Dashboard</span>
+                            <span>Buka Halaman Detail E-Tiket & Scan QR</span>
+                            <ArrowRight className="size-4" />
                         </Link>
+                        <div className="flex gap-2">
+                            <Link
+                                href={`/orders/${orderSuccess.order_reference}`}
+                                className="flex-1 py-2.5 border border-gray-200 text-slate font-semibold rounded-xl text-xs hover:bg-gray-50 transition text-center"
+                            >
+                                Lihat Invoice Transaksi
+                            </Link>
+                            <Link
+                                href="/dashboard#tiket"
+                                className="flex-1 py-2.5 border border-gray-200 text-slate font-semibold rounded-xl text-xs hover:bg-gray-50 transition text-center"
+                            >
+                                Dashboard Tiket
+                            </Link>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => window.print()}
+                            className="w-full block py-2.5 border border-dashed border-gray-200 text-slate font-semibold rounded-xl text-xs hover:bg-gray-50 transition"
+                        >
+                            Cetak / Simpan Halaman Tiket
+                        </button>
                         <Link
                             href="/"
-                            className="w-full block py-3 border border-gray-200 text-slate font-semibold rounded-xl text-xs hover:bg-gray-50 transition"
+                            className="w-full block py-2 text-slate text-xs hover:text-brand-blue transition font-medium"
                         >
                             Kembali ke Beranda
                         </Link>
@@ -154,17 +216,7 @@ export default function Checkout({
             <Head title={`Checkout ${event?.title || 'Tiket'} - Hajirin`} />
 
             <div className="bg-[#f8fafc] text-navy font-sans min-h-screen pb-20">
-                {/* Navbar */}
-                <nav className="bg-white border-b border-gray-100 px-4 py-4 sm:px-8 lg:px-12 flex items-center justify-between sticky top-0 z-30 shadow-2xs">
-                    <Link href="/" className="flex items-center gap-2">
-                        <img src="/hajirin_icon.svg" alt="Logo Hajirin" className="h-8 w-auto" />
-                        <span className="text-2xl font-bold tracking-tighter text-navy">HAJIRIN</span>
-                    </Link>
-                    <div className="flex items-center text-xs font-medium text-slate bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-200">
-                        <ShieldCheck className="size-4 text-emerald-600 mr-1.5 shrink-0" />
-                        <span>Transaksi Aman & Terenkripsi</span>
-                    </div>
-                </nav>
+                <Navbar auth={auth} />
 
                 <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
                     <Link
@@ -242,13 +294,27 @@ export default function Checkout({
 
                                         <div>
                                             <label className="block text-xs font-semibold text-slate mb-1.5">
-                                                Nomor WhatsApp / HP
+                                                Nomor WhatsApp / HP (Hanya Angka) <span className="text-red-500">*</span>
                                             </label>
                                             <input
                                                 type="tel"
+                                                inputMode="numeric"
+                                                pattern="[0-9]*"
                                                 value={data.attendee_phone}
-                                                onChange={(e) => setData('attendee_phone', e.target.value)}
-                                                placeholder="08123456789"
+                                                onChange={(e) => {
+                                                    const numericValue = e.target.value.replace(/\D/g, '');
+                                                    setData('attendee_phone', numericValue);
+                                                }}
+                                                onKeyDown={(e) => {
+                                                    if (
+                                                        !/[0-9]/.test(e.key) &&
+                                                        !['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.key)
+                                                    ) {
+                                                        e.preventDefault();
+                                                    }
+                                                }}
+                                                placeholder="Contoh: 081234567890"
+                                                required
                                                 className="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm focus:border-brand-blue focus:outline-none focus:ring-2 focus:ring-brand-blue/20"
                                             />
                                             {errors.attendee_phone && (
@@ -267,11 +333,10 @@ export default function Checkout({
                                 </p>
 
                                 <div className="space-y-3">
-                                    <label className={`flex items-center justify-between p-4 rounded-xl border cursor-pointer transition ${
-                                        data.payment_method === 'qris'
+                                    <label className={`flex items-center justify-between p-4 rounded-xl border cursor-pointer transition ${data.payment_method === 'qris'
                                             ? 'border-brand-blue bg-blue-50/50 ring-2 ring-brand-blue/30 shadow-sm'
                                             : 'border-gray-200 hover:border-gray-300 bg-white'
-                                    }`}>
+                                        }`}>
                                         <div className="flex items-center gap-3.5">
                                             <div className="size-11 rounded-xl bg-white border border-gray-200 flex items-center justify-center text-brand-blue shrink-0 shadow-2xs">
                                                 <QrCode className="size-5" />
@@ -290,11 +355,10 @@ export default function Checkout({
                                         />
                                     </label>
 
-                                    <label className={`flex items-center justify-between p-4 rounded-xl border cursor-pointer transition ${
-                                        data.payment_method === 'transfer'
+                                    <label className={`flex items-center justify-between p-4 rounded-xl border cursor-pointer transition ${data.payment_method === 'transfer'
                                             ? 'border-brand-blue bg-blue-50/50 ring-2 ring-brand-blue/30 shadow-sm'
                                             : 'border-gray-200 hover:border-gray-300 bg-white'
-                                    }`}>
+                                        }`}>
                                         <div className="flex items-center gap-3.5">
                                             <div className="size-11 rounded-xl bg-white border border-gray-200 flex items-center justify-center text-brand-blue shrink-0 shadow-2xs">
                                                 <Building2 className="size-5" />
@@ -313,11 +377,10 @@ export default function Checkout({
                                         />
                                     </label>
 
-                                    <label className={`flex items-center justify-between p-4 rounded-xl border cursor-pointer transition ${
-                                        data.payment_method === 'card'
+                                    <label className={`flex items-center justify-between p-4 rounded-xl border cursor-pointer transition ${data.payment_method === 'card'
                                             ? 'border-brand-blue bg-blue-50/50 ring-2 ring-brand-blue/30 shadow-sm'
                                             : 'border-gray-200 hover:border-gray-300 bg-white'
-                                    }`}>
+                                        }`}>
                                         <div className="flex items-center gap-3.5">
                                             <div className="size-11 rounded-xl bg-white border border-gray-200 flex items-center justify-center text-brand-blue shrink-0 shadow-2xs">
                                                 <CreditCard className="size-5" />
@@ -361,17 +424,33 @@ export default function Checkout({
                                     </div>
                                 </div>
 
-                                <div className="space-y-2 text-xs text-slate py-4 border-y border-gray-100 mb-4">
-                                    <div className="flex justify-between items-center">
-                                        <div>
-                                            <p className="font-bold text-navy">{ticket?.name}</p>
-                                            <p className="text-[11px] text-slate">{data.quantity}x @ {ticket?.formatted_unit_price}</p>
+                                <div className="space-y-3 text-xs text-slate py-4 border-y border-gray-100 mb-4">
+                                    {data.items && data.items.length > 0 ? (
+                                        data.items.map((item, idx) => (
+                                            <div key={idx} className="flex justify-between items-center pb-2 border-b border-gray-50 last:border-b-0 last:pb-0">
+                                                <div>
+                                                    <p className="font-bold text-navy">{item.name}</p>
+                                                    <p className="text-[11px] text-slate">
+                                                        {item.quantity}x @ {item.unit_price > 0 ? `Rp${Number(item.unit_price).toLocaleString('id-ID')}` : 'Gratis'}
+                                                    </p>
+                                                </div>
+                                                <span className="font-bold text-navy text-sm">
+                                                    {(item.unit_price * item.quantity) > 0 ? `Rp${Number(item.unit_price * item.quantity).toLocaleString('id-ID')}` : 'Gratis'}
+                                                </span>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="flex justify-between items-center">
+                                            <div>
+                                                <p className="font-bold text-navy">{ticket?.name}</p>
+                                                <p className="text-[11px] text-slate">{data.quantity}x @ {ticket?.formatted_unit_price}</p>
+                                            </div>
+                                            <span className="font-bold text-navy text-sm">
+                                                {formatted_total_amount}
+                                            </span>
                                         </div>
-                                        <span className="font-bold text-navy text-sm">
-                                            {formatted_total_amount}
-                                        </span>
-                                    </div>
-                                    <div className="flex justify-between pt-2">
+                                    )}
+                                    <div className="flex justify-between pt-2 border-t border-gray-100">
                                         <span>Biaya Layanan Platform</span>
                                         <span className="font-bold text-emerald-600">Gratis (Rp0)</span>
                                     </div>
@@ -380,7 +459,7 @@ export default function Checkout({
                                 <div className="flex justify-between items-baseline mb-6">
                                     <span className="text-sm font-bold text-navy">Total Pembayaran</span>
                                     <span className="text-2xl font-extrabold text-brand-blue">
-                                        {formatted_total_amount}
+                                        {computedTotalAmount > 0 ? `Rp${Number(computedTotalAmount).toLocaleString('id-ID')}` : (formatted_total_amount || 'Gratis')}
                                     </span>
                                 </div>
 

@@ -4,9 +4,10 @@ import {
     Search, ChevronRight,
     Headphones, Bookmark, CalendarDays, MapPin, CircleUserRound,
     Users, Palette, Volleyball, UserRound, TentTree, LayoutGrid, Menu,
-    Compass
+    Compass, LogOut
 } from 'lucide-react';
 import AuthModal from '../../Components/Auth/AuthModal';
+import Navbar from '../../Components/Navbar';
 
 export default function CategoryIndex({ auth, initialCategory = 'Semua', events = [] }) {
     // Normalisasi huruf pertama agar selalu sesuai dengan data kategori (misal: 'seminar' jadi 'Seminar')
@@ -83,45 +84,7 @@ export default function CategoryIndex({ auth, initialCategory = 'Semua', events 
             <Head title={`Kategori ${activeCategory} - Hajirin`} />
             
             <div className="bg-white text-navy font-sans antialiased min-h-screen">
-                {/* Navbar */}
-                <nav className="sticky top-0 z-50 flex items-center justify-between border-b border-gray-100 bg-white px-4 py-4 sm:px-8 lg:px-10">
-                    <div className="flex items-center gap-5 sm:gap-8">
-                        <Link href="/" className="flex items-center gap-2">
-                            <img src="/hajirin_icon.svg" alt="Logo Hajirin" className="h-8 w-auto" />
-                            <span className="text-2xl font-bold tracking-tighter text-navy">HAJIRIN</span>
-                        </Link>
-                        <div className="hidden gap-6 text-sm font-medium text-gray-700 md:flex">
-                            <Link href="/#event-unggulan" className="hover:text-brand-blue">Jelajah Event</Link>
-                            <Link href="/kategori" className="text-brand-blue font-bold">Kategori</Link>
-                        </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-2 sm:gap-4">
-                        <button type="button" onClick={handleCreateEventClick} className="hidden rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold hover:bg-gray-50 sm:block text-gray-700">Buat Event</button>
-                        <button type="button" aria-label="Cari event" className="p-2 text-gray-500 hover:text-navy"><Search className="size-5" /></button>
-                        
-                        {auth?.user ? (
-                            <div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-3 py-2 ml-2">
-                                <span className={`flex size-9 shrink-0 items-center justify-center rounded-full text-sm font-bold uppercase ${auth.user.role === 'ADMIN' ? 'bg-purple-100 text-purple-700' : auth.user.role === 'EO' ? 'bg-indigo-100 text-indigo-700' : 'bg-blue-50 text-brand-blue'}`}>
-                                    {auth.user.name.charAt(0)}
-                                </span>
-                                <Link href={auth.user.role === 'ADMIN' ? '/admin/dashboard' : auth.user.role === 'EO' ? '/eo/dashboard' : '/dashboard'} className="hidden min-w-0 text-left sm:block">
-                                    <p className="max-w-32 truncate text-sm font-semibold leading-tight text-navy">{auth.user.name}</p>
-                                    <p className="max-w-32 truncate text-xs text-gray-500">
-                                        {auth.user.role === 'ADMIN' ? 'Dashboard Admin ↗' : auth.user.role === 'EO' ? 'Dashboard EO ↗' : auth.user.email}
-                                    </p>
-                                </Link>
-                                <span className="h-8 w-px bg-gray-200" aria-hidden="true" />
-                                <Link href="/logout" method="post" as="button" className="text-sm font-medium text-gray-500 transition hover:text-red-600">Keluar</Link>
-                            </div>
-                        ) : (
-                            <>
-                                <button type="button" onClick={() => openAuthModal('login')} className="hidden rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:text-navy sm:block ml-2">Masuk</button>
-                                <button type="button" onClick={() => openAuthModal('register')} className="rounded-lg bg-brand-blue px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-800">Daftar</button>
-                            </>
-                        )}
-                    </div>
-                </nav>
+                <Navbar auth={auth} onOpenAuthModal={openAuthModal} activeLink="kategori" />
 
                 {/* Header Dinamis */}
                 <section className="bg-gray-50 border-b border-gray-100 py-8">
