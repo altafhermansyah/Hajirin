@@ -34,7 +34,7 @@ export default function CategoryIndex({ auth, initialCategory = 'Semua', events 
             router.visit('/admin/dashboard');
             return;
         }
-        router.visit('/dashboard#pengajuan-eo');
+        router.visit('/eo-applications/create');
     }
 
     // Daftar semua kategori beserta icon-nya

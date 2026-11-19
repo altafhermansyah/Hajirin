@@ -1,5 +1,6 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import { useState } from 'react';
+import QrCodeSvg from '../../Components/QrCodeSvg';
 import {
     ShieldCheck, CreditCard, QrCode, Building2,
     ArrowLeft, CheckCircle2, AlertCircle, Ticket,
@@ -95,9 +96,9 @@ export default function Checkout({
                                         key={idx}
                                         className="flex items-center justify-between p-3.5 rounded-xl border border-blue-100 bg-blue-50/50"
                                     >
-                                        <div className="flex items-center gap-2.5">
-                                            <div className="size-8 rounded-lg bg-blue-100 text-brand-blue flex items-center justify-center font-bold text-xs">
-                                                #{idx + 1}
+                                        <div className="flex items-center gap-3">
+                                            <div className="shrink-0 rounded-lg bg-white p-1 border border-blue-200">
+                                                <QrCodeSvg value={t.code} className="size-12" />
                                             </div>
                                             <div>
                                                 <p className="font-mono font-bold text-sm text-navy">{t.code}</p>

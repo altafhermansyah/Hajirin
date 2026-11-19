@@ -15,13 +15,21 @@ class EoApplicationAndDashboardTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_regular_user_can_submit_eo_application_with_verification_document(): void
+    public function test_regular_user_can_view_dedicated_eo_registration_page_and_submit_application(): void
     {
         Storage::fake('local');
 
         $user = User::factory()->create([
             'role' => 'USER',
         ]);
+
+        $this->actingAs($user)
+            ->get('/eo-applications/create')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Eo/Register')
+                ->where('eoApplication', null)
+            );
 
         $file = UploadedFile::fake()->create('berkas-eo-lengkap.pdf', 512, 'application/pdf');
 
@@ -41,6 +49,16 @@ class EoApplicationAndDashboardTest extends TestCase
         $this->assertEquals('081234567899', $application->contact_phone);
 
         Storage::disk('local')->assertExists($application->document_path);
+
+        // Halaman pendaftaran EO kini menampilkan status pengajuan PENDING beserta pre-signed URL
+        $this->actingAs($user)
+            ->get('/eo-applications/create')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Eo/Register')
+                ->where('eoApplication.status', 'PENDING')
+                ->where('eoApplication.organizationName', 'Nusantara Live Promotor')
+            );
 
         // Pengajuan duplikat saat masih PENDING harus ditolak
         $duplicateResponse = $this->actingAs($user)->post('/eo-applications', [
@@ -136,9 +154,13 @@ class EoApplicationAndDashboardTest extends TestCase
             ->get('/eo/dashboard')
             ->assertStatus(403);
 
-        // 2. EO yang membuka /dashboard diarahkan otomatis ke /eo/dashboard
+        // 2. EO yang membuka /dashboard atau /eo-applications/create diarahkan otomatis ke /eo/dashboard
         $this->actingAs($eoUser)
             ->get('/dashboard')
+            ->assertRedirect('/eo/dashboard');
+
+        $this->actingAs($eoUser)
+            ->get('/eo-applications/create')
             ->assertRedirect('/eo/dashboard');
 
         // 3. EO dapat mengakses /eo/dashboard dan menerima prop lengkap

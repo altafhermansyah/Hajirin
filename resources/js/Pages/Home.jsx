@@ -137,7 +137,7 @@ export default function Home({ auth, categories = [] }) {
             router.visit('/admin/dashboard');
             return;
         }
-        router.visit('/dashboard#pengajuan-eo');
+        router.visit('/eo-applications/create');
     }
 
     function changeSlide(offset) {

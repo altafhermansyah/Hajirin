@@ -2,19 +2,19 @@ import React, { useState } from 'react';
 import { Link, router, usePage } from '@inertiajs/react';
 import EoLayout from '../../Layouts/EoLayout';
 import {
-    Calendar,
-    MapPin,
-    Globe,
-    Image as ImageIcon,
-    Ticket,
-    PlusCircle,
-    Trash2,
+    Card,
+    EoButton,
+    eoButtonClass,
+    StatusBadge,
+} from '../../Components/eo/Primitives';
+import {
     ArrowLeft,
     CheckCircle2,
-    Send,
+    Image as ImageIcon,
+    Plus,
     Save,
-    AlertCircle,
-    FileText,
+    Send,
+    Trash2,
 } from 'lucide-react';
 
 const emptyTicketTemplate = () => ({
@@ -29,6 +29,17 @@ const emptyTicketTemplate = () => ({
     price: 0,
     price_tier_name: 'Harga Resmi',
 });
+
+const EVENT_STATUS_LABELS = {
+    PUBLISHED: { tone: 'success', label: 'Published (Tayang)' },
+    PENDING_REVIEW: { tone: 'warning', label: 'Menunggu Review Admin' },
+    REJECTED: { tone: 'danger', label: 'Perlu Revisi' },
+    CANCELLED: { tone: 'danger', label: 'Dibatalkan' },
+    DRAFT: { tone: 'neutral', label: 'Draft' },
+};
+
+const INPUT_CLASS =
+    'mt-1.5 w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/15';
 
 export default function EventForm({
     mode = 'create',
@@ -154,71 +165,70 @@ export default function EventForm({
         submitWithAction(defaultAction);
     };
 
+    const currentStatusInfo = isEdit
+        ? EVENT_STATUS_LABELS[event.status] || EVENT_STATUS_LABELS.DRAFT
+        : null;
+
     return (
         <EoLayout
             title={isEdit ? `Edit Event: ${event.title}` : 'Buat Event & Tiket Baru'}
             organizerName={organizerName}
         >
             {/* Header & Back Navigation */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
                 <div>
                     <Link
-                        href="/eo/dashboard"
-                        className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-700 hover:text-blue-800 mb-2"
+                        href="/eo/events"
+                        className="inline-flex items-center gap-1.5 text-xs font-medium text-blue-600 hover:underline mb-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 rounded-xs"
                     >
-                        <ArrowLeft className="size-3.5" />
-                        Kembali ke Dashboard EO
+                        <ArrowLeft className="size-3.5" strokeWidth={1.75} aria-hidden="true" />
+                        Kembali ke Event Saya
                     </Link>
-                    <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
-                        {isEdit ? 'Edit Informasi Event & Jenis Tiket' : 'Buat Event & Konfigurasi Tiket'}
+                    <h1 className="text-2xl font-semibold text-gray-900">
+                        {isEdit ? 'Edit Event & Jenis Tiket' : 'Buat Event & Konfigurasi Tiket'}
                     </h1>
-                    <p className="mt-1 text-xs sm:text-sm text-slate-500">
-                        Lengkapi detail acara, jadwal, lokasi, serta atur variasi jenis tiket dan tier harga dalam satu halaman.
+                    <p className="mt-1 text-sm text-gray-600">
+                        Lengkapi detail acara, jadwal, lokasi, serta kategori tiket dan harga.
                     </p>
                 </div>
 
-                {isEdit && (
-                    <span
-                        className={`inline-flex items-center gap-1.5 self-start sm:self-auto rounded-full px-3.5 py-1.5 text-xs font-bold border ${
-                            event.status === 'PUBLISHED'
-                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                : event.status === 'PENDING_REVIEW'
-                                ? 'bg-amber-50 text-amber-700 border-amber-200'
-                                : event.status === 'REJECTED'
-                                ? 'bg-red-50 text-red-700 border-red-200'
-                                : 'bg-slate-100 text-slate-700 border-slate-200'
-                        }`}
-                    >
-                        Status Saat Ini:{' '}
-                        {event.status === 'PUBLISHED'
-                            ? 'Published (Tayang)'
-                            : event.status === 'PENDING_REVIEW'
-                            ? 'Menunggu Review Admin'
-                            : event.status === 'REJECTED'
-                            ? 'Perlu Revisi'
-                            : 'Draft'}
-                    </span>
+                {isEdit && currentStatusInfo && (
+                    <div className="rounded-md border border-gray-200 bg-white px-3 py-1.5 self-start sm:self-auto">
+                        <StatusBadge
+                            tone={currentStatusInfo.tone}
+                            label={`Status: ${currentStatusInfo.label}`}
+                            className="text-xs"
+                        />
+                    </div>
                 )}
             </div>
 
             {/* Rejection Alert if Event was Rejected by Admin */}
             {isEdit && event?.status === 'REJECTED' && event?.rejection_reason && (
-                <div
+                <Card
                     role="alert"
-                    className="rounded-2xl border border-red-200 bg-red-50/90 p-4 sm:p-5 text-sm text-red-900 shadow-xs flex items-start gap-3"
+                    className="flex items-start gap-3 p-4 sm:p-5 text-sm text-gray-900"
                 >
-                    <AlertCircle className="size-5 shrink-0 text-red-600 mt-0.5" />
+                    <span
+                        className="mt-1.5 size-2 shrink-0 rounded-full bg-red-600"
+                        aria-hidden="true"
+                    />
                     <div>
-                        <p className="font-bold">Catatan Revisi dari Moderator Admin:</p>
-                        <p className="mt-1 text-xs sm:text-sm text-red-800 leading-relaxed">
+                        <p className="font-medium text-gray-900">
+                            Catatan Revisi dari Moderator Admin
+                        </p>
+                        <p className="mt-1 text-sm text-gray-600 leading-relaxed">
                             {event.rejection_reason}
                         </p>
-                        <p className="mt-1.5 text-xs text-red-700">
-                            Silakan perbaiki informasi event atau tiket di bawah ini, lalu klik tombol{' '}
-                            <span className="font-bold">"Simpan & Ajukan Review ke Admin"</span>.
+                        <p className="mt-1.5 text-xs text-gray-500">
+                            Perbaiki informasi event atau tiket di bawah ini, lalu pilih{' '}
+                            <span className="font-medium text-gray-900">
+                                Simpan &amp; Ajukan Review ke Admin
+                            </span>
+                            .
                         </p>
                     </div>
-                </div>
+                </Card>
             )}
 
             <form
@@ -229,160 +239,166 @@ export default function EventForm({
                 className="space-y-6"
             >
                 {/* SECTION 1: Informasi Dasar & Poster Event */}
-                <fieldset className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-7 shadow-xs space-y-5">
-                    <legend className="text-base sm:text-lg font-extrabold text-slate-900 flex items-center gap-2 px-1">
-                        <FileText className="size-5 text-blue-600" />
-                        1. Informasi Dasar & Poster Event
-                    </legend>
-
-                    <div className="grid gap-5 sm:grid-cols-[1.6fr_1fr]">
-                        <div className="space-y-2">
-                            <label
-                                htmlFor="event-title"
-                                className="block text-xs font-bold uppercase tracking-wider text-slate-700"
-                            >
-                                Judul Event <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                                id="event-title"
-                                name="title"
-                                type="text"
-                                required
-                                maxLength={200}
-                                value={formData.title}
-                                onChange={(e) => updateField('title', e.target.value)}
-                                aria-describedby="event-title-help"
-                                placeholder="Contoh: Indonesia Tech Conference 2026: Future of AI"
-                                className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2.5 text-sm text-slate-900 focus:border-blue-600 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-600/10"
-                            />
-                            <p id="event-title-help" className="text-[11px] text-slate-500">
-                                Gunakan judul yang spesifik dan menarik agar mudah ditemukan pengunjung.
-                            </p>
-                            {errors.title && (
-                                <p role="alert" className="text-xs font-medium text-red-600">
-                                    {errors.title}
-                                </p>
-                            )}
-                        </div>
-
-                        <div className="space-y-2">
-                            <label
-                                htmlFor="event-category"
-                                className="block text-xs font-bold uppercase tracking-wider text-slate-700"
-                            >
-                                Kategori Acara <span className="text-red-500">*</span>
-                            </label>
-                            <select
-                                id="event-category"
-                                name="category_id"
-                                required
-                                value={formData.category_id}
-                                onChange={(e) => updateField('category_id', Number(e.target.value))}
-                                className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2.5 text-sm text-slate-900 focus:border-blue-600 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-600/10"
-                            >
-                                {categories.map((cat) => (
-                                    <option key={cat.id} value={cat.id}>
-                                        {cat.name}
-                                    </option>
-                                ))}
-                            </select>
-                            {errors.category_id && (
-                                <p role="alert" className="text-xs font-medium text-red-600">
-                                    {errors.category_id}
-                                </p>
-                            )}
-                        </div>
-                    </div>
-
-                    <div className="space-y-2">
-                        <label
-                            htmlFor="event-description"
-                            className="block text-xs font-bold uppercase tracking-wider text-slate-700"
-                        >
-                            Deskripsi Lengkap Acara <span className="text-red-500">*</span>
-                        </label>
-                        <textarea
-                            id="event-description"
-                            name="description"
-                            rows={5}
-                            required
-                            minLength={20}
-                            value={formData.description}
-                            onChange={(e) => updateField('description', e.target.value)}
-                            aria-describedby="event-description-help"
-                            placeholder="Jelaskan rangkaian acara, pembicara/bintang tamu, fasilitas yang didapat peserta, dan highlight acara (minimal 20 karakter)..."
-                            className="w-full rounded-xl border border-slate-200 bg-slate-50/50 p-3.5 text-sm text-slate-900 focus:border-blue-600 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-600/10"
-                        />
-                        <p id="event-description-help" className="text-[11px] text-slate-500">
-                            Minimal 20 karakter. Anda dapat menulis poin-poin highlight acara untuk memperjelas tampilan halaman publik.
+                <fieldset className="rounded-lg border border-gray-200 bg-white overflow-hidden">
+                    <div className="border-b border-gray-200 px-5 py-4">
+                        <legend className="text-base font-semibold text-gray-900">
+                            1. Informasi Dasar &amp; Poster Event
+                        </legend>
+                        <p className="mt-0.5 text-xs text-gray-500">
+                            Judul, kategori, deskripsi, serta gambar poster utama acara.
                         </p>
-                        {errors.description && (
-                            <p role="alert" className="text-xs font-medium text-red-600">
-                                {errors.description}
-                            </p>
-                        )}
                     </div>
 
-                    <div className="grid gap-5 lg:grid-cols-2">
-                        <div className="space-y-2">
+                    <div className="p-5 sm:p-6 space-y-5">
+                        <div className="grid gap-5 sm:grid-cols-[1.6fr_1fr]">
+                            <div>
+                                <label
+                                    htmlFor="event-title"
+                                    className="block text-sm font-medium text-gray-700"
+                                >
+                                    Judul event <span className="text-red-600">*</span>
+                                </label>
+                                <input
+                                    id="event-title"
+                                    name="title"
+                                    type="text"
+                                    required
+                                    maxLength={200}
+                                    value={formData.title}
+                                    onChange={(e) => updateField('title', e.target.value)}
+                                    aria-describedby="event-title-help"
+                                    placeholder="Contoh: Indonesia Tech Conference 2026: Future of AI"
+                                    className={INPUT_CLASS}
+                                />
+                                <p id="event-title-help" className="mt-1 text-xs text-gray-500">
+                                    Gunakan judul yang spesifik dan mudah ditemukan pengunjung.
+                                </p>
+                                {errors.title && (
+                                    <p role="alert" className="mt-1 text-xs font-medium text-red-600">
+                                        {errors.title}
+                                    </p>
+                                )}
+                            </div>
+
+                            <div>
+                                <label
+                                    htmlFor="event-category"
+                                    className="block text-sm font-medium text-gray-700"
+                                >
+                                    Kategori acara <span className="text-red-600">*</span>
+                                </label>
+                                <select
+                                    id="event-category"
+                                    name="category_id"
+                                    required
+                                    value={formData.category_id}
+                                    onChange={(e) => updateField('category_id', Number(e.target.value))}
+                                    className={INPUT_CLASS}
+                                >
+                                    {categories.map((cat) => (
+                                        <option key={cat.id} value={cat.id}>
+                                            {cat.name}
+                                        </option>
+                                    ))}
+                                </select>
+                                {errors.category_id && (
+                                    <p role="alert" className="mt-1 text-xs font-medium text-red-600">
+                                        {errors.category_id}
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+
+                        <div>
                             <label
-                                htmlFor="event-tnc"
-                                className="block text-xs font-bold uppercase tracking-wider text-slate-700"
+                                htmlFor="event-description"
+                                className="block text-sm font-medium text-gray-700"
                             >
-                                Syarat & Ketentuan Peserta (Opsional)
+                                Deskripsi lengkap acara <span className="text-red-600">*</span>
                             </label>
                             <textarea
-                                id="event-tnc"
-                                name="terms_and_conditions"
-                                rows={4}
-                                value={formData.terms_and_conditions}
-                                onChange={(e) => updateField('terms_and_conditions', e.target.value)}
-                                placeholder="Contoh: Peserta wajib membawa kartu identitas saat penukaran wristband, dilarang membawa senjata tajam..."
-                                className="w-full rounded-xl border border-slate-200 bg-slate-50/50 p-3.5 text-sm text-slate-900 focus:border-blue-600 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-600/10"
+                                id="event-description"
+                                name="description"
+                                rows={5}
+                                required
+                                minLength={20}
+                                value={formData.description}
+                                onChange={(e) => updateField('description', e.target.value)}
+                                aria-describedby="event-description-help"
+                                placeholder="Jelaskan rangkaian acara, pembicara atau bintang tamu, serta fasilitas peserta (minimal 20 karakter)..."
+                                className={INPUT_CLASS}
                             />
-                            {errors.terms_and_conditions && (
-                                <p role="alert" className="text-xs font-medium text-red-600">
-                                    {errors.terms_and_conditions}
+                            <p id="event-description-help" className="mt-1 text-xs text-gray-500">
+                                Minimal 20 karakter untuk menjelaskan rangkaian acara pada halaman publik.
+                            </p>
+                            {errors.description && (
+                                <p role="alert" className="mt-1 text-xs font-medium text-red-600">
+                                    {errors.description}
                                 </p>
                             )}
                         </div>
 
-                        <div className="space-y-2">
-                            <label
-                                htmlFor="event-banner"
-                                className="block text-xs font-bold uppercase tracking-wider text-slate-700"
-                            >
-                                Poster / Banner Event (JPG, PNG, WEBP — Maks 4 MB)
-                            </label>
-                            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 rounded-xl border border-dashed border-slate-300 bg-slate-50/60 p-4">
-                                {bannerPreview ? (
-                                    <img
-                                        src={bannerPreview}
-                                        alt="Preview Poster Event"
-                                        className="h-24 w-36 rounded-lg object-cover border border-slate-200 shrink-0 bg-slate-100"
-                                    />
-                                ) : (
-                                    <div className="flex h-24 w-36 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-400">
-                                        <ImageIcon className="size-7" />
-                                    </div>
-                                )}
-                                <div className="space-y-1.5 text-xs text-slate-600 w-full">
-                                    <input
-                                        id="event-banner"
-                                        name="banner"
-                                        type="file"
-                                        accept=".jpg,.jpeg,.png,.webp"
-                                        onChange={handleBannerChange}
-                                        className="block w-full text-xs text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-50 file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-blue-700 hover:file:bg-blue-100"
-                                    />
-                                    <p className="text-[11px] text-slate-500">
-                                        Rekomendasi rasio landscape 16:9. Jika dikosongkan, sistem akan menggunakan banner standar kategori.
+                        <div className="grid gap-5 lg:grid-cols-2">
+                            <div>
+                                <label
+                                    htmlFor="event-tnc"
+                                    className="block text-sm font-medium text-gray-700"
+                                >
+                                    Syarat &amp; ketentuan peserta
+                                </label>
+                                <textarea
+                                    id="event-tnc"
+                                    name="terms_and_conditions"
+                                    rows={4}
+                                    value={formData.terms_and_conditions}
+                                    onChange={(e) => updateField('terms_and_conditions', e.target.value)}
+                                    placeholder="Contoh: Peserta wajib membawa kartu identitas saat penukaran tiket..."
+                                    className={INPUT_CLASS}
+                                />
+                                {errors.terms_and_conditions && (
+                                    <p role="alert" className="mt-1 text-xs font-medium text-red-600">
+                                        {errors.terms_and_conditions}
                                     </p>
-                                    {errors.banner && (
-                                        <p role="alert" className="text-xs font-medium text-red-600">
-                                            {errors.banner}
-                                        </p>
+                                )}
+                            </div>
+
+                            <div>
+                                <label
+                                    htmlFor="event-banner"
+                                    className="block text-sm font-medium text-gray-700"
+                                >
+                                    Poster / banner event
+                                </label>
+                                <div className="mt-1.5 flex flex-col sm:flex-row items-start sm:items-center gap-4 rounded-lg border border-dashed border-gray-300 bg-gray-50 p-4">
+                                    {bannerPreview ? (
+                                        <img
+                                            src={bannerPreview}
+                                            alt="Preview Poster Event"
+                                            className="h-24 w-36 rounded-md object-cover border border-gray-200 shrink-0 bg-gray-100"
+                                        />
+                                    ) : (
+                                        <div className="flex h-24 w-36 shrink-0 items-center justify-center rounded-md border border-gray-200 bg-white text-gray-400">
+                                            <ImageIcon className="size-6" strokeWidth={1.75} aria-hidden="true" />
+                                        </div>
                                     )}
+                                    <div className="space-y-1.5 text-xs text-gray-600 w-full">
+                                        <input
+                                            id="event-banner"
+                                            name="banner"
+                                            type="file"
+                                            accept=".jpg,.jpeg,.png,.webp"
+                                            onChange={handleBannerChange}
+                                            className="block w-full text-xs text-gray-600 file:mr-3 file:rounded-md file:border file:border-gray-200 file:bg-white file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-gray-700 hover:file:bg-gray-50 file:cursor-pointer"
+                                        />
+                                        <p className="text-xs text-gray-500">
+                                            JPG, PNG, atau WEBP (maks. 4 MB, rasio landscape 16:9).
+                                        </p>
+                                        {errors.banner && (
+                                            <p role="alert" className="text-xs font-medium text-red-600">
+                                                {errors.banner}
+                                            </p>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -390,265 +406,269 @@ export default function EventForm({
                 </fieldset>
 
                 {/* SECTION 2: Waktu & Lokasi Penyelenggaraan */}
-                <fieldset className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-7 shadow-xs space-y-5">
-                    <legend className="text-base sm:text-lg font-extrabold text-slate-900 flex items-center gap-2 px-1">
-                        <Calendar className="size-5 text-blue-600" />
-                        2. Jadwal & Lokasi Penyelenggaraan
-                    </legend>
-
-                    {/* Jadwal Mulai & Selesai */}
-                    <div className="grid gap-5 sm:grid-cols-2">
-                        <div className="space-y-2">
-                            <label
-                                htmlFor="event-starts-at"
-                                className="block text-xs font-bold uppercase tracking-wider text-slate-700"
-                            >
-                                Waktu Mulai Acara <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                                id="event-starts-at"
-                                name="starts_at"
-                                type="datetime-local"
-                                required
-                                value={formData.starts_at}
-                                onChange={(e) => updateField('starts_at', e.target.value)}
-                                className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2.5 text-sm text-slate-900 focus:border-blue-600 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-600/10"
-                            />
-                            {errors.starts_at && (
-                                <p role="alert" className="text-xs font-medium text-red-600">
-                                    {errors.starts_at}
-                                </p>
-                            )}
-                        </div>
-
-                        <div className="space-y-2">
-                            <label
-                                htmlFor="event-ends-at"
-                                className="block text-xs font-bold uppercase tracking-wider text-slate-700"
-                            >
-                                Waktu Selesai Acara <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                                id="event-ends-at"
-                                name="ends_at"
-                                type="datetime-local"
-                                required
-                                value={formData.ends_at}
-                                onChange={(e) => updateField('ends_at', e.target.value)}
-                                className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3.5 py-2.5 text-sm text-slate-900 focus:border-blue-600 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-600/10"
-                            />
-                            {errors.ends_at && (
-                                <p role="alert" className="text-xs font-medium text-red-600">
-                                    {errors.ends_at}
-                                </p>
-                            )}
-                        </div>
+                <fieldset className="rounded-lg border border-gray-200 bg-white overflow-hidden">
+                    <div className="border-b border-gray-200 px-5 py-4">
+                        <legend className="text-base font-semibold text-gray-900">
+                            2. Jadwal &amp; Lokasi Penyelenggaraan
+                        </legend>
+                        <p className="mt-0.5 text-xs text-gray-500">
+                            Tentukan waktu mulai, waktu selesai, serta format acara offline atau online.
+                        </p>
                     </div>
 
-                    {/* Radio Pilihan Format Acara (OFFLINE vs ONLINE) */}
-                    <div className="space-y-2">
-                        <span className="block text-xs font-bold uppercase tracking-wider text-slate-700">
-                            Format Penyelenggaraan Acara <span className="text-red-500">*</span>
-                        </span>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <label
-                                htmlFor="type-offline"
-                                className={`flex items-start gap-3 rounded-xl border p-4 cursor-pointer transition ${
-                                    formData.event_type === 'OFFLINE'
-                                        ? 'border-blue-600 bg-blue-50/50 ring-2 ring-blue-600/15'
-                                        : 'border-slate-200 bg-white hover:bg-slate-50'
-                                }`}
-                            >
+                    <div className="p-5 sm:p-6 space-y-5">
+                        {/* Jadwal Mulai & Selesai */}
+                        <div className="grid gap-5 sm:grid-cols-2">
+                            <div>
+                                <label
+                                    htmlFor="event-starts-at"
+                                    className="block text-sm font-medium text-gray-700"
+                                >
+                                    Waktu mulai acara <span className="text-red-600">*</span>
+                                </label>
                                 <input
-                                    id="type-offline"
-                                    type="radio"
-                                    name="event_type"
-                                    value="OFFLINE"
-                                    checked={formData.event_type === 'OFFLINE'}
-                                    onChange={() => updateField('event_type', 'OFFLINE')}
-                                    className="mt-1 size-4 accent-blue-600"
+                                    id="event-starts-at"
+                                    name="starts_at"
+                                    type="datetime-local"
+                                    required
+                                    value={formData.starts_at}
+                                    onChange={(e) => updateField('starts_at', e.target.value)}
+                                    className={INPUT_CLASS}
                                 />
-                                <div>
-                                    <span className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
-                                        <MapPin className="size-4 text-blue-600" />
-                                        Event Offline (Lokasi Fisik / Venue)
-                                    </span>
-                                    <span className="mt-0.5 block text-xs text-slate-500">
-                                        Peserta hadir langsung di lokasi gedung, hall, stadion, atau venue acara.
-                                    </span>
-                                </div>
-                            </label>
-
-                            <label
-                                htmlFor="type-online"
-                                className={`flex items-start gap-3 rounded-xl border p-4 cursor-pointer transition ${
-                                    formData.event_type === 'ONLINE'
-                                        ? 'border-blue-600 bg-blue-50/50 ring-2 ring-blue-600/15'
-                                        : 'border-slate-200 bg-white hover:bg-slate-50'
-                                }`}
-                            >
-                                <input
-                                    id="type-online"
-                                    type="radio"
-                                    name="event_type"
-                                    value="ONLINE"
-                                    checked={formData.event_type === 'ONLINE'}
-                                    onChange={() => updateField('event_type', 'ONLINE')}
-                                    className="mt-1 size-4 accent-blue-600"
-                                />
-                                <div>
-                                    <span className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
-                                        <Globe className="size-4 text-indigo-600" />
-                                        Event Online (Streaming / Webinar)
-                                    </span>
-                                    <span className="mt-0.5 block text-xs text-slate-500">
-                                        Acara diselenggarakan secara daring melalui Zoom, Google Meet, atau platform streaming.
-                                    </span>
-                                </div>
-                            </label>
-                        </div>
-                    </div>
-
-                    {formData.event_type === 'OFFLINE' ? (
-                        <div className="space-y-4 rounded-xl border border-slate-200/80 bg-slate-50/50 p-4">
-                            <div className="grid gap-4 sm:grid-cols-2">
-                                <div className="space-y-1.5">
-                                    <label
-                                        htmlFor="event-city"
-                                        className="block text-xs font-bold text-slate-700"
-                                    >
-                                        Kota / Kabupaten <span className="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        id="event-city"
-                                        name="city"
-                                        type="text"
-                                        required
-                                        value={formData.city}
-                                        onChange={(e) => updateField('city', e.target.value)}
-                                        placeholder="Contoh: Jakarta Selatan, Bandung, Surabaya"
-                                        className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-600/10"
-                                    />
-                                    {errors.city && (
-                                        <p role="alert" className="text-xs font-medium text-red-600">
-                                            {errors.city}
-                                        </p>
-                                    )}
-                                </div>
-
-                                <div className="space-y-1.5">
-                                    <label
-                                        htmlFor="event-venue"
-                                        className="block text-xs font-bold text-slate-700"
-                                    >
-                                        Nama Gedung / Venue <span className="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        id="event-venue"
-                                        name="venue_name"
-                                        type="text"
-                                        required
-                                        value={formData.venue_name}
-                                        onChange={(e) => updateField('venue_name', e.target.value)}
-                                        placeholder="Contoh: ICE BSD Hall 1 / JCC Senayan"
-                                        className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-600/10"
-                                    />
-                                    {errors.venue_name && (
-                                        <p role="alert" className="text-xs font-medium text-red-600">
-                                            {errors.venue_name}
-                                        </p>
-                                    )}
-                                </div>
+                                {errors.starts_at && (
+                                    <p role="alert" className="mt-1 text-xs font-medium text-red-600">
+                                        {errors.starts_at}
+                                    </p>
+                                )}
                             </div>
 
-                            <div className="space-y-1.5">
+                            <div>
                                 <label
-                                    htmlFor="event-address"
-                                    className="block text-xs font-bold text-slate-700"
+                                    htmlFor="event-ends-at"
+                                    className="block text-sm font-medium text-gray-700"
                                 >
-                                    Alamat Lengkap Venue <span className="text-red-500">*</span>
+                                    Waktu selesai acara <span className="text-red-600">*</span>
                                 </label>
-                                <textarea
-                                    id="event-address"
-                                    name="address"
-                                    rows={2}
+                                <input
+                                    id="event-ends-at"
+                                    name="ends_at"
+                                    type="datetime-local"
                                     required
-                                    autoComplete="street-address"
-                                    value={formData.address}
-                                    onChange={(e) => updateField('address', e.target.value)}
-                                    placeholder="Jl. Jend. Sudirman Kav. 52-53, Senayan, Kec. Kebayoran Baru..."
-                                    className="w-full rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-900 focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-600/10"
+                                    value={formData.ends_at}
+                                    onChange={(e) => updateField('ends_at', e.target.value)}
+                                    className={INPUT_CLASS}
                                 />
-                                {errors.address && (
-                                    <p role="alert" className="text-xs font-medium text-red-600">
-                                        {errors.address}
+                                {errors.ends_at && (
+                                    <p role="alert" className="mt-1 text-xs font-medium text-red-600">
+                                        {errors.ends_at}
                                     </p>
                                 )}
                             </div>
                         </div>
-                    ) : (
-                        <div className="space-y-1.5 rounded-xl border border-indigo-100 bg-indigo-50/40 p-4">
-                            <label
-                                htmlFor="event-online-url"
-                                className="block text-xs font-bold text-slate-700"
-                            >
-                                Tautan Streaming / Ruangan Webinar <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                                id="event-online-url"
-                                name="online_url"
-                                type="url"
-                                required
-                                autoCorrect="off"
-                                autoCapitalize="off"
-                                spellCheck={false}
-                                value={formData.online_url}
-                                onChange={(e) => updateField('online_url', e.target.value)}
-                                placeholder="https://zoom.us/j/123456789 atau https://meet.google.com/..."
-                                className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-600/10"
-                            />
-                            <p className="text-[11px] text-slate-500">
-                                Tautan ini akan disertakan pada E-Tiket peserta yang telah menyelesaikan pemesanan.
-                            </p>
-                            {errors.online_url && (
-                                <p role="alert" className="text-xs font-medium text-red-600">
-                                    {errors.online_url}
-                                </p>
-                            )}
+
+                        {/* Radio Pilihan Format Acara (OFFLINE vs ONLINE) */}
+                        <div>
+                            <span className="block text-sm font-medium text-gray-700">
+                                Format penyelenggaraan acara <span className="text-red-600">*</span>
+                            </span>
+                            <div className="mt-1.5 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <label
+                                    htmlFor="type-offline"
+                                    className={`flex items-start gap-3 rounded-lg border p-4 cursor-pointer transition-colors ${
+                                        formData.event_type === 'OFFLINE'
+                                            ? 'border-blue-600 bg-white'
+                                            : 'border-gray-200 bg-white hover:bg-gray-50'
+                                    }`}
+                                >
+                                    <input
+                                        id="type-offline"
+                                        type="radio"
+                                        name="event_type"
+                                        value="OFFLINE"
+                                        checked={formData.event_type === 'OFFLINE'}
+                                        onChange={() => updateField('event_type', 'OFFLINE')}
+                                        className="mt-0.5 size-4 accent-blue-600"
+                                    />
+                                    <div>
+                                        <span className="text-sm font-medium text-gray-900 block">
+                                            Event Offline (Lokasi Fisik / Venue)
+                                        </span>
+                                        <span className="mt-0.5 block text-xs text-gray-500">
+                                            Peserta hadir langsung di lokasi gedung, hall, stadion, atau venue acara.
+                                        </span>
+                                    </div>
+                                </label>
+
+                                <label
+                                    htmlFor="type-online"
+                                    className={`flex items-start gap-3 rounded-lg border p-4 cursor-pointer transition-colors ${
+                                        formData.event_type === 'ONLINE'
+                                            ? 'border-blue-600 bg-white'
+                                            : 'border-gray-200 bg-white hover:bg-gray-50'
+                                    }`}
+                                >
+                                    <input
+                                        id="type-online"
+                                        type="radio"
+                                        name="event_type"
+                                        value="ONLINE"
+                                        checked={formData.event_type === 'ONLINE'}
+                                        onChange={() => updateField('event_type', 'ONLINE')}
+                                        className="mt-0.5 size-4 accent-blue-600"
+                                    />
+                                    <div>
+                                        <span className="text-sm font-medium text-gray-900 block">
+                                            Event Online (Streaming / Webinar)
+                                        </span>
+                                        <span className="mt-0.5 block text-xs text-gray-500">
+                                            Acara diselenggarakan daring melalui Zoom, Google Meet, atau platform streaming.
+                                        </span>
+                                    </div>
+                                </label>
+                            </div>
                         </div>
-                    )}
+
+                        {formData.event_type === 'OFFLINE' ? (
+                            <div className="space-y-4 rounded-lg border border-gray-200 bg-gray-50 p-4">
+                                <div className="grid gap-4 sm:grid-cols-2">
+                                    <div>
+                                        <label
+                                            htmlFor="event-city"
+                                            className="block text-sm font-medium text-gray-700"
+                                        >
+                                            Kota / kabupaten <span className="text-red-600">*</span>
+                                        </label>
+                                        <input
+                                            id="event-city"
+                                            name="city"
+                                            type="text"
+                                            required
+                                            value={formData.city}
+                                            onChange={(e) => updateField('city', e.target.value)}
+                                            placeholder="Contoh: Jakarta Selatan, Bandung, Surabaya"
+                                            className={INPUT_CLASS}
+                                        />
+                                        {errors.city && (
+                                            <p role="alert" className="mt-1 text-xs font-medium text-red-600">
+                                                {errors.city}
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    <div>
+                                        <label
+                                            htmlFor="event-venue"
+                                            className="block text-sm font-medium text-gray-700"
+                                        >
+                                            Nama gedung / venue <span className="text-red-600">*</span>
+                                        </label>
+                                        <input
+                                            id="event-venue"
+                                            name="venue_name"
+                                            type="text"
+                                            required
+                                            value={formData.venue_name}
+                                            onChange={(e) => updateField('venue_name', e.target.value)}
+                                            placeholder="Contoh: ICE BSD Hall 1 / JCC Senayan"
+                                            className={INPUT_CLASS}
+                                        />
+                                        {errors.venue_name && (
+                                            <p role="alert" className="mt-1 text-xs font-medium text-red-600">
+                                                {errors.venue_name}
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label
+                                        htmlFor="event-address"
+                                        className="block text-sm font-medium text-gray-700"
+                                    >
+                                        Alamat lengkap venue <span className="text-red-600">*</span>
+                                    </label>
+                                    <textarea
+                                        id="event-address"
+                                        name="address"
+                                        rows={2}
+                                        required
+                                        autoComplete="street-address"
+                                        value={formData.address}
+                                        onChange={(e) => updateField('address', e.target.value)}
+                                        placeholder="Jl. Jend. Sudirman Kav. 52-53, Senayan, Kec. Kebayoran Baru..."
+                                        className={INPUT_CLASS}
+                                    />
+                                    {errors.address && (
+                                        <p role="alert" className="mt-1 text-xs font-medium text-red-600">
+                                            {errors.address}
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                                <label
+                                    htmlFor="event-online-url"
+                                    className="block text-sm font-medium text-gray-700"
+                                >
+                                    Tautan streaming / ruangan webinar <span className="text-red-600">*</span>
+                                </label>
+                                <input
+                                    id="event-online-url"
+                                    name="online_url"
+                                    type="url"
+                                    required
+                                    autoCorrect="off"
+                                    autoCapitalize="off"
+                                    spellCheck={false}
+                                    value={formData.online_url}
+                                    onChange={(e) => updateField('online_url', e.target.value)}
+                                    placeholder="https://zoom.us/j/123456789 atau https://meet.google.com/..."
+                                    className={INPUT_CLASS}
+                                />
+                                <p className="mt-1 text-xs text-gray-500">
+                                    Tautan ini akan disertakan pada E-Tiket peserta setelah pembayaran lunas.
+                                </p>
+                                {errors.online_url && (
+                                    <p role="alert" className="mt-1 text-xs font-medium text-red-600">
+                                        {errors.online_url}
+                                    </p>
+                                )}
+                            </div>
+                        )}
+                    </div>
                 </fieldset>
 
-                {/* SECTION 3: Manajemen Jenis Tiket & Tier Harga (Fase 4) */}
-                <fieldset className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-7 shadow-xs space-y-5">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+                {/* SECTION 3: Manajemen Jenis Tiket & Tier Harga */}
+                <fieldset className="rounded-lg border border-gray-200 bg-white overflow-hidden">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-200 px-5 py-4">
                         <div>
-                            <legend className="text-base sm:text-lg font-extrabold text-slate-900 flex items-center gap-2">
-                                <Ticket className="size-5 text-blue-600" />
-                                3. Manajemen Jenis Tiket & Tier Harga
+                            <legend className="text-base font-semibold text-gray-900">
+                                3. Manajemen Jenis Tiket &amp; Tier Harga
                             </legend>
-                            <p className="mt-0.5 text-xs text-slate-500">
-                                Tambahkan satu atau lebih kategori tiket (misal: Early Bird, Regular, VIP) beserta kuota dan periode penjualannya.
+                            <p className="mt-0.5 text-xs text-gray-500">
+                                Tambahkan kategori tiket (mis. Early Bird, Regular, VIP), kuota, dan masa penjualan.
                             </p>
                         </div>
 
-                        <button
-                            type="button"
+                        <EoButton
+                            variant="outline"
+                            size="md"
                             onClick={addTicketTier}
-                            className="inline-flex items-center gap-1.5 rounded-xl bg-blue-50 border border-blue-200 px-3.5 py-2 text-xs font-bold text-blue-700 hover:bg-blue-100 transition self-start sm:self-auto"
+                            className="self-start sm:self-auto"
                         >
-                            <PlusCircle className="size-4" />
+                            <Plus className="size-4" strokeWidth={1.75} aria-hidden="true" />
                             Tambah Jenis Tiket
-                        </button>
+                        </EoButton>
                     </div>
 
-                    {errors.tickets && (
-                        <p role="alert" className="text-xs font-medium text-red-600">
-                            {errors.tickets}
-                        </p>
-                    )}
+                    <div className="p-5 sm:p-6 space-y-4">
+                        {errors.tickets && (
+                            <p role="alert" className="text-xs font-medium text-red-600">
+                                {errors.tickets}
+                            </p>
+                        )}
 
-                    <div className="space-y-4">
                         {formData.tickets.map((ticket, index) => {
                             const isFree = Number(ticket.price) === 0;
                             const soldCount = Number(ticket.sold_count || 0);
@@ -656,20 +676,22 @@ export default function EventForm({
                             return (
                                 <div
                                     key={ticket.id || `tier-${index}`}
-                                    className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 sm:p-5 space-y-4"
+                                    className="rounded-lg border border-gray-200 bg-gray-50 p-4 sm:p-5 space-y-4"
                                 >
-                                    <div className="flex items-center justify-between gap-2 border-b border-slate-200/70 pb-3">
-                                        <div className="flex items-center gap-2">
-                                            <span className="inline-flex size-6 items-center justify-center rounded-full bg-blue-700 text-xs font-bold text-white">
-                                                {index + 1}
+                                    <div className="flex items-center justify-between gap-2 border-b border-gray-200 pb-3">
+                                        <div className="flex items-center gap-3 flex-wrap">
+                                            <span className="text-xs font-medium text-gray-500 tabular-nums">
+                                                #{index + 1}
                                             </span>
-                                            <h3 className="text-sm font-bold text-slate-900">
-                                                {ticket.name || `Kategori Tiket #${index + 1}`}
+                                            <h3 className="text-sm font-semibold text-gray-900">
+                                                {ticket.name || `Kategori Tiket ${index + 1}`}
                                             </h3>
                                             {soldCount > 0 && (
-                                                <span className="rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-[11px] font-bold text-emerald-700">
-                                                    {soldCount} Terjual
-                                                </span>
+                                                <StatusBadge
+                                                    tone="success"
+                                                    label={`${soldCount} terjual`}
+                                                    className="text-xs"
+                                                />
                                             )}
                                         </div>
 
@@ -677,21 +699,21 @@ export default function EventForm({
                                             <button
                                                 type="button"
                                                 onClick={() => removeTicketTier(index)}
-                                                className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold text-red-600 hover:bg-red-50 transition"
+                                                className="inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium text-red-600 hover:bg-gray-100 transition-colors cursor-pointer"
                                             >
-                                                <Trash2 className="size-3.5" />
+                                                <Trash2 className="size-3.5" strokeWidth={1.75} aria-hidden="true" />
                                                 Hapus Tiket
                                             </button>
                                         )}
                                     </div>
 
                                     <div className="grid gap-4 sm:grid-cols-3">
-                                        <div className="space-y-1.5 sm:col-span-1">
+                                        <div>
                                             <label
                                                 htmlFor={`ticket-name-${index}`}
-                                                className="block text-xs font-bold text-slate-700"
+                                                className="block text-xs font-medium text-gray-700"
                                             >
-                                                Nama Jenis Tiket <span className="text-red-500">*</span>
+                                                Nama jenis tiket <span className="text-red-600">*</span>
                                             </label>
                                             <input
                                                 id={`ticket-name-${index}`}
@@ -702,21 +724,21 @@ export default function EventForm({
                                                     updateTicketField(index, 'name', e.target.value)
                                                 }
                                                 placeholder="Contoh: Presale 1 / Regular / VIP"
-                                                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-blue-600 focus:outline-none"
+                                                className={INPUT_CLASS}
                                             />
                                             {errors[`tickets.${index}.name`] && (
-                                                <p role="alert" className="text-xs font-medium text-red-600">
+                                                <p role="alert" className="mt-1 text-xs font-medium text-red-600">
                                                     {errors[`tickets.${index}.name`]}
                                                 </p>
                                             )}
                                         </div>
 
-                                        <div className="space-y-1.5">
+                                        <div>
                                             <label
                                                 htmlFor={`ticket-tier-${index}`}
-                                                className="block text-xs font-bold text-slate-700"
+                                                className="block text-xs font-medium text-gray-700"
                                             >
-                                                Label Tier Harga
+                                                Label tier harga
                                             </label>
                                             <input
                                                 id={`ticket-tier-${index}`}
@@ -726,26 +748,26 @@ export default function EventForm({
                                                     updateTicketField(index, 'price_tier_name', e.target.value)
                                                 }
                                                 placeholder="Contoh: Early Bird / Harga Resmi"
-                                                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-blue-600 focus:outline-none"
+                                                className={INPUT_CLASS}
                                             />
                                         </div>
 
-                                        <div className="space-y-1.5">
-                                            <div className="flex items-center justify-between">
+                                        <div>
+                                            <div className="flex items-center justify-between gap-2">
                                                 <label
                                                     htmlFor={`ticket-price-${index}`}
-                                                    className="block text-xs font-bold text-slate-700"
+                                                    className="block text-xs font-medium text-gray-700"
                                                 >
-                                                    Harga Tiket (Rp) <span className="text-red-500">*</span>
+                                                    Harga tiket (Rp) <span className="text-red-600">*</span>
                                                 </label>
                                                 <button
                                                     type="button"
                                                     onClick={() =>
                                                         updateTicketField(index, 'price', isFree ? 50000 : 0)
                                                     }
-                                                    className="text-[11px] font-bold text-blue-600 hover:underline"
+                                                    className="text-xs font-medium text-blue-600 hover:underline cursor-pointer"
                                                 >
-                                                    {isFree ? 'Ubah ke Berbayar' : 'Set Tiket Gratis (Rp0)'}
+                                                    {isFree ? 'Ubah ke Berbayar' : 'Set Tiket Gratis'}
                                                 </button>
                                             </div>
                                             <input
@@ -758,10 +780,10 @@ export default function EventForm({
                                                 onChange={(e) =>
                                                     updateTicketField(index, 'price', e.target.value)
                                                 }
-                                                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-900 focus:border-blue-600 focus:outline-none"
+                                                className={`${INPUT_CLASS} tabular-nums font-medium`}
                                             />
                                             {errors[`tickets.${index}.price`] && (
-                                                <p role="alert" className="text-xs font-medium text-red-600">
+                                                <p role="alert" className="mt-1 text-xs font-medium text-red-600">
                                                     {errors[`tickets.${index}.price`]}
                                                 </p>
                                             )}
@@ -769,12 +791,12 @@ export default function EventForm({
                                     </div>
 
                                     <div className="grid gap-4 sm:grid-cols-4">
-                                        <div className="space-y-1.5">
+                                        <div>
                                             <label
                                                 htmlFor={`ticket-quota-${index}`}
-                                                className="block text-xs font-bold text-slate-700"
+                                                className="block text-xs font-medium text-gray-700"
                                             >
-                                                Total Kuota Tiket <span className="text-red-500">*</span>
+                                                Total kuota tiket <span className="text-red-600">*</span>
                                             </label>
                                             <input
                                                 id={`ticket-quota-${index}`}
@@ -785,21 +807,21 @@ export default function EventForm({
                                                 onChange={(e) =>
                                                     updateTicketField(index, 'quota', e.target.value)
                                                 }
-                                                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-blue-600 focus:outline-none"
+                                                className={`${INPUT_CLASS} tabular-nums`}
                                             />
                                             {errors[`tickets.${index}.quota`] && (
-                                                <p role="alert" className="text-xs font-medium text-red-600">
+                                                <p role="alert" className="mt-1 text-xs font-medium text-red-600">
                                                     {errors[`tickets.${index}.quota`]}
                                                 </p>
                                             )}
                                         </div>
 
-                                        <div className="space-y-1.5">
+                                        <div>
                                             <label
                                                 htmlFor={`ticket-max-order-${index}`}
-                                                className="block text-xs font-bold text-slate-700"
+                                                className="block text-xs font-medium text-gray-700"
                                             >
-                                                Maks. per Transaksi <span className="text-red-500">*</span>
+                                                Maks. per transaksi <span className="text-red-600">*</span>
                                             </label>
                                             <input
                                                 id={`ticket-max-order-${index}`}
@@ -811,21 +833,21 @@ export default function EventForm({
                                                 onChange={(e) =>
                                                     updateTicketField(index, 'max_per_order', e.target.value)
                                                 }
-                                                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-blue-600 focus:outline-none"
+                                                className={`${INPUT_CLASS} tabular-nums`}
                                             />
                                             {errors[`tickets.${index}.max_per_order`] && (
-                                                <p role="alert" className="text-xs font-medium text-red-600">
+                                                <p role="alert" className="mt-1 text-xs font-medium text-red-600">
                                                     {errors[`tickets.${index}.max_per_order`]}
                                                 </p>
                                             )}
                                         </div>
 
-                                        <div className="space-y-1.5">
+                                        <div>
                                             <label
                                                 htmlFor={`ticket-sale-start-${index}`}
-                                                className="block text-xs font-bold text-slate-700"
+                                                className="block text-xs font-medium text-gray-700"
                                             >
-                                                Mulai Penjualan (Opsional)
+                                                Mulai penjualan
                                             </label>
                                             <input
                                                 id={`ticket-sale-start-${index}`}
@@ -834,16 +856,16 @@ export default function EventForm({
                                                 onChange={(e) =>
                                                     updateTicketField(index, 'sale_start', e.target.value)
                                                 }
-                                                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-900 focus:border-blue-600 focus:outline-none"
+                                                className={INPUT_CLASS}
                                             />
                                         </div>
 
-                                        <div className="space-y-1.5">
+                                        <div>
                                             <label
                                                 htmlFor={`ticket-sale-end-${index}`}
-                                                className="block text-xs font-bold text-slate-700"
+                                                className="block text-xs font-medium text-gray-700"
                                             >
-                                                Akhir Penjualan (Opsional)
+                                                Akhir penjualan
                                             </label>
                                             <input
                                                 id={`ticket-sale-end-${index}`}
@@ -852,22 +874,22 @@ export default function EventForm({
                                                 onChange={(e) =>
                                                     updateTicketField(index, 'sale_end', e.target.value)
                                                 }
-                                                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-900 focus:border-blue-600 focus:outline-none"
+                                                className={INPUT_CLASS}
                                             />
                                             {errors[`tickets.${index}.sale_end`] && (
-                                                <p role="alert" className="text-xs font-medium text-red-600">
+                                                <p role="alert" className="mt-1 text-xs font-medium text-red-600">
                                                     {errors[`tickets.${index}.sale_end`]}
                                                 </p>
                                             )}
                                         </div>
                                     </div>
 
-                                    <div className="space-y-1.5">
+                                    <div>
                                         <label
                                             htmlFor={`ticket-desc-${index}`}
-                                            className="block text-xs font-bold text-slate-700"
+                                            className="block text-xs font-medium text-gray-700"
                                         >
-                                            Benefit / Deskripsi Tiket
+                                            Benefit / deskripsi tiket
                                         </label>
                                         <input
                                             id={`ticket-desc-${index}`}
@@ -876,8 +898,8 @@ export default function EventForm({
                                             onChange={(e) =>
                                                 updateTicketField(index, 'description', e.target.value)
                                             }
-                                            placeholder="Contoh: Termasuk akses penuh semua sesi, konsumsi makan siang, dan e-sertifikat."
-                                            className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-900 focus:border-blue-600 focus:outline-none"
+                                            placeholder="Contoh: Termasuk akses penuh semua sesi dan e-sertifikat."
+                                            className={INPUT_CLASS}
                                         />
                                     </div>
                                 </div>
@@ -887,58 +909,59 @@ export default function EventForm({
                 </fieldset>
 
                 {/* Form Submission Bar */}
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
-                    <div className="text-xs text-slate-500">
-                        <p className="font-bold text-slate-800">Alur Moderasi Event Hajirin</p>
+                <Card className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 p-5">
+                    <div className="text-xs text-gray-500">
+                        <p className="font-medium text-gray-900">Alur Moderasi Event</p>
                         <p className="mt-0.5">
-                            Simpan sebagai <span className="font-semibold">Draft</span> jika masih ingin melengkapi nanti, atau{' '}
-                            <span className="font-semibold">Ajukan ke Admin</span> agar event diverifikasi dan tayang publik.
+                            Simpan sebagai Draft atau langsung Ajukan Review ke Admin untuk tayang di katalog publik.
                         </p>
                     </div>
 
-                    <div className="flex flex-wrap items-center justify-end gap-3 shrink-0">
+                    <div className="flex flex-wrap items-center justify-end gap-2 shrink-0">
                         <Link
-                            href="/eo/dashboard"
-                            className="rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition"
+                            href="/eo/events"
+                            className={eoButtonClass('outline', 'md')}
                         >
                             Batal
                         </Link>
 
                         {(!isEdit || event?.status !== 'PUBLISHED') && (
-                            <button
-                                type="button"
+                            <EoButton
+                                variant="outline"
+                                size="md"
                                 disabled={processingAction !== null}
                                 onClick={() => submitWithAction('DRAFT')}
-                                className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-xs font-bold text-slate-800 hover:bg-slate-50 disabled:opacity-50 transition"
                             >
-                                <Save className="size-4 text-slate-600" />
+                                <Save className="size-4 text-gray-500" strokeWidth={1.75} aria-hidden="true" />
                                 {processingAction === 'DRAFT' ? 'Menyimpan Draft...' : 'Simpan sebagai Draft'}
-                            </button>
+                            </EoButton>
                         )}
 
                         {isEdit && event?.status === 'PUBLISHED' ? (
-                            <button
+                            <EoButton
                                 type="submit"
+                                variant="primary"
+                                size="md"
                                 disabled={processingAction !== null}
-                                className="inline-flex items-center gap-2 rounded-xl bg-blue-700 px-5 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-blue-800 disabled:opacity-50 transition"
                             >
-                                <CheckCircle2 className="size-4" />
-                                {processingAction ? 'Menyimpan Perubahan...' : 'Simpan Perubahan Event & Tiket'}
-                            </button>
+                                <CheckCircle2 className="size-4" strokeWidth={1.75} aria-hidden="true" />
+                                {processingAction ? 'Menyimpan Perubahan...' : 'Simpan Perubahan'}
+                            </EoButton>
                         ) : (
-                            <button
+                            <EoButton
                                 type="submit"
+                                variant="primary"
+                                size="md"
                                 disabled={processingAction !== null}
-                                className="inline-flex items-center gap-2 rounded-xl bg-blue-700 px-5 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-blue-800 disabled:opacity-50 transition"
                             >
-                                <Send className="size-4" />
+                                <Send className="size-4" strokeWidth={1.75} aria-hidden="true" />
                                 {processingAction === 'PENDING_REVIEW'
                                     ? 'Mengajukan ke Admin...'
-                                    : 'Simpan & Ajukan Review ke Admin'}
-                            </button>
+                                    : 'Simpan & Ajukan Review'}
+                            </EoButton>
                         )}
                     </div>
-                </div>
+                </Card>
             </form>
         </EoLayout>
     );

@@ -1,8 +1,9 @@
-import { Head, Link, useForm, usePage } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import { useState } from 'react';
+import QrCodeSvg from '../Components/QrCodeSvg';
 import {
     ArrowLeft, Building2, CalendarDays, ChevronRight, Clock3,
-    CreditCard, ExternalLink, FileCheck2, FileUp, LayoutDashboard, LogOut, MapPin, Ticket, UserRound,
+    CreditCard, LayoutDashboard, LogOut, MapPin, Ticket, UserRound,
     QrCode, Printer, X, Check, Copy, Sparkles, ShieldCheck, AlertCircle, CheckCircle2
 } from 'lucide-react';
 
@@ -16,33 +17,12 @@ export default function Dashboard({ auth, dashboard }) {
     const [copiedCode, setCopiedCode] = useState(null);
     const [activeTicketTab, setActiveTicketTab] = useState('aktif');
 
-    const eoApplication = dashboard.eoApplication || null;
-
-    const eoForm = useForm({
-        organization_name: eoApplication?.status === 'REJECTED' ? (eoApplication.organizationName || '') : '',
-        contact_phone: eoApplication?.status === 'REJECTED' ? (eoApplication.contactPhone || user.phone || '') : (user.phone || ''),
-        portfolio_url: eoApplication?.status === 'REJECTED' ? (eoApplication.portfolioUrl || '') : '',
-        document: null,
-        reason: eoApplication?.status === 'REJECTED' ? (eoApplication.reason || '') : '',
-    });
-
-    const handleEoApplicationSubmit = (e) => {
-        e.preventDefault();
-        eoForm.post('/eo-applications', {
-            forceFormData: true,
-            preserveScroll: true,
-            onSuccess: () => {
-                eoForm.reset('document');
-            },
-        });
-    };
-
     const navItems = [
-        [LayoutDashboard, 'Ringkasan', '#ringkasan'],
-        [Ticket, 'Tiket saya', '#tiket'],
-        [CreditCard, 'Pesanan', '#pesanan'],
-        [Building2, 'Jadi Penyelenggara (EO)', '#pengajuan-eo'],
-        [UserRound, 'Profil', '#profil'],
+        { icon: LayoutDashboard, label: 'Ringkasan', href: '#ringkasan' },
+        { icon: Ticket, label: 'Tiket saya', href: '#tiket' },
+        { icon: CreditCard, label: 'Pesanan', href: '#pesanan' },
+        { icon: UserRound, label: 'Profil', href: '#profil' },
+        { icon: Building2, label: 'Jadi Penyelenggara (EO)', href: '/eo-applications/create', isPageLink: true },
     ];
 
     const myTickets = dashboard.myTickets || [];
@@ -77,20 +57,26 @@ export default function Dashboard({ auth, dashboard }) {
                     <div className="px-4 py-6">
                         <p className="mb-3 px-3 text-xs font-semibold uppercase tracking-wider text-slate-400">Menu akun</p>
                         <nav className="space-y-1">
-                            {navItems.map(([Icon, label, href], index) => (
-                                <a
-                                    key={href}
-                                    href={href}
-                                    className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium ${
-                                        index === 0
-                                            ? 'bg-blue-50 text-blue-700'
-                                            : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                                    }`}
-                                >
-                                    <Icon className="size-4" />
-                                    {label}
-                                </a>
-                            ))}
+                            {navItems.map((item, index) => {
+                                const Icon = item.icon;
+                                const className = `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium ${
+                                    index === 0
+                                        ? 'bg-blue-50 text-blue-700'
+                                        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                                }`;
+
+                                return item.isPageLink ? (
+                                    <Link key={item.href} href={item.href} className={className}>
+                                        <Icon className="size-4" />
+                                        {item.label}
+                                    </Link>
+                                ) : (
+                                    <a key={item.href} href={item.href} className={className}>
+                                        <Icon className="size-4" />
+                                        {item.label}
+                                    </a>
+                                );
+                            })}
                         </nav>
                     </div>
                     <div className="mt-auto border-t border-slate-100 p-4">
@@ -350,242 +336,6 @@ export default function Dashboard({ auth, dashboard }) {
                             </div>
                         </section>
 
-                        {/* Section: Pengajuan Akun Event Organizer (EO) */}
-                        <section id="pengajuan-eo" className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden scroll-mt-20">
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 px-5 py-4 sm:px-6 gap-3 bg-gradient-to-r from-slate-50 to-indigo-50/40">
-                                <div className="flex items-start gap-3">
-                                    <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-indigo-100 text-indigo-700">
-                                        <Building2 className="size-5" />
-                                    </span>
-                                    <div>
-                                        <h2 className="text-lg font-bold text-slate-900">
-                                            Pendaftaran Akun Event Organizer (EO)
-                                        </h2>
-                                        <p className="mt-0.5 text-xs text-slate-500">
-                                            Ajukan akunmu untuk menyelenggarakan acara, mengelola penjualan tiket, dan memantau check-in peserta di Hajirin.
-                                        </p>
-                                    </div>
-                                </div>
-
-                                {eoApplication && (
-                                    <span
-                                        className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold border ${
-                                            eoApplication.status === 'PENDING'
-                                                ? 'bg-amber-50 text-amber-700 border-amber-200'
-                                                : eoApplication.status === 'APPROVED'
-                                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                                : 'bg-red-50 text-red-700 border-red-200'
-                                        }`}
-                                    >
-                                        <span
-                                            className={`size-1.5 rounded-full ${
-                                                eoApplication.status === 'PENDING'
-                                                    ? 'bg-amber-500'
-                                                    : eoApplication.status === 'APPROVED'
-                                                    ? 'bg-emerald-500'
-                                                    : 'bg-red-500'
-                                            }`}
-                                        />
-                                        {eoApplication.status === 'PENDING'
-                                            ? 'Menunggu Verifikasi Admin'
-                                            : eoApplication.status === 'APPROVED'
-                                            ? 'Disetujui'
-                                            : 'Perlu Perbaikan Data'}
-                                    </span>
-                                )}
-                            </div>
-
-                            <div className="p-5 sm:p-6">
-                                {eoApplication?.status === 'PENDING' ? (
-                                    <div className="space-y-5">
-                                        <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50/70 p-4 text-xs sm:text-sm text-amber-900">
-                                            <Clock3 className="mt-0.5 size-5 shrink-0 text-amber-600" />
-                                            <div>
-                                                <p className="font-bold">Pengajuanmu Sedang Ditinjau oleh Tim Admin</p>
-                                                <p className="mt-1 text-xs text-amber-800 leading-relaxed">
-                                                    Dikirim pada <span className="font-semibold">{eoApplication.createdAt}</span>. Begitu pengajuan disetujui, akunmu akan otomatis beralih menjadi Event Organizer dan memiliki akses penuh ke Dashboard EO.
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                                            <ProfileField label="Nama Organisasi / EO" value={eoApplication.organizationName} />
-                                            <ProfileField label="Nomor WhatsApp PIC" value={eoApplication.contactPhone} />
-                                            <ProfileField label="Tautan Portofolio / Sosmed" value={eoApplication.portfolioUrl || '-'} />
-                                        </div>
-
-                                        <div>
-                                            <p className="text-xs font-medium text-slate-500">Deskripsi & Rencana Event</p>
-                                            <div className="mt-1.5 rounded-xl border border-slate-200 bg-slate-50/50 p-3.5 text-xs sm:text-sm text-slate-700 leading-relaxed whitespace-pre-line">
-                                                {eoApplication.reason}
-                                            </div>
-                                        </div>
-
-                                        {eoApplication.documentUrl && (
-                                            <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 p-4">
-                                                <div className="flex items-center gap-3">
-                                                    <FileCheck2 className="size-5 text-indigo-600 shrink-0" />
-                                                    <div>
-                                                        <p className="text-xs font-bold text-slate-900">Berkas Verifikasi Identitas & Legalitas</p>
-                                                        <p className="text-[11px] text-slate-500">Tautan aman (Pre-signed URL) berlaku selama 15 menit</p>
-                                                    </div>
-                                                </div>
-                                                <a
-                                                    href={eoApplication.documentUrl}
-                                                    target="_blank"
-                                                    rel="noreferrer"
-                                                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-50 transition"
-                                                >
-                                                    Lihat Berkas <ExternalLink className="size-3.5" />
-                                                </a>
-                                            </div>
-                                        )}
-                                    </div>
-                                ) : (
-                                    <div className="space-y-5">
-                                        {eoApplication?.status === 'REJECTED' && (
-                                            <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50/80 p-4 text-xs sm:text-sm text-red-900">
-                                                <AlertCircle className="mt-0.5 size-5 shrink-0 text-red-600" />
-                                                <div>
-                                                    <p className="font-bold">Pengajuan Sebelumnya Belum Disetujui</p>
-                                                    <p className="mt-1 text-xs text-red-800">
-                                                        <span className="font-semibold">Catatan Admin:</span> {eoApplication.rejectionReason}
-                                                    </p>
-                                                    <p className="mt-1 text-[11px] text-red-700">
-                                                        Silakan perbarui data atau berkas verifikasi di bawah ini untuk mengajukan ulang.
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        <form onSubmit={handleEoApplicationSubmit} className="space-y-4">
-                                            <div className="grid gap-4 sm:grid-cols-2">
-                                                <div>
-                                                    <label htmlFor="eo_organization_name" className="block text-xs font-semibold text-slate-700">
-                                                        Nama Organisasi / Komunitas / Promotor <span className="text-red-500">*</span>
-                                                    </label>
-                                                    <input
-                                                        id="eo_organization_name"
-                                                        type="text"
-                                                        value={eoForm.data.organization_name}
-                                                        onChange={(e) => eoForm.setData('organization_name', e.target.value)}
-                                                        placeholder="Contoh: Himpunan Mahasiswa Informatika / Nusantara Live"
-                                                        className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-600/10"
-                                                    />
-                                                    {eoForm.errors.organization_name && (
-                                                        <p className="mt-1 text-xs font-medium text-red-600">{eoForm.errors.organization_name}</p>
-                                                    )}
-                                                </div>
-
-                                                <div>
-                                                    <label htmlFor="eo_contact_phone" className="block text-xs font-semibold text-slate-700">
-                                                        Nomor WhatsApp Penanggung Jawab (PIC) <span className="text-red-500">*</span>
-                                                    </label>
-                                                    <input
-                                                        id="eo_contact_phone"
-                                                        type="text"
-                                                        value={eoForm.data.contact_phone}
-                                                        onChange={(e) => eoForm.setData('contact_phone', e.target.value)}
-                                                        placeholder="Contoh: 081234567890"
-                                                        className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-600/10"
-                                                    />
-                                                    {eoForm.errors.contact_phone && (
-                                                        <p className="mt-1 text-xs font-medium text-red-600">{eoForm.errors.contact_phone}</p>
-                                                    )}
-                                                </div>
-                                            </div>
-
-                                            <div className="grid gap-4 sm:grid-cols-2">
-                                                <div>
-                                                    <label htmlFor="eo_portfolio_url" className="block text-xs font-semibold text-slate-700">
-                                                        Tautan Media Sosial / Portofolio Acara <span className="text-slate-400 font-normal">(Opsional)</span>
-                                                    </label>
-                                                    <input
-                                                        id="eo_portfolio_url"
-                                                        type="url"
-                                                        value={eoForm.data.portfolio_url}
-                                                        onChange={(e) => eoForm.setData('portfolio_url', e.target.value)}
-                                                        placeholder="https://instagram.com/nama.organisasi"
-                                                        className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-600/10"
-                                                    />
-                                                    {eoForm.errors.portfolio_url && (
-                                                        <p className="mt-1 text-xs font-medium text-red-600">{eoForm.errors.portfolio_url}</p>
-                                                    )}
-                                                </div>
-
-                                                <div>
-                                                    <label htmlFor="eo_document" className="block text-xs font-semibold text-slate-700">
-                                                        Berkas Verifikasi Gabungan (KTP/KTM & Legalitas) <span className="text-red-500">*</span>
-                                                    </label>
-                                                    <div className="mt-1.5 flex items-center gap-2">
-                                                        <label
-                                                            htmlFor="eo_document"
-                                                            className="flex w-full cursor-pointer items-center justify-between rounded-xl border border-dashed border-slate-300 bg-slate-50/70 px-3.5 py-2 text-xs text-slate-600 hover:border-blue-600 hover:bg-blue-50/40 transition"
-                                                        >
-                                                            <span className="flex items-center gap-2 truncate">
-                                                                <FileUp className="size-4 text-blue-700 shrink-0" />
-                                                                <span className="truncate font-medium">
-                                                                    {eoForm.data.document ? eoForm.data.document.name : 'Pilih 1 file PDF / JPG / PNG (Maks 5 MB)'}
-                                                                </span>
-                                                            </span>
-                                                            <span className="ml-2 shrink-0 rounded-md bg-white px-2 py-1 text-[11px] font-bold text-slate-700 border border-slate-200">
-                                                                Pilih File
-                                                            </span>
-                                                        </label>
-                                                        <input
-                                                            id="eo_document"
-                                                            type="file"
-                                                            accept=".pdf,.jpg,.jpeg,.png"
-                                                            onChange={(e) => eoForm.setData('document', e.target.files?.[0] || null)}
-                                                            className="sr-only"
-                                                        />
-                                                    </div>
-                                                    {eoForm.errors.document && (
-                                                        <p className="mt-1 text-xs font-medium text-red-600">{eoForm.errors.document}</p>
-                                                    )}
-                                                </div>
-                                            </div>
-
-                                            <div>
-                                                <label htmlFor="eo_reason" className="block text-xs font-semibold text-slate-700">
-                                                    Deskripsi Organisasi & Rencana Event <span className="text-red-500">*</span>
-                                                </label>
-                                                <textarea
-                                                    id="eo_reason"
-                                                    rows={3}
-                                                    value={eoForm.data.reason}
-                                                    onChange={(e) => eoForm.setData('reason', e.target.value)}
-                                                    placeholder="Jelaskan secara singkat profil organisasimu dan jenis event apa yang ingin diselenggarakan di Hajirin (minimal 20 karakter)..."
-                                                    className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white p-3.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-600/10"
-                                                />
-                                                {eoForm.errors.reason && (
-                                                    <p className="mt-1 text-xs font-medium text-red-600">{eoForm.errors.reason}</p>
-                                                )}
-                                            </div>
-
-                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-slate-100">
-                                                <p className="text-[11px] text-slate-500">
-                                                    Berkas disimpan di ruang penyimpanan terenkripsi (Private Storage) dan hanya dapat diakses oleh Admin via Pre-signed URL.
-                                                </p>
-                                                <button
-                                                    type="submit"
-                                                    disabled={eoForm.processing}
-                                                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-700 px-5 py-2.5 text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-blue-800 disabled:opacity-50 transition shrink-0"
-                                                >
-                                                    <Building2 className="size-4" />
-                                                    {eoForm.processing
-                                                        ? 'Mengirim Pengajuan...'
-                                                        : eoApplication?.status === 'REJECTED'
-                                                        ? 'Kirim Ulang Pengajuan EO'
-                                                        : 'Kirim Pengajuan EO'}
-                                                </button>
-                                            </div>
-                                        </form>
-                                    </div>
-                                )}
-                            </div>
-                        </section>
-
                         {/* Footer */}
                         <footer className="flex flex-col gap-2 border-t border-slate-200 pt-5 text-xs text-slate-400 sm:flex-row sm:items-center sm:justify-between">
                             <span>© 2026 Hajirin Indonesia · Temukan event, buat kenangan.</span>
@@ -628,40 +378,8 @@ export default function Dashboard({ auth, dashboard }) {
 
                                 {/* Scannable QR Code Box */}
                                 <div className="rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 p-6 flex flex-col items-center justify-center text-center">
-                                    {/* shortcut: static SVG QR placeholder, replace with real QR code generator once EO check-in system is implemented */}
-                                    <div className="size-40 bg-white p-3 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-center">
-                                        <svg viewBox="0 0 100 100" className="size-full">
-                                            {/* Corner Markers */}
-                                            <rect x="5" y="5" width="28" height="28" rx="4" fill="#0D1B2A" />
-                                            <rect x="10" y="10" width="18" height="18" rx="2" fill="white" />
-                                            <rect x="13" y="13" width="12" height="12" rx="1" fill="#0D1B2A" />
-
-                                            <rect x="67" y="5" width="28" height="28" rx="4" fill="#0D1B2A" />
-                                            <rect x="72" y="10" width="18" height="18" rx="2" fill="white" />
-                                            <rect x="75" y="13" width="12" height="12" rx="1" fill="#0D1B2A" />
-
-                                            <rect x="5" y="67" width="28" height="28" rx="4" fill="#0D1B2A" />
-                                            <rect x="10" y="72" width="18" height="18" rx="2" fill="white" />
-                                            <rect x="13" y="75" width="12" height="12" rx="1" fill="#0D1B2A" />
-
-                                            {/* Pattern Bits */}
-                                            <rect x="38" y="8" width="6" height="6" fill="#0D1B2A" />
-                                            <rect x="48" y="15" width="12" height="6" fill="#0D1B2A" />
-                                            <rect x="38" y="24" width="8" height="8" fill="#0D1B2A" />
-                                            <rect x="50" y="28" width="10" height="6" fill="#0D1B2A" />
-
-                                            <rect x="8" y="38" width="8" height="6" fill="#0D1B2A" />
-                                            <rect x="22" y="42" width="10" height="8" fill="#0D1B2A" />
-                                            <rect x="38" y="40" width="24" height="20" rx="3" fill="#1D4ED8" />
-                                            <rect x="68" y="38" width="8" height="12" fill="#0D1B2A" />
-                                            <rect x="80" y="44" width="14" height="8" fill="#0D1B2A" />
-
-                                            <rect x="38" y="68" width="8" height="8" fill="#0D1B2A" />
-                                            <rect x="50" y="74" width="12" height="6" fill="#0D1B2A" />
-                                            <rect x="42" y="84" width="20" height="8" fill="#0D1B2A" />
-                                            <rect x="70" y="70" width="8" height="14" fill="#0D1B2A" />
-                                            <rect x="82" y="80" width="10" height="12" fill="#0D1B2A" />
-                                        </svg>
+                                    <div className="size-44 bg-white p-2 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-center">
+                                        <QrCodeSvg value={selectedETicket.ticketCode} className="size-full" />
                                     </div>
 
                                     <div className="mt-3 flex items-center gap-2">

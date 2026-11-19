@@ -5,8 +5,11 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\Eo\EoAttendeeController;
+use App\Http\Controllers\Eo\EoCheckInController;
 use App\Http\Controllers\Eo\EoDashboardController;
 use App\Http\Controllers\Eo\EoEventController;
+use App\Http\Controllers\Eo\EoProfileController;
 use App\Http\Controllers\EoApplicationController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\UserDashboardController;
@@ -21,6 +24,8 @@ Route::middleware('auth')->group(function () {
         ->middleware('throttle:20,1')
         ->name('checkout.store');
 
+    Route::get('/eo-applications/create', [EoApplicationController::class, 'create'])
+        ->name('eo-applications.create');
     Route::post('/eo-applications', [EoApplicationController::class, 'store'])
         ->middleware('throttle:5,1')
         ->name('eo-applications.store');
@@ -49,12 +54,24 @@ Route::middleware(['auth', 'eo'])->prefix('eo')->name('eo.')->group(function () 
     Route::get('/', fn () => redirect()->route('eo.dashboard'));
     Route::get('/dashboard', [EoDashboardController::class, 'index'])->name('dashboard');
 
+    Route::get('/events', [EoEventController::class, 'index'])->name('events.index');
     Route::get('/events/create', [EoEventController::class, 'create'])->name('events.create');
     Route::post('/events', [EoEventController::class, 'store'])->name('events.store');
     Route::get('/events/{id}/edit', [EoEventController::class, 'edit'])->name('events.edit');
     Route::put('/events/{id}', [EoEventController::class, 'update'])->name('events.update');
     Route::post('/events/{id}/submit', [EoEventController::class, 'submitForReview'])->name('events.submit');
     Route::post('/events/{id}/cancel', [EoEventController::class, 'cancel'])->name('events.cancel');
+
+    Route::get('/attendees', [EoAttendeeController::class, 'index'])->name('attendees.index');
+    Route::get('/attendees/export', [EoAttendeeController::class, 'export'])->name('attendees.export');
+
+    Route::get('/check-in', [EoCheckInController::class, 'index'])->name('check-in.index');
+    Route::post('/check-in', [EoCheckInController::class, 'store'])
+        ->middleware('throttle:60,1')
+        ->name('check-in.store');
+
+    Route::get('/profile', [EoProfileController::class, 'show'])->name('profile.show');
+    Route::put('/profile', [EoProfileController::class, 'update'])->name('profile.update');
 });
 
 // Route Admin Dashboard & Moderasi EO + Event

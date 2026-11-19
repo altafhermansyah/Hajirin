@@ -269,7 +269,7 @@ class AdminDashboardController extends Controller
                 'type' => 'EO_APPLICATION_UPDATED',
                 'title' => 'Pengajuan Event Organizer Belum Disetujui',
                 'message' => "Pengajuan organisasi {$application->organization_name} belum dapat disetujui. Alasan: {$validated['rejection_reason']}",
-                'action_url' => '/dashboard#pengajuan-eo',
+                'action_url' => '/eo-applications/create',
                 'created_at' => now(),
             ]);
         });

@@ -4,12 +4,59 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreEoApplicationRequest;
 use App\Models\EoApplication;
+use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class EoApplicationController extends Controller
 {
+    /**
+     * Tampilkan halaman khusus pendaftaran pengajuan akun Event Organizer (EO).
+     */
+    public function create(Request $request): Response|RedirectResponse
+    {
+        $user = $request->user();
+
+        if ($user?->role === 'ADMIN') {
+            return redirect()->route('admin.dashboard');
+        }
+
+        if ($user?->role === 'EO') {
+            return redirect()->route('eo.dashboard');
+        }
+
+        $latestEoApplication = DB::table('eo_applications')
+            ->where('user_id', $user->id)
+            ->orderByDesc('created_at')
+            ->first();
+
+        $eoApplicationData = $latestEoApplication ? [
+            'id' => $latestEoApplication->id,
+            'organizationName' => $latestEoApplication->organization_name,
+            'contactPhone' => $latestEoApplication->contact_phone,
+            'portfolioUrl' => $latestEoApplication->portfolio_url,
+            'reason' => $latestEoApplication->reason,
+            'status' => $latestEoApplication->status,
+            'rejectionReason' => $latestEoApplication->rejection_reason,
+            'documentUrl' => $latestEoApplication->document_path
+                ? Storage::disk('local')->temporaryUrl($latestEoApplication->document_path, now()->addMinutes(15))
+                : null,
+            'createdAt' => Carbon::parse($latestEoApplication->created_at)->locale('id')->translatedFormat('d M Y, H:i').' WIB',
+            'reviewedAt' => $latestEoApplication->reviewed_at
+                ? Carbon::parse($latestEoApplication->reviewed_at)->locale('id')->translatedFormat('d M Y, H:i').' WIB'
+                : null,
+        ] : null;
+
+        return Inertia::render('Eo/Register', [
+            'eoApplication' => $eoApplicationData,
+        ]);
+    }
+
     /**
      * Simpan pengajuan pendaftaran akun menjadi Event Organizer (EO).
      */
