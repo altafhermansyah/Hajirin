@@ -159,8 +159,8 @@ export default function Home({ auth, categories = [], events = [], bookmarkedEve
         }
         setBookmarkedSet(nextSet);
 
-        // Jika eventId berupa UUID yang tersimpan di DB, kirimkan request ke endpoint bookmark
-        const targetIdentifier = eventId || eventSlug;
+        // Kirim targetIdentifier (slug atau eventId) ke endpoint bookmark
+        const targetIdentifier = eventSlug || eventId;
         router.post(
             `/events/${targetIdentifier}/bookmark`,
             {},
@@ -171,7 +171,7 @@ export default function Home({ auth, categories = [], events = [], bookmarkedEve
                         type: 'success',
                         message: isCurrentlyBookmarked
                             ? `"${eventTitle}" dihapus dari simpanan.`
-                            : `"${eventTitle}" berhasil disimpan ke profil kamu!`,
+                            : 'Penanda telah berhasil dan tersimpan di halaman bookmark!',
                     });
                 },
                 onError: () => {
@@ -185,6 +185,19 @@ export default function Home({ auth, categories = [], events = [], bookmarkedEve
             }
         );
     }
+
+    // State untuk filter lokasi Event Terdekat
+    const [nearbyCity, setNearbyCity] = useState('Semua Kota');
+
+    const filteredNearbyEvents = useMemo(() => {
+        if (nearbyCity === 'Semua Kota') {
+            return nearbyEvents;
+        }
+        return nearbyEvents.filter((item) => {
+            const loc = (item.place || '').toLowerCase();
+            return loc.includes(nearbyCity.toLowerCase());
+        });
+    }, [nearbyCity]);
 
     // Daftar semua event yang dapat dicari (gabungan dari database dan fallback data)
     const allSearchableEvents = useMemo(() => {
@@ -700,29 +713,77 @@ export default function Home({ auth, categories = [], events = [], bookmarkedEve
                             </div>
                         </section>
 
-                        <SectionHeading title="Event Terdekat" description="Temukan acara seru yang berlokasi dekat di sekitarmu" action="Lihat Semua Event" />
+                        <SectionHeading
+                            title="Event Terdekat"
+                            description="Temukan acara seru yang berlokasi dekat di sekitarmu"
+                            action="Lihat Semua Event"
+                            actionHref={`/event-terdekat?city=${encodeURIComponent(nearbyCity)}`}
+                        />
                         <section className="px-4 pb-10 sm:px-8 lg:px-10">
-                            <div className="mb-6 flex justify-end">
-                                <button type="button" className="inline-flex items-center rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-semibold text-gray-700 hover:bg-gray-50">
-                                    <MapPin className="mr-2 size-4 text-red-500" />Jakarta <ChevronDown className="ml-2 size-4 text-gray-400" />
-                                </button>
+                            <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs font-semibold text-slate">Pilih Lokasi:</span>
+                                    <div className="relative">
+                                        <select
+                                            value={nearbyCity}
+                                            onChange={(e) => {
+                                                setNearbyCity(e.target.value);
+                                                setVisibleNearby(4);
+                                            }}
+                                            className="appearance-none rounded-lg border border-gray-300 bg-white py-1.5 pl-8 pr-8 text-sm font-semibold text-gray-700 shadow-2xs hover:bg-gray-50 focus:border-brand-blue focus:outline-none"
+                                        >
+                                            <option value="Semua Kota">Semua Kota</option>
+                                            <option value="Jakarta">Jakarta</option>
+                                            <option value="Tangerang">Tangerang</option>
+                                            <option value="Bandung">Bandung</option>
+                                            <option value="Surabaya">Surabaya</option>
+                                            <option value="Yogyakarta">Yogyakarta</option>
+                                            <option value="Bali">Bali</option>
+                                        </select>
+                                        <MapPin className="pointer-events-none absolute left-2.5 top-2.5 size-4 text-red-500" />
+                                        <ChevronDown className="pointer-events-none absolute right-2.5 top-2.5 size-4 text-gray-400" />
+                                    </div>
+                                </div>
+                                <Link
+                                    href={`/event-terdekat?city=${encodeURIComponent(nearbyCity)}`}
+                                    className="inline-flex items-center text-xs font-semibold text-brand-blue hover:underline"
+                                >
+                                    Lihat Semua Event di {nearbyCity} <ArrowRight className="ml-1 size-3" />
+                                </Link>
                             </div>
                             
-                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-                                {nearbyEvents.slice(0, visibleNearby).map((evt, index) => <NearbyCard key={index} {...evt} />)}
-                            </div>
+                            {filteredNearbyEvents.length > 0 ? (
+                                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+                                    {filteredNearbyEvents.slice(0, visibleNearby).map((evt, index) => <NearbyCard key={index} {...evt} />)}
+                                </div>
+                            ) : (
+                                <div className="my-6 rounded-xl border border-dashed border-gray-200 bg-gray-50/50 p-8 text-center">
+                                    <MapPin className="mx-auto mb-2 size-6 text-gray-400" />
+                                    <p className="text-sm font-semibold text-navy">Belum ada event terdekat di kota {nearbyCity}.</p>
+                                    <p className="mt-1 text-xs text-slate">Coba pilih kota lain atau tampilkan semua event terdekat.</p>
+                                    <button
+                                        type="button"
+                                        onClick={() => setNearbyCity('Semua Kota')}
+                                        className="mt-4 rounded-lg bg-brand-blue px-4 py-2 text-xs font-semibold text-white hover:bg-blue-800 transition"
+                                    >
+                                        Tampilkan Semua Kota
+                                    </button>
+                                </div>
+                            )}
                             
-                            <div className="mt-6 text-center">
-                                {visibleNearby < nearbyEvents.length ? (
-                                    <button type="button" onClick={() => setVisibleNearby(visibleNearby + 4)} className="inline-flex items-center rounded-lg border border-gray-300 bg-white px-6 py-2.5 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50">
-                                        Lihat Lebih Banyak Event Terdekat <ChevronDown className="ml-2 size-4" />
-                                    </button>
-                                ) : (
-                                    <button type="button" onClick={() => setVisibleNearby(4)} className="inline-flex items-center rounded-lg border border-gray-300 bg-white px-6 py-2.5 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50">
-                                        Tampilkan Lebih Sedikit <ChevronUp className="ml-2 size-4" />
-                                    </button>
-                                )}
-                            </div>
+                            {filteredNearbyEvents.length > 4 && (
+                                <div className="mt-6 text-center">
+                                    {visibleNearby < filteredNearbyEvents.length ? (
+                                        <button type="button" onClick={() => setVisibleNearby(visibleNearby + 4)} className="inline-flex items-center rounded-lg border border-gray-300 bg-white px-6 py-2.5 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50">
+                                            Lihat Lebih Banyak Event Terdekat <ChevronDown className="ml-2 size-4" />
+                                        </button>
+                                    ) : (
+                                        <button type="button" onClick={() => setVisibleNearby(4)} className="inline-flex items-center rounded-lg border border-gray-300 bg-white px-6 py-2.5 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50">
+                                            Tampilkan Lebih Sedikit <ChevronUp className="ml-2 size-4" />
+                                        </button>
+                                    )}
+                                </div>
+                            )}
                         </section>
                     </>
                 )}
@@ -756,8 +817,23 @@ export default function Home({ auth, categories = [], events = [], bookmarkedEve
     );
 }
 
-function SectionHeading({ id, title, description, action }) {
-    return <section id={id} className="flex items-end justify-between px-4 pb-6 pt-8 sm:px-8 lg:px-10"><div><h2 className="mb-1 text-2xl font-bold text-navy">{title}</h2><p className="text-sm text-slate">{description}</p></div><a href="#" className="hidden items-center text-sm font-semibold text-brand-blue hover:underline sm:flex">{action} <ArrowRight className="ml-1 size-4" /></a></section>;
+function SectionHeading({ id, title, description, action, actionHref }) {
+    return (
+        <section id={id} className="flex items-end justify-between px-4 pb-6 pt-8 sm:px-8 lg:px-10">
+            <div>
+                <h2 className="mb-1 text-2xl font-bold text-navy">{title}</h2>
+                <p className="text-sm text-slate">{description}</p>
+            </div>
+            {action && (
+                <Link
+                    href={actionHref || '#'}
+                    className="hidden items-center text-sm font-semibold text-brand-blue hover:underline sm:flex"
+                >
+                    {action} <ArrowRight className="ml-1 size-4" />
+                </Link>
+            )}
+        </section>
+    );
 }
 
 // Komponen Card diubah menggunakan <Link>

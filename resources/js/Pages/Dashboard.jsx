@@ -342,11 +342,11 @@ export default function Dashboard({ auth, dashboard }) {
                             {dashboard.bookmarkedEvents && dashboard.bookmarkedEvents.length > 0 ? (
                                 <div className="grid grid-cols-1 gap-4 p-5 sm:p-6 md:grid-cols-2 xl:grid-cols-3">
                                     {dashboard.bookmarkedEvents.map((evt) => (
-                                        <div
+                                        <article
                                             key={evt.id || evt.slug}
-                                            className="group flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white transition hover:shadow-md"
+                                            className="group relative flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white transition hover:shadow-md"
                                         >
-                                            <div className="relative h-36 overflow-hidden bg-slate-100">
+                                            <Link href={`/event/${evt.slug}`} className="relative h-36 overflow-hidden bg-slate-100 block">
                                                 <img
                                                     src={evt.image}
                                                     alt={evt.title}
@@ -355,23 +355,25 @@ export default function Dashboard({ auth, dashboard }) {
                                                 <span className="absolute left-3 top-3 rounded bg-white/95 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide shadow-xs text-navy">
                                                     {evt.category}
                                                 </span>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => handleRemoveBookmark(evt.id, evt.slug, evt.title)}
-                                                    className="absolute right-3 top-3 flex size-8 items-center justify-center rounded-full bg-white/90 text-rose-500 shadow-xs hover:bg-rose-50 transition"
-                                                    title="Hapus dari Simpanan"
-                                                >
-                                                    <Trash2 className="size-4" />
-                                                </button>
-                                            </div>
+                                            </Link>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleRemoveBookmark(evt.id, evt.slug, evt.title)}
+                                                className="absolute right-3 top-3 z-10 flex size-8 items-center justify-center rounded-full bg-white/90 text-rose-500 shadow-xs hover:bg-rose-50 transition"
+                                                title="Hapus dari Simpanan"
+                                            >
+                                                <Trash2 className="size-4" />
+                                            </button>
                                             <div className="flex flex-1 flex-col p-4">
                                                 <p className="mb-1 flex items-center text-[11px] font-semibold text-blue-700">
                                                     <CalendarDays className="mr-1 size-3" />
                                                     {evt.date}
                                                 </p>
-                                                <h3 className="mb-1 text-sm font-bold leading-snug text-slate-900 line-clamp-2">
-                                                    {evt.title}
-                                                </h3>
+                                                <Link href={`/event/${evt.slug}`} className="block">
+                                                    <h3 className="mb-1 text-sm font-bold leading-snug text-slate-900 line-clamp-2 group-hover:text-blue-700 transition">
+                                                        {evt.title}
+                                                    </h3>
+                                                </Link>
                                                 <p className="mb-3 flex items-center text-xs text-slate-500">
                                                     <MapPin className="mr-1 size-3 text-slate-400 shrink-0" />
                                                     <span className="truncate">{evt.place}</span>
@@ -390,7 +392,7 @@ export default function Dashboard({ auth, dashboard }) {
                                                     </Link>
                                                 </div>
                                             </div>
-                                        </div>
+                                        </article>
                                     ))}
                                 </div>
                             ) : (

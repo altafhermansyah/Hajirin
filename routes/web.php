@@ -39,6 +39,8 @@ Route::middleware('auth')->group(function () {
     // Route Bookmark Event
     Route::post('/events/{event}/bookmark', [BookmarkController::class, 'toggle'])
         ->name('events.bookmark');
+    Route::get('/bookmarks', fn () => redirect()->to(route('dashboard').'#bookmark'))
+        ->name('bookmarks');
 
     // Route Profil User
     Route::get('/profile', [UserProfileController::class, 'show'])->name('profile');
@@ -111,6 +113,9 @@ Route::get('/kategori/{type?}', [CategoryController::class, 'index'])->name('kat
 
 // Route Detail Event
 Route::get('/event/{slug}', [EventController::class, 'show'])->name('event.show');
+
+// Route Event Terdekat
+Route::get('/event-terdekat', [EventController::class, 'nearby'])->name('events.nearby');
 
 // Route Event Organizer (EO) Dashboard & Manajemen Event/Tiket
 Route::middleware(['auth', 'eo'])->prefix('eo')->name('eo.')->group(function () {

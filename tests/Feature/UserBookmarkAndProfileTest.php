@@ -180,4 +180,51 @@ class UserBookmarkAndProfileTest extends TestCase
 
         $response->assertSessionHasErrors('password');
     }
+
+    public function test_user_can_bookmark_using_event_slug_and_receives_success_message(): void
+    {
+        $user = User::factory()->create();
+        $event = Event::where('status', 'PUBLISHED')->firstOrFail();
+
+        $response = $this->actingAs($user)->post("/events/{$event->slug}/bookmark");
+        $response->assertSessionHas('success', 'Penanda telah berhasil dan tersimpan di halaman bookmark!');
+
+        $this->assertDatabaseHas('bookmarks', [
+            'user_id' => $user->id,
+            'event_id' => $event->id,
+        ]);
+    }
+
+    public function test_bookmarks_route_redirects_to_dashboard_bookmark(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user)->get('/bookmarks');
+        $response->assertRedirect('/dashboard#bookmark');
+    }
+
+    public function test_nearby_events_page_can_be_rendered(): void
+    {
+        $response = $this->get('/event-terdekat');
+
+        $response->assertOk();
+        $response->assertInertia(fn (Assert $page) => $page
+            ->component('Event/Nearby')
+            ->has('events')
+            ->has('availableCities')
+            ->where('selectedCity', 'Semua Kota')
+        );
+    }
+
+    public function test_nearby_events_page_can_filter_by_city(): void
+    {
+        $response = $this->get('/event-terdekat?city=Jakarta');
+
+        $response->assertOk();
+        $response->assertInertia(fn (Assert $page) => $page
+            ->component('Event/Nearby')
+            ->where('selectedCity', 'Jakarta')
+            ->has('events')
+        );
+    }
 }
