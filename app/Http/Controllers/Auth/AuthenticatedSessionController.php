@@ -26,6 +26,16 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
+        if (Auth::user()->isSuspended()) {
+            Auth::guard('web')->logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            throw ValidationException::withMessages([
+                'email' => ['Akun Anda sedang ditangguhkan (suspended) oleh Administrator platform.'],
+            ]);
+        }
+
         if (Auth::user()->role === 'ADMIN') {
             return redirect()->intended('/admin/dashboard');
         }

@@ -108,9 +108,9 @@ export default function AdminLayout({ title, children }) {
     const managementMenu = [
         {
             name: 'Kelola Pengguna',
-            href: '#users',
+            href: '/admin/users',
             icon: Users,
-            active: false,
+            active: currentPath.startsWith('/admin/users'),
         },
         {
             name: 'Laporan & Keuangan',
