@@ -48,6 +48,7 @@ class HandleInertiaRequests extends Middleware
             'adminCounts' => fn () => $request->user()?->role === 'ADMIN' ? [
                 'pendingApplications' => DB::table('eo_applications')->where('status', 'PENDING')->count(),
                 'pendingEvents' => DB::table('events')->where('status', 'PENDING_REVIEW')->count(),
+                'pendingRefunds' => DB::table('refunds')->where('status', 'PENDING')->count(),
             ] : null,
         ];
     }

@@ -51,6 +51,11 @@ class Event extends Model
         return $this->belongsTo(User::class, 'eo_id');
     }
 
+    public function eo(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'eo_id');
+    }
+
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);

@@ -28,10 +28,13 @@ export default function AdminLayout({ title, children }) {
 
     const currentPath = typeof window !== 'undefined' ? window.location.pathname : '/admin/dashboard';
 
+    const isTicketSection = currentPath.startsWith('/admin/orders') || currentPath.startsWith('/admin/tickets') || currentPath.startsWith('/admin/refunds');
+
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
     const [openSubmenus, setOpenSubmenus] = useState({
         'Organizers (EO)': currentPath.startsWith('/admin/organizers'),
+        'Tiket & Transaksi': isTicketSection,
     });
 
     const toggleSubmenu = (name) => {
@@ -57,6 +60,7 @@ export default function AdminLayout({ title, children }) {
 
     const pendingAppsCount = adminCounts?.pendingApplications || 0;
     const pendingEventsCount = adminCounts?.pendingEvents || 0;
+    const pendingRefundsCount = adminCounts?.pendingRefunds || 0;
 
     const workspaceMenu = [
         {
@@ -97,18 +101,34 @@ export default function AdminLayout({ title, children }) {
         {
             name: 'Tiket & Transaksi',
             icon: Ticket,
-            active: false,
+            active: isTicketSection,
+            badge: pendingRefundsCount > 0 ? String(pendingRefundsCount) : null,
+            badgeColor: 'bg-rose-100 text-rose-700',
             children: [
-                { name: 'Semua Pesanan', href: '#orders' },
-                { name: 'Status Pembayaran', href: '#payments' },
-                { name: 'Pengembalian Dana (Refund)', href: '#refunds' },
+                {
+                    name: 'Semua Pesanan',
+                    href: '/admin/orders',
+                    active: currentPath.startsWith('/admin/orders'),
+                },
+                {
+                    name: 'Daftar Tiket Peserta',
+                    href: '/admin/tickets',
+                    active: currentPath.startsWith('/admin/tickets'),
+                },
+                {
+                    name: 'Pengembalian Dana (Refund)',
+                    href: '/admin/refunds',
+                    active: currentPath.startsWith('/admin/refunds'),
+                    badge: pendingRefundsCount > 0 ? String(pendingRefundsCount) : null,
+                    badgeColor: 'bg-rose-100 text-rose-700',
+                },
             ],
         },
         {
             name: 'Check-in Scanner',
-            href: '#scanner',
+            href: '/admin/scanner',
             icon: QrCode,
-            active: false,
+            active: currentPath.startsWith('/admin/scanner') || currentPath.startsWith('/admin/check-in'),
         },
     ];
 

@@ -1,8 +1,12 @@
 <?php
 
+use App\Http\Controllers\Admin\AdminCheckInController;
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminEventController;
+use App\Http\Controllers\Admin\AdminOrderController;
 use App\Http\Controllers\Admin\AdminOrganizerController;
+use App\Http\Controllers\Admin\AdminRefundController;
+use App\Http\Controllers\Admin\AdminTicketController;
 use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\RegisteredUserController;
@@ -175,6 +179,26 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::put('/users/{id}', [AdminUserController::class, 'update'])->name('users.update');
     Route::patch('/users/{id}/toggle-status', [AdminUserController::class, 'toggleStatus'])->name('users.toggle-status');
     Route::delete('/users/{id}', [AdminUserController::class, 'destroy'])->name('users.destroy');
+
+    // Manajemen Pesanan & Transaksi Tiket
+    Route::get('/orders', [AdminOrderController::class, 'index'])->name('orders.index');
+    Route::patch('/orders/{id}/mark-as-paid', [AdminOrderController::class, 'markAsPaid'])->name('orders.mark-as-paid');
+
+    // Manajemen E-Tiket Individu
+    Route::get('/tickets', [AdminTicketController::class, 'index'])->name('tickets.index');
+    Route::post('/tickets/{id}/check-in', [AdminTicketController::class, 'checkIn'])->name('tickets.check-in');
+
+    // Manajemen Pengembalian Dana (Refund)
+    Route::get('/refunds', [AdminRefundController::class, 'index'])->name('refunds.index');
+    Route::post('/refunds/{id}/approve', [AdminRefundController::class, 'approve'])->name('refunds.approve');
+    Route::post('/refunds/{id}/reject', [AdminRefundController::class, 'reject'])->name('refunds.reject');
+
+    // Check-in Scanner Platform
+    Route::get('/scanner', [AdminCheckInController::class, 'index'])->name('scanner.index');
+    Route::post('/scanner', [AdminCheckInController::class, 'store'])
+        ->middleware('throttle:60,1')
+        ->name('scanner.store');
+    Route::get('/check-in', fn () => redirect()->route('admin.scanner.index'))->name('check-in');
 });
 
 // Route Autentikasi (Guest)
