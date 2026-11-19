@@ -1,9 +1,9 @@
-import { Head, Link, usePage } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import QrCodeSvg from '../Components/QrCodeSvg';
 import {
-    ArrowLeft, Building2, CalendarDays, ChevronRight, Clock3,
-    CreditCard, LayoutDashboard, LogOut, MapPin, Ticket, UserRound,
+    ArrowLeft, ArrowRight, Bookmark, Building2, CalendarDays, ChevronRight, Clock3,
+    CreditCard, LayoutDashboard, LogOut, MapPin, Ticket, Trash2, UserRound,
     QrCode, Printer, X, Check, Copy, Sparkles, ShieldCheck, AlertCircle, CheckCircle2
 } from 'lucide-react';
 
@@ -17,11 +17,22 @@ export default function Dashboard({ auth, dashboard }) {
     const [copiedCode, setCopiedCode] = useState(null);
     const [activeTicketTab, setActiveTicketTab] = useState('aktif');
 
+    // State untuk edit profil
+    const [profileName, setProfileName] = useState(user.name || '');
+    const [profilePhone, setProfilePhone] = useState(user.phone || '');
+    const [profilePassword, setProfilePassword] = useState('');
+    const [profilePasswordConfirm, setProfilePasswordConfirm] = useState('');
+    const [isSavingProfile, setIsSavingProfile] = useState(false);
+    const [profileSuccessMsg, setProfileSuccessMsg] = useState(null);
+    const [profileErrors, setProfileErrors] = useState({});
+    const [bookmarkToast, setBookmarkToast] = useState(null);
+
     const navItems = [
         { icon: LayoutDashboard, label: 'Ringkasan', href: '#ringkasan' },
         { icon: Ticket, label: 'Tiket saya', href: '#tiket' },
         { icon: CreditCard, label: 'Pesanan', href: '#pesanan' },
-        { icon: UserRound, label: 'Profil', href: '#profil' },
+        { icon: Bookmark, label: 'Event Disimpan (Bookmark)', href: '#bookmark' },
+        { icon: UserRound, label: 'Profil Saya', href: '#profil' },
         { icon: Building2, label: 'Jadi Penyelenggara (EO)', href: '/eo-applications/create', isPageLink: true },
     ];
 
@@ -31,6 +42,47 @@ export default function Dashboard({ auth, dashboard }) {
         if (activeTicketTab === 'digunakan') return t.status === 'USED';
         return true;
     });
+
+    const handleUpdateProfile = (e) => {
+        e.preventDefault();
+        setIsSavingProfile(true);
+        setProfileErrors({});
+        setProfileSuccessMsg(null);
+
+        router.put('/profile', {
+            name: profileName,
+            phone: profilePhone,
+            password: profilePassword || undefined,
+            password_confirmation: profilePasswordConfirm || undefined,
+        }, {
+            preserveScroll: true,
+            onSuccess: () => {
+                setIsSavingProfile(false);
+                setProfilePassword('');
+                setProfilePasswordConfirm('');
+                setProfileSuccessMsg('Profil berhasil diperbarui!');
+                setTimeout(() => setProfileSuccessMsg(null), 4000);
+            },
+            onError: (errs) => {
+                setIsSavingProfile(false);
+                setProfileErrors(errs);
+            },
+        });
+    };
+
+    const handleRemoveBookmark = (eventId, eventSlug, eventTitle) => {
+        router.post(`/events/${eventId || eventSlug}/bookmark`, {}, {
+            preserveScroll: true,
+            onSuccess: () => {
+                setBookmarkToast(`"${eventTitle}" berhasil dihapus dari simpanan.`);
+                setTimeout(() => setBookmarkToast(null), 3000);
+            },
+            onError: () => {
+                setBookmarkToast('Gagal menghapus event dari simpanan.');
+                setTimeout(() => setBookmarkToast(null), 3000);
+            },
+        });
+    };
 
     const handleCopyCode = (code) => {
         if (navigator?.clipboard) {
@@ -275,8 +327,85 @@ export default function Dashboard({ auth, dashboard }) {
                             )}
                         </section>
 
+                        {/* Section: Bookmark Event */}
+                        <section id="bookmark" className="rounded-2xl border border-slate-200 bg-white shadow-sm scroll-mt-20">
+                            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4 sm:px-6">
+                                <div>
+                                    <h2 className="font-bold text-slate-900">Event Disimpan (Bookmark)</h2>
+                                    <p className="mt-0.5 text-xs text-slate-500">
+                                        Daftar acara yang kamu tandai dan simpan untuk diikuti.
+                                    </p>
+                                </div>
+                                <Bookmark className="size-5 text-amber-500" />
+                            </div>
+
+                            {dashboard.bookmarkedEvents && dashboard.bookmarkedEvents.length > 0 ? (
+                                <div className="grid grid-cols-1 gap-4 p-5 sm:p-6 md:grid-cols-2 xl:grid-cols-3">
+                                    {dashboard.bookmarkedEvents.map((evt) => (
+                                        <div
+                                            key={evt.id || evt.slug}
+                                            className="group flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white transition hover:shadow-md"
+                                        >
+                                            <div className="relative h-36 overflow-hidden bg-slate-100">
+                                                <img
+                                                    src={evt.image}
+                                                    alt={evt.title}
+                                                    className="size-full object-cover transition duration-500 group-hover:scale-105"
+                                                />
+                                                <span className="absolute left-3 top-3 rounded bg-white/95 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide shadow-xs text-navy">
+                                                    {evt.category}
+                                                </span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleRemoveBookmark(evt.id, evt.slug, evt.title)}
+                                                    className="absolute right-3 top-3 flex size-8 items-center justify-center rounded-full bg-white/90 text-rose-500 shadow-xs hover:bg-rose-50 transition"
+                                                    title="Hapus dari Simpanan"
+                                                >
+                                                    <Trash2 className="size-4" />
+                                                </button>
+                                            </div>
+                                            <div className="flex flex-1 flex-col p-4">
+                                                <p className="mb-1 flex items-center text-[11px] font-semibold text-blue-700">
+                                                    <CalendarDays className="mr-1 size-3" />
+                                                    {evt.date}
+                                                </p>
+                                                <h3 className="mb-1 text-sm font-bold leading-snug text-slate-900 line-clamp-2">
+                                                    {evt.title}
+                                                </h3>
+                                                <p className="mb-3 flex items-center text-xs text-slate-500">
+                                                    <MapPin className="mr-1 size-3 text-slate-400 shrink-0" />
+                                                    <span className="truncate">{evt.place}</span>
+                                                </p>
+                                                <div className="mt-auto flex items-center justify-between border-t border-slate-100 pt-3">
+                                                    <div>
+                                                        <p className="text-[10px] text-slate-400">Harga Mulai</p>
+                                                        <p className="text-sm font-bold text-blue-700">{evt.price}</p>
+                                                    </div>
+                                                    <Link
+                                                        href={`/event/${evt.slug}`}
+                                                        className="inline-flex items-center gap-1.5 rounded-lg bg-blue-700 px-3.5 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-blue-800 transition"
+                                                    >
+                                                        Buka Event
+                                                        <ArrowRight className="size-3" />
+                                                    </Link>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <EmptyState
+                                    icon={Bookmark}
+                                    title="Belum ada event yang disimpan"
+                                    message="Tandai event menarik dengan menekan ikon bookmark di halaman utama atau halaman detail event untuk menyimpannya di sini."
+                                    action="Jelajahi Event Sekarang"
+                                    href="/#event-unggulan"
+                                />
+                            )}
+                        </section>
+
                         {/* Section: Pesanan & Profil */}
-                        <section className="grid gap-6 xl:grid-cols-[1.4fr_1fr]">
+                        <section className="grid gap-6 xl:grid-cols-[1.2fr_1fr]">
                             <div id="pesanan" className="rounded-2xl border border-slate-200 bg-white shadow-sm scroll-mt-20">
                                 <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4 sm:px-6">
                                     <div>
@@ -321,18 +450,100 @@ export default function Dashboard({ auth, dashboard }) {
 
                             <div id="profil" className="rounded-2xl border border-slate-200 bg-white shadow-sm scroll-mt-20">
                                 <div className="border-b border-slate-100 px-5 py-4 sm:px-6">
-                                    <h2 className="font-bold text-slate-900">Informasi Akun</h2>
-                                    <p className="mt-0.5 text-xs text-slate-500">Data profil terdaftar di Hajirin.</p>
+                                    <h2 className="font-bold text-slate-900">Profil & Pengaturan Akun</h2>
+                                    <p className="mt-0.5 text-xs text-slate-500">Kelola informasi pribadi dan keamanan akun kamu.</p>
                                 </div>
-                                <div className="space-y-4 p-5 sm:p-6">
-                                    <ProfileField label="Nama Lengkap" value={user.name} />
-                                    <ProfileField label="Alamat Email" value={user.email} />
-                                    {user.phone && <ProfileField label="Nomor Telepon" value={user.phone} />}
+                                <form onSubmit={handleUpdateProfile} className="space-y-4 p-5 sm:p-6">
+                                    {profileSuccessMsg && (
+                                        <div className="flex items-center gap-2 rounded-xl bg-emerald-50 p-3 text-xs text-emerald-800 border border-emerald-200">
+                                            <CheckCircle2 className="size-4 shrink-0 text-emerald-600" />
+                                            <span>{profileSuccessMsg}</span>
+                                        </div>
+                                    )}
+
+                                    <div>
+                                        <label className="block text-xs font-semibold text-slate-700 mb-1">Nama Lengkap</label>
+                                        <input
+                                            type="text"
+                                            value={profileName}
+                                            onChange={(e) => setProfileName(e.target.value)}
+                                            required
+                                            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-sm text-slate-900 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-600"
+                                        />
+                                        {profileErrors.name && (
+                                            <p className="mt-1 text-xs text-rose-600">{profileErrors.name}</p>
+                                        )}
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-xs font-semibold text-slate-700 mb-1">Alamat Email</label>
+                                        <input
+                                            type="email"
+                                            value={user.email}
+                                            disabled
+                                            className="w-full rounded-xl border border-slate-200 bg-slate-100 px-3.5 py-2 text-sm text-slate-500 cursor-not-allowed"
+                                        />
+                                        <p className="mt-1 text-[11px] text-slate-400">Email akun tidak dapat diubah untuk menjaga integritas tiket terbitan.</p>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-xs font-semibold text-slate-700 mb-1">Nomor Telepon (WhatsApp)</label>
+                                        <input
+                                            type="text"
+                                            value={profilePhone}
+                                            onChange={(e) => setProfilePhone(e.target.value)}
+                                            placeholder="Contoh: 08123456789"
+                                            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-sm text-slate-900 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-600"
+                                        />
+                                        {profileErrors.phone && (
+                                            <p className="mt-1 text-xs text-rose-600">{profileErrors.phone}</p>
+                                        )}
+                                    </div>
+
+                                    <div className="pt-2 border-t border-slate-100">
+                                        <p className="text-xs font-bold text-slate-900 mb-2">Ganti Kata Sandi (Opsional)</p>
+                                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                            <div>
+                                                <label className="block text-[11px] font-medium text-slate-600 mb-1">Password Baru</label>
+                                                <input
+                                                    type="password"
+                                                    value={profilePassword}
+                                                    onChange={(e) => setProfilePassword(e.target.value)}
+                                                    placeholder="Minimal 8 karakter"
+                                                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs text-slate-900 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-600"
+                                                />
+                                                {profileErrors.password && (
+                                                    <p className="mt-1 text-xs text-rose-600">{profileErrors.password}</p>
+                                                )}
+                                            </div>
+                                            <div>
+                                                <label className="block text-[11px] font-medium text-slate-600 mb-1">Konfirmasi Password</label>
+                                                <input
+                                                    type="password"
+                                                    value={profilePasswordConfirm}
+                                                    onChange={(e) => setProfilePasswordConfirm(e.target.value)}
+                                                    placeholder="Ulangi password baru"
+                                                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs text-slate-900 focus:bg-white focus:border-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-600"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="pt-2">
+                                        <button
+                                            type="submit"
+                                            disabled={isSavingProfile}
+                                            className="w-full rounded-xl bg-blue-700 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-blue-800 disabled:opacity-50 transition"
+                                        >
+                                            {isSavingProfile ? 'Menyimpan...' : 'Simpan Perubahan Profil'}
+                                        </button>
+                                    </div>
+
                                     <div className="flex items-start gap-2.5 rounded-xl bg-blue-50/70 p-3.5 text-xs leading-relaxed text-blue-900 border border-blue-100">
                                         <ShieldCheck className="size-4 shrink-0 text-blue-700 mt-0.5" />
-                                        <span>Akun kamu terlindungi dengan enkripsi keamanan data dan e-tiket resmi.</span>
+                                        <span>Data profil dan tiket kamu terlindungi dengan standar keamanan enkripsi data Hajirin.</span>
                                     </div>
-                                </div>
+                                </form>
                             </div>
                         </section>
 
@@ -440,6 +651,13 @@ export default function Dashboard({ auth, dashboard }) {
                                 </div>
                             </div>
                         </div>
+                    </div>
+                )}
+                {bookmarkToast && (
+                    <div role="status" aria-live="polite" className="fixed right-4 top-20 z-50 flex max-w-sm items-start gap-3 rounded-xl border border-emerald-200 bg-white p-4 shadow-lg animate-fade-in">
+                        <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-emerald-600" />
+                        <p className="flex-1 text-sm font-medium text-slate-800">{bookmarkToast}</p>
+                        <button type="button" onClick={() => setBookmarkToast(null)} aria-label="Tutup notifikasi" className="text-slate-400 hover:text-slate-700"><X className="size-4" /></button>
                     </div>
                 )}
             </div>

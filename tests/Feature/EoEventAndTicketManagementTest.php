@@ -39,7 +39,10 @@ class EoEventAndTicketManagementTest extends TestCase
                 ->where('mode', 'create')
             );
 
-        $banner = UploadedFile::fake()->image('konferensi-ai.jpg', 1200, 675);
+        $banner = UploadedFile::fake()->createWithContent(
+            'konferensi-ai.jpg',
+            base64_decode('/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA=')
+        );
 
         $response = $this->actingAs($eo)->post('/eo/events', [
             'title' => 'Konferensi AI & Cloud Nusantara 2026',

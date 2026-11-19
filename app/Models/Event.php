@@ -70,4 +70,9 @@ class Event extends Model
     {
         return $this->hasManyThrough(Ticket::class, Order::class);
     }
+
+    public function bookmarks(): HasMany
+    {
+        return $this->hasMany(Bookmark::class);
+    }
 }

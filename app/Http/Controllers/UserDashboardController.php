@@ -94,6 +94,52 @@ class UserDashboardController extends Controller
                 ];
             });
 
+        $minPrices = DB::table('ticket_prices')
+            ->join('ticket_types', 'ticket_types.id', '=', 'ticket_prices.ticket_type_id')
+            ->where('ticket_types.status', 'ACTIVE')
+            ->where('ticket_prices.status', 'ACTIVE')
+            ->groupBy('ticket_types.event_id')
+            ->selectRaw('ticket_types.event_id, MIN(ticket_prices.price) as min_price')
+            ->pluck('min_price', 'ticket_types.event_id');
+
+        $bookmarkedEvents = DB::table('bookmarks')
+            ->join('events', 'events.id', '=', 'bookmarks.event_id')
+            ->join('categories', 'categories.id', '=', 'events.category_id')
+            ->join('users', 'users.id', '=', 'events.eo_id')
+            ->where('bookmarks.user_id', $userId)
+            ->where('events.status', 'PUBLISHED')
+            ->select(
+                'events.id',
+                'events.title',
+                'events.slug',
+                'events.starts_at',
+                'events.venue_name',
+                'events.event_type',
+                'events.banner_path',
+                'categories.name as category_name',
+                'users.name as organizer_name',
+                'bookmarks.created_at as bookmarked_at'
+            )
+            ->orderByDesc('bookmarks.created_at')
+            ->get()
+            ->map(function ($event) use ($minPrices) {
+                $minPrice = $minPrices[$event->id] ?? null;
+                $numericPrice = $minPrice !== null ? (float) $minPrice : 0;
+
+                return [
+                    'id' => $event->id,
+                    'slug' => $event->slug,
+                    'title' => $event->title,
+                    'category' => $event->category_name,
+                    'organizer' => $event->organizer_name,
+                    'date' => Carbon::parse($event->starts_at)->locale('id')->translatedFormat('l, d F Y • H:i').' WIB',
+                    'place' => $event->venue_name ?: ($event->event_type === 'ONLINE' ? 'Online Event' : 'Lokasi Diumumkan'),
+                    'price' => $numericPrice > 0 ? 'Rp'.number_format($numericPrice, 0, ',', '.') : 'Gratis',
+                    'image' => $event->banner_path ?: '/images/events/tech_hero.jpg',
+                    'bookmarkedAt' => Carbon::parse($event->bookmarked_at)->locale('id')->diffForHumans(),
+                ];
+            });
+
         return Inertia::render('Dashboard', [
             'dashboard' => [
                 'orderCount' => DB::table('orders')->where('user_id', $userId)->count(),
@@ -106,6 +152,7 @@ class UserDashboardController extends Controller
                 'upcomingEventCount' => $upcomingEventCount,
                 'recentOrders' => $recentOrders,
                 'myTickets' => $myTickets,
+                'bookmarkedEvents' => $bookmarkedEvents,
             ],
         ]);
     }

@@ -1,5 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
     CalendarDays, MapPin, Share2, Bookmark, Check,
     CircleUserRound, Info, Ticket, ChevronRight, Search,
@@ -9,17 +9,48 @@ import {
 } from 'lucide-react';
 import AuthModal from '../../Components/Auth/AuthModal';
 
-export default function EventDetail({ auth, eventSlug, eventData, relatedEvents = [] }) {
+export default function EventDetail({ auth, eventSlug, eventData, relatedEvents = [], isBookmarked: initialBookmarked }) {
     const [selectedTicket, setSelectedTicket] = useState(null);
     const [ticketQuantity, setTicketQuantity] = useState(1);
-    const [isBookmarked, setIsBookmarked] = useState(false);
+    const [isBookmarked, setIsBookmarked] = useState(initialBookmarked || false);
     const [toastMessage, setToastMessage] = useState('');
     const [showShareMenu, setShowShareMenu] = useState(false);
     const [activeTab, setActiveTab] = useState('deskripsi');
 
+    useEffect(() => {
+        setIsBookmarked(initialBookmarked || false);
+    }, [initialBookmarked]);
+
     // Auth modal state
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
     const [authView, setAuthView] = useState('login');
+
+    const handleToggleBookmark = () => {
+        if (!auth?.user) {
+            setAuthView('login');
+            setIsAuthModalOpen(true);
+            showToast('Silakan masuk atau daftar terlebih dahulu untuk menandai event.');
+            return;
+        }
+
+        const next = !isBookmarked;
+        setIsBookmarked(next);
+
+        router.post(
+            `/events/${eventData?.id || eventSlug}/bookmark`,
+            {},
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    showToast(next ? 'Event berhasil disimpan ke profil kamu!' : 'Event dihapus dari simpanan.');
+                },
+                onError: () => {
+                    setIsBookmarked(!next);
+                    showToast('Gagal memperbarui status simpanan event.');
+                },
+            }
+        );
+    };
 
     if (!eventData) {
         return (
@@ -142,23 +173,48 @@ export default function EventDetail({ auth, eventSlug, eventData, relatedEvents 
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-3 sm:gap-4">
+                    <div className="flex items-center gap-2 sm:gap-3">
                         <Link
-                            href="/kategori"
+                            href="/#search-section"
                             className="hidden items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-semibold text-slate hover:bg-gray-100 sm:flex"
                         >
                             <Search className="size-3.5" />
-                            <span>Cari Acara</span>
+                            <span>Cari Event</span>
                         </Link>
 
+                        <button
+                            type="button"
+                            onClick={() => {
+                                if (!auth?.user) {
+                                    setAuthView('login');
+                                    setIsAuthModalOpen(true);
+                                    return;
+                                }
+                                if (auth.user.role === 'EO') {
+                                    router.visit('/eo/dashboard');
+                                    return;
+                                }
+                                if (auth.user.role === 'ADMIN') {
+                                    router.visit('/admin/dashboard');
+                                    return;
+                                }
+                                router.visit('/eo-applications/create');
+                            }}
+                            className="hidden rounded-lg border border-gray-300 px-3.5 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 sm:block transition"
+                        >
+                            Buat Event
+                        </button>
+
                         {auth?.user ? (
-                            <div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-3 py-1.5 shadow-sm">
-                                <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-bold uppercase text-brand-blue">
+                            <div className="flex items-center gap-2.5 rounded-xl border border-gray-200 bg-white px-2.5 py-1.5 shadow-2xs">
+                                <span className={`flex size-8 shrink-0 items-center justify-center rounded-full text-xs font-bold uppercase ${auth.user.role === 'ADMIN' ? 'bg-purple-100 text-purple-700' : auth.user.role === 'EO' ? 'bg-indigo-100 text-indigo-700' : 'bg-blue-50 text-brand-blue'}`}>
                                     {auth.user.name.charAt(0)}
                                 </span>
-                                <Link href="/dashboard" className="hidden min-w-0 text-left sm:block">
+                                <Link href={auth.user.role === 'ADMIN' ? '/admin/dashboard' : auth.user.role === 'EO' ? '/eo/dashboard' : '/dashboard'} className="hidden min-w-0 text-left sm:block">
                                     <p className="max-w-28 truncate text-xs font-bold leading-tight text-navy">{auth.user.name}</p>
-                                    <p className="max-w-28 truncate text-[11px] text-slate">Dashboard</p>
+                                    <p className="max-w-28 truncate text-[10px] text-gray-500">
+                                        {auth.user.role === 'ADMIN' ? 'Dashboard Admin ↗' : auth.user.role === 'EO' ? 'Dashboard EO ↗' : 'Profil & Tiket ↗'}
+                                    </p>
                                 </Link>
                                 <span className="h-6 w-px bg-gray-200 hidden sm:block" />
                                 <Link
@@ -270,13 +326,10 @@ export default function EventDetail({ auth, eventSlug, eventData, relatedEvents 
                                         )}
                                     </div>
                                     <button
-                                        onClick={() => {
-                                            setIsBookmarked(!isBookmarked);
-                                            showToast(isBookmarked ? 'Event dihapus dari simpanan.' : 'Event berhasil disimpan!');
-                                        }}
+                                        onClick={handleToggleBookmark}
                                         className={`flex size-9 items-center justify-center rounded-full shadow-md transition backdrop-blur ${
                                             isBookmarked
-                                                ? 'bg-amber-500 text-white'
+                                                ? 'bg-amber-500 text-white shadow-amber-500/20'
                                                 : 'bg-white/95 text-navy hover:bg-white'
                                         }`}
                                         title={isBookmarked ? 'Hapus dari Simpanan' : 'Simpan Event'}

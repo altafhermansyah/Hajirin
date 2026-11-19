@@ -165,10 +165,15 @@ class EventController extends Controller
             'tickets' => $ticketsData,
         ];
 
+        $isBookmarked = auth()->check()
+            ? DB::table('bookmarks')->where('user_id', auth()->id())->where('event_id', $event->id)->exists()
+            : false;
+
         return Inertia::render('Event/Detail', [
             'eventData' => $eventData,
             'eventSlug' => $slug,
             'relatedEvents' => $relatedEvents,
+            'isBookmarked' => $isBookmarked,
         ]);
     }
 }
