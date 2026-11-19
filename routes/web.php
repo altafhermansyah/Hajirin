@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Admin\AdminDashboardController;
+use App\Http\Controllers\Admin\AdminEventController;
+use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\CategoryController;
@@ -83,10 +85,19 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/eo-applications/{id}/reject', [AdminDashboardController::class, 'rejectEoApplication'])
         ->name('eo-applications.reject');
 
-    Route::post('/events/{id}/approve', [AdminDashboardController::class, 'approveEvent'])
-        ->name('events.approve');
-    Route::post('/events/{id}/reject', [AdminDashboardController::class, 'rejectEvent'])
-        ->name('events.reject');
+    // Kelola Event Platform
+    Route::get('/events', [AdminEventController::class, 'index'])->name('events.index');
+    Route::post('/events/{id}/approve', [AdminEventController::class, 'approve'])->name('events.approve');
+    Route::post('/events/{id}/reject', [AdminEventController::class, 'reject'])->name('events.reject');
+    Route::post('/events/{id}/cancel', [AdminEventController::class, 'cancel'])->name('events.cancel');
+    Route::delete('/events/{id}', [AdminEventController::class, 'destroy'])->name('events.destroy');
+
+    // Kelola Pengguna (User Management)
+    Route::get('/users', [AdminUserController::class, 'index'])->name('users.index');
+    Route::post('/users', [AdminUserController::class, 'store'])->name('users.store');
+    Route::put('/users/{id}', [AdminUserController::class, 'update'])->name('users.update');
+    Route::patch('/users/{id}/toggle-status', [AdminUserController::class, 'toggleStatus'])->name('users.toggle-status');
+    Route::delete('/users/{id}', [AdminUserController::class, 'destroy'])->name('users.destroy');
 });
 
 // Route Autentikasi (Guest)

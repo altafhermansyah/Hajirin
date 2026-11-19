@@ -28,6 +28,12 @@ class Event extends Model
         'starts_at',
         'ends_at',
         'banner_path',
+        'status',
+        'rejection_reason',
+        'reviewed_by',
+        'reviewed_at',
+        'cancelled_at',
+        'cancellation_reason',
     ];
 
     protected function casts(): array

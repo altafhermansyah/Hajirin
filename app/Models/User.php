@@ -25,6 +25,8 @@ class User extends Authenticatable
         'phone',
         'avatar_path',
         'password',
+        'role',
+        'status',
     ];
 
     /**
@@ -81,5 +83,15 @@ class User extends Authenticatable
     public function isUser(): bool
     {
         return $this->role === 'USER';
+    }
+
+    public function isActive(): bool
+    {
+        return ($this->status ?? 'ACTIVE') === 'ACTIVE';
+    }
+
+    public function isSuspended(): bool
+    {
+        return $this->status === 'SUSPENDED';
     }
 }

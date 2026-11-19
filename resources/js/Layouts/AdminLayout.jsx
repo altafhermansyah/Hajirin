@@ -63,11 +63,9 @@ export default function AdminLayout({ title, children }) {
         },
         {
             name: 'Kelola Events',
-            href: '#events',
+            href: '/admin/events',
             icon: Calendar,
-            badge: '42',
-            badgeColor: 'bg-blue-100 text-blue-700',
-            active: false,
+            active: currentPath.startsWith('/admin/events'),
         },
         {
             name: 'Organizers (EO)',
@@ -108,9 +106,9 @@ export default function AdminLayout({ title, children }) {
     const managementMenu = [
         {
             name: 'Kelola Pengguna',
-            href: '#users',
+            href: '/admin/users',
             icon: Users,
-            active: false,
+            active: currentPath.startsWith('/admin/users'),
         },
         {
             name: 'Laporan & Keuangan',
