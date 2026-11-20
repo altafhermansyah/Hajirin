@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, router } from '@inertiajs/react';
-import { Search, LogOut, X } from 'lucide-react';
+import { Search, LogOut } from 'lucide-react';
 
 export default function Navbar({
     auth,
@@ -50,12 +50,12 @@ export default function Navbar({
             if (onSearch) {
                 onSearch(trimmed);
             }
-            const searchEl = document.getElementById('search-section') || document.getElementById('hasil-pencarian');
+            const searchEl = document.getElementById('hasil-pencarian') || document.getElementById('search-section');
             if (searchEl) {
                 searchEl.scrollIntoView({ behavior: 'smooth' });
             }
         } else {
-            router.visit(trimmed ? `/?q=${encodeURIComponent(trimmed)}#search-section` : '/#search-section');
+            router.visit(trimmed ? `/?q=${encodeURIComponent(trimmed)}#hasil-pencarian` : '/#search-section');
         }
     };
 
@@ -90,8 +90,8 @@ export default function Navbar({
                 </div>
             </div>
 
-            <div className="flex items-center gap-2 sm:gap-4 flex-1 justify-end max-w-2xl">
-                {/* Form Input Pencarian Interaktif di Navbar */}
+            <div className="flex items-center gap-2 sm:gap-3 flex-1 justify-end max-w-2xl">
+                {/* Form Input Pencarian di Navbar: Langsung Scroll ke Hasil Event Saat Pengguna Mengetik */}
                 <form
                     onSubmit={handleSearchSubmit}
                     className="relative w-36 sm:w-56 md:w-64 lg:w-72"
@@ -99,7 +99,7 @@ export default function Navbar({
                     <button
                         type="submit"
                         aria-label="Cari Event"
-                        className="absolute left-2.5 top-2.5 text-gray-400 hover:text-brand-blue transition"
+                        className="absolute left-2.5 top-2.5 text-gray-400 hover:text-brand-blue transition cursor-pointer"
                     >
                         <Search className="size-4" />
                     </button>
@@ -109,26 +109,34 @@ export default function Navbar({
                         onChange={(e) => {
                             const val = e.target.value;
                             setSearchVal(val);
-                            if (onSearch && typeof window !== 'undefined' && window.location.pathname === '/') {
+                            if (typeof window !== 'undefined' && window.location.pathname === '/' && onSearch) {
                                 onSearch(val);
+                                if (val.trim().length > 0) {
+                                    setTimeout(() => {
+                                        const targetEl = document.getElementById('hasil-pencarian') || document.getElementById('search-section');
+                                        if (targetEl) {
+                                            targetEl.scrollIntoView({ behavior: 'smooth' });
+                                        }
+                                    }, 50);
+                                }
                             }
                         }}
-                        placeholder="Cari event..."
-                        className="h-9 w-full rounded-lg border border-gray-200 bg-gray-50/90 pl-8 pr-7 text-xs text-slate-800 placeholder:text-gray-400 transition focus:border-brand-blue focus:bg-white focus:outline-none focus:ring-1 focus:ring-brand-blue"
+                        placeholder="Cari judul event..."
+                        className="w-full rounded-xl border border-gray-200 bg-slate-50 py-2 pl-9 pr-8 text-xs text-navy placeholder:text-gray-400 focus:border-brand-blue focus:bg-white focus:outline-hidden focus:ring-1 focus:ring-brand-blue transition"
                     />
                     {searchVal && (
                         <button
                             type="button"
                             onClick={() => {
                                 setSearchVal('');
-                                if (onSearch && typeof window !== 'undefined' && window.location.pathname === '/') {
+                                if (typeof window !== 'undefined' && window.location.pathname === '/' && onSearch) {
                                     onSearch('');
                                 }
                             }}
-                            className="absolute right-2 top-2.5 text-gray-400 hover:text-gray-600"
-                            title="Hapus pencarian"
+                            className="absolute right-2.5 top-2.5 text-gray-400 hover:text-navy text-xs font-bold cursor-pointer"
+                            aria-label="Hapus pencarian"
                         >
-                            <X className="size-3.5" />
+                            ✕
                         </button>
                     )}
                 </form>
@@ -136,7 +144,7 @@ export default function Navbar({
                 <button
                     type="button"
                     onClick={handleCreateEventClick}
-                    className="hidden sm:inline-flex items-center gap-1.5 rounded-lg border border-gray-300 px-3.5 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition shrink-0"
+                    className="hidden sm:inline-flex items-center gap-1.5 rounded-lg border border-gray-300 px-3.5 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition shrink-0 cursor-pointer"
                 >
                     Buat Event
                 </button>
@@ -166,7 +174,7 @@ export default function Navbar({
                             href="/logout"
                             method="post"
                             as="button"
-                            className="flex items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs font-medium text-slate hover:bg-red-50 hover:border-red-200 hover:text-red-600 transition"
+                            className="flex items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs font-medium text-slate hover:bg-red-50 hover:border-red-200 hover:text-red-600 transition cursor-pointer"
                             title="Keluar dari akun"
                         >
                             <LogOut className="size-3.5" />
@@ -178,14 +186,14 @@ export default function Navbar({
                         <button
                             type="button"
                             onClick={() => (onOpenAuthModal ? onOpenAuthModal('login') : router.visit('/login'))}
-                            className="hidden rounded-lg border border-gray-300 px-3.5 py-1.5 text-xs font-semibold text-gray-700 hover:text-navy sm:block transition"
+                            className="hidden rounded-lg border border-gray-300 px-3.5 py-1.5 text-xs font-semibold text-gray-700 hover:text-navy sm:block transition cursor-pointer"
                         >
                             Masuk
                         </button>
                         <button
                             type="button"
                             onClick={() => (onOpenAuthModal ? onOpenAuthModal('register') : router.visit('/register'))}
-                            className="rounded-lg bg-brand-blue px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-800"
+                            className="rounded-lg bg-brand-blue px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-800 cursor-pointer"
                         >
                             Daftar
                         </button>

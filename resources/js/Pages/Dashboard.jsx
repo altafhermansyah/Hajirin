@@ -1,13 +1,12 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { useState, useEffect, useRef } from 'react';
-import QrCodeSvg from '../Components/QrCodeSvg';
 import Navbar from '../Components/Navbar';
 import {
     ArrowLeft, ArrowRight, Bookmark, Building2, CalendarDays, Check,
     CheckCircle2, Clock, Copy, CreditCard, LogOut, MapPin, Printer,
     QrCode, Search, ShieldCheck, Sparkles, Ticket, Trash2, UserRound,
     X, AlertCircle, ChevronRight, ExternalLink, Camera, UploadCloud,
-    FileText, Info
+    FileText, Info, Mail, Phone, Lock, KeyRound, Shield, Compass
 } from 'lucide-react';
 
 export default function Dashboard({ auth, dashboard }) {
@@ -26,10 +25,6 @@ export default function Dashboard({ auth, dashboard }) {
     };
 
     const [activeTab, setActiveTab] = useState(getInitialTab);
-    const [selectedETicket, setSelectedETicket] = useState(null);
-    const [selectedOrder, setSelectedOrder] = useState(null);
-    const [copiedCode, setCopiedCode] = useState(null);
-    const [ticketFilter, setTicketFilter] = useState('aktif'); // 'aktif' | 'semua'
 
     // State form profil & ganti foto profil
     const [profileName, setProfileName] = useState(user.name || '');
@@ -63,10 +58,7 @@ export default function Dashboard({ auth, dashboard }) {
     }, [user.avatar_path]);
 
     const myTickets = dashboard.myTickets || [];
-    const filteredTickets = myTickets.filter((t) => {
-        if (ticketFilter === 'aktif') return t.status === 'ACTIVE';
-        return true;
-    });
+    const filteredTickets = myTickets;
 
     const handleTabChange = (tabKey) => {
         setActiveTab(tabKey);
@@ -132,14 +124,6 @@ export default function Dashboard({ auth, dashboard }) {
         });
     };
 
-    const handleCopyCode = (code) => {
-        if (navigator?.clipboard) {
-            navigator.clipboard.writeText(code);
-            setCopiedCode(code);
-            setTimeout(() => setCopiedCode(null), 2500);
-        }
-    };
-
     return (
         <>
             <Head title="Akun Saya — Hajirin" />
@@ -147,8 +131,8 @@ export default function Dashboard({ auth, dashboard }) {
             <div className="min-h-screen bg-[#f8fafc] text-slate-900 font-sans flex flex-col">
                 <Navbar auth={auth} />
 
-                {/* Main Content Area */}
-                <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 space-y-8">
+                {/* Main Content Area - Single Unified Column (No Sidebar) */}
+                <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
                     {/* Flash Notifications */}
                     {flash?.success && (
                         <div className="flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50/90 p-4 text-xs sm:text-sm text-emerald-900 shadow-2xs">
@@ -169,60 +153,23 @@ export default function Dashboard({ auth, dashboard }) {
                         </div>
                     )}
 
-                    {/* User Profile Header Card */}
-                    <section className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-700 via-blue-800 to-indigo-900 p-6 sm:p-8 text-white shadow-lg shadow-blue-900/10">
-                        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-                            <div className="flex items-center gap-4 sm:gap-5">
-                                <div className="relative size-16 sm:size-20 rounded-2xl bg-white/10 backdrop-blur border border-white/20 overflow-hidden shadow-inner shrink-0">
-                                    {avatarPreview ? (
-                                        <img src={avatarPreview} alt={user.name} className="size-full object-cover" />
-                                    ) : (
-                                        <div className="size-full flex items-center justify-center text-2xl sm:text-3xl font-extrabold text-white">
-                                            {user.name.charAt(0).toUpperCase()}
-                                        </div>
-                                    )}
-                                </div>
-                                <div>
-                                    <div className="flex flex-wrap items-center gap-2 mb-1">
-                                        <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Halo, {user.name}!</h1>
-                                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/20 border border-emerald-400/30 px-2.5 py-0.5 text-[10px] font-bold text-emerald-300">
-                                            <Sparkles className="size-3" /> Akun Aktif
-                                        </span>
-                                    </div>
-                                    <p className="text-xs sm:text-sm text-blue-100">{user.email}</p>
-                                    <p className="text-[11px] text-blue-200/80 mt-1">
-                                        {user.phone ? `Nomor WhatsApp: ${user.phone}` : 'Belum menambahkan nomor WhatsApp'}
-                                    </p>
-                                </div>
-                            </div>
+                    {/* Header Halaman Akun & Profil */}
+                    <div className="pb-3 border-b border-gray-200">
+                        <h1 className="text-2xl sm:text-3xl font-extrabold text-navy tracking-tight">Akun & Profil Saya</h1>
+                        <p className="text-xs sm:text-sm text-slate-500 mt-1">
+                            Kelola tiket acara, bookmark event tersimpan, riwayat pesanan, dan pengaturan profil Anda.
+                        </p>
+                    </div>
 
-                            {/* Quick Stats Badges */}
-                            <div className="flex flex-wrap items-center gap-3 pt-4 md:pt-0 border-t md:border-t-0 border-white/10">
-                                <div className="rounded-2xl bg-white/10 backdrop-blur px-4 py-2.5 border border-white/15 text-center min-w-[100px]">
-                                    <p className="text-lg sm:text-xl font-extrabold">{myTickets.length}</p>
-                                    <p className="text-[10px] text-blue-200 uppercase font-semibold tracking-wider">Event Tiket</p>
-                                </div>
-                                <div className="rounded-2xl bg-white/10 backdrop-blur px-4 py-2.5 border border-white/15 text-center min-w-[100px]">
-                                    <p className="text-lg sm:text-xl font-extrabold">{dashboard.bookmarkedEvents?.length || 0}</p>
-                                    <p className="text-[10px] text-blue-200 uppercase font-semibold tracking-wider">Disimpan</p>
-                                </div>
-                                <div className="rounded-2xl bg-white/10 backdrop-blur px-4 py-2.5 border border-white/15 text-center min-w-[100px]">
-                                    <p className="text-lg sm:text-xl font-extrabold">{dashboard.orderCount || 0}</p>
-                                    <p className="text-[10px] text-blue-200 uppercase font-semibold tracking-wider">Pesanan</p>
-                                </div>
-                            </div>
-                        </div>
-                    </section>
-
-                    {/* Consumer Navigation Tabs */}
-                    <div className="flex border-b border-gray-200 overflow-x-auto no-scrollbar gap-2 sm:gap-4">
+                    {/* Navigasi Tab Horizontal Lengkap */}
+                    <div className="flex border-b border-gray-200 overflow-x-auto no-scrollbar gap-2 sm:gap-4 pt-1">
                         <button
                             type="button"
                             onClick={() => handleTabChange('tiket')}
-                            className={`flex items-center gap-2 pb-3.5 px-3 sm:px-4 text-sm font-bold border-b-2 whitespace-nowrap transition ${
+                            className={`flex items-center gap-2 pb-3.5 px-3 sm:px-4 text-xs sm:text-sm font-bold border-b-2 whitespace-nowrap transition ${
                                 activeTab === 'tiket'
                                     ? 'border-brand-blue text-brand-blue'
-                                    : 'border-transparent text-slate hover:text-navy hover:border-gray-300'
+                                    : 'border-transparent text-slate-600 hover:text-navy hover:border-gray-300'
                             }`}
                         >
                             <Ticket className="size-4" />
@@ -232,10 +179,10 @@ export default function Dashboard({ auth, dashboard }) {
                         <button
                             type="button"
                             onClick={() => handleTabChange('bookmark')}
-                            className={`flex items-center gap-2 pb-3.5 px-3 sm:px-4 text-sm font-bold border-b-2 whitespace-nowrap transition ${
+                            className={`flex items-center gap-2 pb-3.5 px-3 sm:px-4 text-xs sm:text-sm font-bold border-b-2 whitespace-nowrap transition ${
                                 activeTab === 'bookmark'
                                     ? 'border-brand-blue text-brand-blue'
-                                    : 'border-transparent text-slate hover:text-navy hover:border-gray-300'
+                                    : 'border-transparent text-slate-600 hover:text-navy hover:border-gray-300'
                             }`}
                         >
                             <Bookmark className="size-4" />
@@ -245,10 +192,10 @@ export default function Dashboard({ auth, dashboard }) {
                         <button
                             type="button"
                             onClick={() => handleTabChange('pesanan')}
-                            className={`flex items-center gap-2 pb-3.5 px-3 sm:px-4 text-sm font-bold border-b-2 whitespace-nowrap transition ${
+                            className={`flex items-center gap-2 pb-3.5 px-3 sm:px-4 text-xs sm:text-sm font-bold border-b-2 whitespace-nowrap transition ${
                                 activeTab === 'pesanan'
                                     ? 'border-brand-blue text-brand-blue'
-                                    : 'border-transparent text-slate hover:text-navy hover:border-gray-300'
+                                    : 'border-transparent text-slate-600 hover:text-navy hover:border-gray-300'
                             }`}
                         >
                             <CreditCard className="size-4" />
@@ -258,67 +205,44 @@ export default function Dashboard({ auth, dashboard }) {
                         <button
                             type="button"
                             onClick={() => handleTabChange('profil')}
-                            className={`flex items-center gap-2 pb-3.5 px-3 sm:px-4 text-sm font-bold border-b-2 whitespace-nowrap transition ${
+                            className={`flex items-center gap-2 pb-3.5 px-3 sm:px-4 text-xs sm:text-sm font-bold border-b-2 whitespace-nowrap transition ${
                                 activeTab === 'profil'
                                     ? 'border-brand-blue text-brand-blue'
-                                    : 'border-transparent text-slate hover:text-navy hover:border-gray-300'
+                                    : 'border-transparent text-slate-600 hover:text-navy hover:border-gray-300'
                             }`}
                         >
                             <UserRound className="size-4" />
-                            <span>Profil & Akun</span>
+                            <span>Pengaturan Profil</span>
                         </button>
                     </div>
 
                     {/* TAB 1: E-TIKET SAYA */}
                     {activeTab === 'tiket' && (
                         <div className="space-y-6">
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                                <div>
-                                    <h2 className="text-lg font-bold text-navy">Daftar E-Tiket Saya</h2>
-                                    <p className="text-xs text-slate mt-0.5">
-                                        Klik tombol detail pada tiket untuk melihat barcode QR per tiket untuk masing-masing peserta.
-                                    </p>
-                                </div>
-
-                                <div className="flex items-center gap-1 rounded-xl bg-gray-100 p-1 text-xs font-semibold self-start sm:self-auto">
-                                    <button
-                                        type="button"
-                                        onClick={() => setTicketFilter('aktif')}
-                                        className={`px-3 py-1.5 rounded-lg transition ${
-                                            ticketFilter === 'aktif' ? 'bg-white text-brand-blue shadow-2xs' : 'text-slate hover:text-navy'
-                                        }`}
-                                    >
-                                        Siap Digunakan ({myTickets.filter((t) => t.status === 'ACTIVE').length})
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setTicketFilter('semua')}
-                                        className={`px-3 py-1.5 rounded-lg transition ${
-                                            ticketFilter === 'semua' ? 'bg-white text-brand-blue shadow-2xs' : 'text-slate hover:text-navy'
-                                        }`}
-                                    >
-                                        Semua ({myTickets.length})
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* Daftar E-Tiket: Menampilkan 1 tiket pass per event yang dibeli */}
+                            {/* Daftar E-Tiket: Menampilkan tiket pass per event yang dibeli */}
                             {filteredTickets.length > 0 ? (
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                     {filteredTickets.map((ticket) => (
                                         <article
                                             key={ticket.id || ticket.orderReference}
-                                            className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-gray-200 bg-white p-5 shadow-xs transition hover:border-blue-300 hover:shadow-md"
+                                            className="group relative flex flex-col justify-between overflow-hidden rounded-2xl sm:rounded-3xl border border-gray-200 bg-white p-5 shadow-xs transition hover:border-blue-300 hover:shadow-md"
                                         >
                                             <div>
+                                                {/* Judul Event Paling Atas */}
+                                                <div className="mb-3.5 pb-2.5 border-b border-gray-100">
+                                                    <h3 className="font-extrabold text-base sm:text-lg text-navy line-clamp-2 leading-snug">
+                                                        {ticket.eventTitle}
+                                                    </h3>
+                                                </div>
+
                                                 <div className="flex items-start gap-4 mb-4">
                                                     <img
                                                         src={ticket.banner}
                                                         alt={ticket.eventTitle}
-                                                        className="size-20 sm:size-24 rounded-xl object-cover shrink-0 border border-gray-200 bg-gray-100"
+                                                        className="size-20 sm:size-24 rounded-2xl object-cover shrink-0 border border-gray-200 bg-gray-100"
                                                     />
-                                                    <div className="min-w-0 flex-1">
-                                                        <div className="flex flex-wrap items-center gap-1.5 mb-1.5">
+                                                    <div className="min-w-0 flex-1 space-y-2">
+                                                        <div className="flex flex-wrap items-center gap-1.5">
                                                             <span className="rounded-md bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-brand-blue border border-blue-200">
                                                                 {ticket.ticketType}
                                                             </span>
@@ -326,27 +250,24 @@ export default function Dashboard({ auth, dashboard }) {
                                                                 Total {ticket.quantity} Tiket
                                                             </span>
                                                         </div>
-                                                        <h3 className="font-bold text-sm sm:text-base text-navy line-clamp-2 leading-snug">
-                                                            {ticket.eventTitle}
-                                                        </h3>
-                                                    </div>
-                                                </div>
 
-                                                <div className="space-y-1.5 text-xs text-slate pb-4 border-b border-gray-100">
-                                                    <p className="flex items-center gap-2">
-                                                        <CalendarDays className="size-3.5 text-slate-400 shrink-0" />
-                                                        <span>{ticket.eventDate}</span>
-                                                    </p>
-                                                    <p className="flex items-center gap-2">
-                                                        <MapPin className="size-3.5 text-slate-400 shrink-0" />
-                                                        <span className="truncate">{ticket.eventLocation}</span>
-                                                    </p>
+                                                        <div className="space-y-1 text-xs text-slate-600">
+                                                            <p className="flex items-center gap-2">
+                                                                <CalendarDays className="size-3.5 text-slate-400 shrink-0" />
+                                                                <span>{ticket.eventDate}</span>
+                                                            </p>
+                                                            <p className="flex items-center gap-2">
+                                                                <MapPin className="size-3.5 text-slate-400 shrink-0" />
+                                                                <span className="truncate">{ticket.eventLocation}</span>
+                                                            </p>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
 
                                             <div className="pt-4 flex items-center justify-between gap-3">
                                                 <div>
-                                                    <p className="text-[10px] uppercase font-bold text-slate">No. Referensi</p>
+                                                    <p className="text-[10px] uppercase font-bold text-slate-400">No. Referensi</p>
                                                     <p className="font-mono text-xs sm:text-sm font-extrabold text-brand-blue">{ticket.orderReference}</p>
                                                 </div>
 
@@ -363,7 +284,7 @@ export default function Dashboard({ auth, dashboard }) {
                                     ))}
                                 </div>
                             ) : (
-                                <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-10 text-center">
+                                <div className="rounded-2xl sm:rounded-3xl border border-dashed border-gray-300 bg-white p-10 text-center">
                                     <div className="mx-auto mb-3 flex size-14 items-center justify-center rounded-2xl bg-blue-50 text-brand-blue">
                                         <Ticket className="size-7" />
                                     </div>
@@ -385,32 +306,25 @@ export default function Dashboard({ auth, dashboard }) {
                     {/* TAB 2: EVENT DISIMPAN (BOOKMARK) */}
                     {activeTab === 'bookmark' && (
                         <div className="space-y-6">
-                            <div>
-                                <h2 className="text-lg font-bold text-navy">Event yang Kamu Simpan</h2>
-                                <p className="text-xs text-slate mt-0.5">
-                                    Daftar acara favorit yang kamu tandai untuk diikuti.
-                                </p>
-                            </div>
-
                             {dashboard.bookmarkedEvents && dashboard.bookmarkedEvents.length > 0 ? (
                                 <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
                                     {dashboard.bookmarkedEvents.map((evt) => (
                                         <article
                                             key={evt.id || evt.slug}
-                                            className="group relative flex flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white transition hover:shadow-md hover:border-blue-200"
+                                            className="group relative flex flex-col overflow-hidden rounded-2xl sm:rounded-3xl border border-gray-200 bg-white transition hover:shadow-md hover:border-blue-200"
                                         >
-                                            <Link href={`/event/${evt.slug}`} className="relative h-40 overflow-hidden bg-gray-100 block">
+                                            <Link href={`/event/${evt.slug}`} className="relative h-44 overflow-hidden bg-gray-100 block">
                                                 <img
                                                     src={evt.image}
                                                     alt={evt.title}
                                                     className="size-full object-cover transition duration-500 group-hover:scale-105"
                                                 />
-                                                <span className="absolute left-3 top-3 rounded-md bg-white/95 px-2 py-0.5 text-[10px] font-bold text-navy uppercase shadow-xs">
+                                                <span className="absolute left-3 top-3 rounded-lg bg-white/95 px-2.5 py-0.5 text-[10px] font-bold text-navy uppercase shadow-xs">
                                                     {evt.category}
                                                 </span>
                                             </Link>
 
-                                            <div className="p-4 flex flex-col flex-1">
+                                            <div className="p-5 flex flex-col flex-1">
                                                 <p className="text-[11px] font-medium text-slate mb-1">{evt.date}</p>
                                                 <h3 className="font-bold text-sm text-navy line-clamp-2 leading-snug mb-2">
                                                     <Link href={`/event/${evt.slug}`} className="hover:text-brand-blue transition">
@@ -425,7 +339,7 @@ export default function Dashboard({ auth, dashboard }) {
 
                                                 <div className="pt-3 border-t border-gray-100 flex items-center justify-between">
                                                     <div>
-                                                        <p className="text-[10px] text-slate">Mulai Dari</p>
+                                                        <p className="text-[10px] text-slate-400">Mulai Dari</p>
                                                         <p className="text-sm font-extrabold text-brand-blue">{evt.price}</p>
                                                     </div>
 
@@ -433,14 +347,14 @@ export default function Dashboard({ auth, dashboard }) {
                                                         <button
                                                             type="button"
                                                             onClick={() => handleRemoveBookmark(evt.id, evt.slug, evt.title)}
-                                                            className="rounded-lg p-2 text-slate hover:text-red-600 hover:bg-red-50 transition"
+                                                            className="rounded-xl p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 transition"
                                                             title="Hapus dari simpanan"
                                                         >
                                                             <Trash2 className="size-4" />
                                                         </button>
                                                         <Link
                                                             href={`/event/${evt.slug}`}
-                                                            className="rounded-lg bg-brand-blue px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-800 transition"
+                                                            className="rounded-xl bg-brand-blue px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-blue-800 transition"
                                                         >
                                                             Beli Tiket
                                                         </Link>
@@ -451,7 +365,7 @@ export default function Dashboard({ auth, dashboard }) {
                                     ))}
                                 </div>
                             ) : (
-                                <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-10 text-center">
+                                <div className="rounded-2xl sm:rounded-3xl border border-dashed border-gray-300 bg-white p-10 text-center">
                                     <div className="mx-auto mb-3 flex size-14 items-center justify-center rounded-2xl bg-amber-50 text-amber-600">
                                         <Bookmark className="size-7" />
                                     </div>
@@ -473,15 +387,8 @@ export default function Dashboard({ auth, dashboard }) {
                     {/* TAB 3: RIWAYAT TRANSAKSI / PESANAN */}
                     {activeTab === 'pesanan' && (
                         <div className="space-y-6">
-                            <div>
-                                <h2 className="text-lg font-bold text-navy">Riwayat Pemesanan & Pembayaran</h2>
-                                <p className="text-xs text-slate mt-0.5">
-                                    Catatan transaksi pembelian tiket event kamu. Klik detail untuk melihat rincian pembayaran.
-                                </p>
-                            </div>
-
                             {dashboard.recentOrders && dashboard.recentOrders.length > 0 ? (
-                                <div className="rounded-2xl border border-gray-200 bg-white overflow-hidden shadow-2xs divide-y divide-gray-100">
+                                <div className="rounded-2xl sm:rounded-3xl border border-gray-200 bg-white overflow-hidden shadow-xs divide-y divide-gray-100">
                                     {dashboard.recentOrders.map((order) => (
                                         <div key={order.id} className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-gray-50/60 transition">
                                             <div className="space-y-1">
@@ -490,17 +397,17 @@ export default function Dashboard({ auth, dashboard }) {
                                                     <span className="rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-[10px] font-bold text-emerald-700">
                                                         ✓ Lunas
                                                     </span>
-                                                    <span className="text-[10px] text-slate bg-gray-100 px-2 py-0.5 rounded-md font-semibold">
+                                                    <span className="text-[10px] text-slate-500 bg-gray-100 px-2 py-0.5 rounded-md font-semibold">
                                                         {order.paymentMethod}
                                                     </span>
                                                 </div>
                                                 <p className="font-bold text-sm text-navy">{order.eventTitle}</p>
-                                                <p className="text-xs text-slate">{order.createdAt}</p>
+                                                <p className="text-xs text-slate-500">{order.createdAt}</p>
                                             </div>
 
                                             <div className="flex sm:flex-col items-center sm:items-end justify-between border-t sm:border-t-0 border-gray-100 pt-3 sm:pt-0 gap-2">
                                                 <div className="text-left sm:text-right">
-                                                    <p className="text-[10px] text-slate">Total Pembayaran</p>
+                                                    <p className="text-[10px] text-slate-400">Total Pembayaran</p>
                                                     <p className="text-base font-extrabold text-brand-blue">
                                                         {order.formattedTotalAmount || (order.total_amount > 0 ? `Rp${Number(order.total_amount).toLocaleString('id-ID')}` : 'Gratis')}
                                                     </p>
@@ -519,7 +426,7 @@ export default function Dashboard({ auth, dashboard }) {
                                     ))}
                                 </div>
                             ) : (
-                                <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-10 text-center">
+                                <div className="rounded-2xl sm:rounded-3xl border border-dashed border-gray-300 bg-white p-10 text-center">
                                     <div className="mx-auto mb-3 flex size-14 items-center justify-center rounded-2xl bg-blue-50 text-brand-blue">
                                         <CreditCard className="size-7" />
                                     </div>
@@ -532,137 +439,193 @@ export default function Dashboard({ auth, dashboard }) {
                         </div>
                     )}
 
-                    {/* TAB 4: PROFIL & KEAMANAN AKUN (TERMASUK GANTI FOTO PROFIL DARI PERANGKAT) */}
+                    {/* TAB 4: PENGATURAN PROFIL & AKUN */}
                     {activeTab === 'profil' && (
-                        <div className="max-w-2xl space-y-6">
-                            <div>
-                                <h2 className="text-lg font-bold text-navy">Pengaturan Akun & Profil</h2>
-                                <p className="text-xs text-slate mt-0.5">
-                                    Kelola identitas pribadi, foto profil dari perangkat, dan keamanan akun kamu.
-                                </p>
-                            </div>
-
+                        <div className="space-y-6">
                             {profileSuccessMsg && (
-                                <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-4 text-xs font-semibold text-emerald-800 flex items-center gap-2">
-                                    <CheckCircle2 className="size-4 shrink-0 text-emerald-600" />
+                                <div className="rounded-2xl bg-emerald-50 border border-emerald-200 p-4 text-xs sm:text-sm font-semibold text-emerald-800 flex items-center gap-3 shadow-2xs">
+                                    <CheckCircle2 className="size-5 shrink-0 text-emerald-600" />
                                     <span>{profileSuccessMsg}</span>
                                 </div>
                             )}
 
-                            <form onSubmit={handleUpdateProfile} className="rounded-2xl border border-gray-200 bg-white p-6 sm:p-8 shadow-xs space-y-6">
-                                {/* Upload Foto Profil dari Perangkat */}
-                                <div className="flex flex-col sm:flex-row items-center gap-5 p-4 rounded-2xl bg-gray-50 border border-gray-200/80">
-                                    <div className="relative size-20 rounded-full overflow-hidden border-2 border-brand-blue shadow-sm bg-white shrink-0">
-                                        {avatarPreview ? (
-                                            <img src={avatarPreview} alt={user.name} className="size-full object-cover" />
-                                        ) : (
-                                            <span className="flex size-full items-center justify-center bg-brand-blue text-2xl font-bold text-white uppercase">
-                                                {user.name.charAt(0)}
-                                            </span>
-                                        )}
+                            <form onSubmit={handleUpdateProfile} className="rounded-2xl sm:rounded-3xl border border-gray-200 bg-white p-6 sm:p-8 shadow-xs space-y-8">
+                                {/* Bagian 1: Foto Profil & Identitas Visual */}
+                                <div className="space-y-4">
+                                    <div>
+                                        <h3 className="text-sm font-bold text-navy flex items-center gap-2">
+                                            <Camera className="size-4 text-brand-blue" />
+                                            <span>Foto Profil Pengguna</span>
+                                        </h3>
+                                        <p className="text-xs text-slate-500 mt-0.5">
+                                            Foto profil akan ditampilkan pada navbar dan tiket event yang kamu pesan.
+                                        </p>
                                     </div>
 
-                                    <div className="text-center sm:text-left flex-1">
-                                        <p className="text-sm font-bold text-navy">Foto Profil Pengguna</p>
-                                        <p className="text-xs text-slate mt-0.5">
-                                            Pilih gambar foto profil dari perangkat kamu (Format JPG, PNG, WEBP, Maks. 5MB).
-                                        </p>
-
-                                        <input
-                                            type="file"
-                                            ref={fileInputRef}
-                                            onChange={handleAvatarChange}
-                                            accept="image/jpeg,image/png,image/jpg,image/webp"
-                                            className="hidden"
-                                        />
-
-                                        <div className="mt-3 flex flex-wrap items-center justify-center sm:justify-start gap-2">
-                                            <button
-                                                type="button"
-                                                onClick={() => fileInputRef.current?.click()}
-                                                className="inline-flex items-center gap-1.5 rounded-xl bg-white border border-gray-300 px-3.5 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-100 hover:text-navy transition shadow-2xs"
-                                            >
-                                                <Camera className="size-3.5 text-brand-blue" />
-                                                <span>Pilih Foto dari Perangkat</span>
-                                            </button>
-
-                                            {avatarFile && (
-                                                <span className="text-[11px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-1 rounded-lg">
-                                                    ✓ {avatarFile.name} siap disimpan
+                                    <div className="flex flex-col sm:flex-row items-center gap-6">
+                                        <div
+                                            role="button"
+                                            tabIndex={0}
+                                            onClick={() => fileInputRef.current?.click()}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter' || e.key === ' ') {
+                                                    e.preventDefault();
+                                                    fileInputRef.current?.click();
+                                                }
+                                            }}
+                                            title="Klik untuk memilih foto dari perangkat"
+                                            className="group relative size-24 sm:size-28 rounded-full overflow-hidden ring-4 ring-slate-100 border-2 border-gray-200 shadow-sm bg-slate-50 flex items-center justify-center shrink-0 cursor-pointer transition hover:ring-brand-blue/30"
+                                        >
+                                            {avatarPreview ? (
+                                                <img src={avatarPreview} alt={user.name} className="size-full object-cover transition duration-200 group-hover:scale-105" />
+                                            ) : (
+                                                <span className="flex size-full items-center justify-center bg-slate-100 text-3xl font-extrabold text-navy uppercase">
+                                                    {user.name.charAt(0)}
                                                 </span>
                                             )}
+
+                                            {/* Hover overlay hint */}
+                                            <div className="absolute inset-0 bg-navy/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white p-1 text-center backdrop-blur-2xs">
+                                                <Camera className="size-5 mb-0.5 text-white" />
+                                                <span className="text-[10px] font-bold leading-tight">Pilih Foto</span>
+                                            </div>
                                         </div>
 
-                                        {profileErrors.avatar && (
-                                            <p className="text-xs text-red-600 mt-2">{profileErrors.avatar}</p>
-                                        )}
+                                        <div className="space-y-2.5 text-center sm:text-left flex-1">
+                                            <input
+                                                type="file"
+                                                ref={fileInputRef}
+                                                onChange={handleAvatarChange}
+                                                accept="image/jpeg,image/png,image/jpg,image/webp"
+                                                className="hidden"
+                                            />
+
+                                            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => fileInputRef.current?.click()}
+                                                    className="inline-flex items-center gap-2 rounded-xl bg-slate-50 border border-gray-300 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100 hover:border-gray-400 transition shadow-2xs"
+                                                >
+                                                    <Camera className="size-4 text-brand-blue" />
+                                                    <span>Pilih Foto dari Perangkat</span>
+                                                </button>
+
+                                                {avatarFile && (
+                                                    <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1.5 rounded-xl">
+                                                        ✓ {avatarFile.name} siap disimpan
+                                                    </span>
+                                                )}
+                                            </div>
+
+                                            <p className="text-[11px] text-slate-400 leading-relaxed">
+                                                Format gambar JPG, PNG, atau WEBP. Ukuran maksimal 5MB.
+                                            </p>
+
+                                            {profileErrors.avatar && (
+                                                <p className="text-xs text-red-600">{profileErrors.avatar}</p>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
 
-                                <div>
-                                    <label className="block text-xs font-semibold text-slate mb-1.5">
-                                        Nama Lengkap <span className="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={profileName}
-                                        onChange={(e) => setProfileName(e.target.value)}
-                                        required
-                                        className="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm focus:border-brand-blue focus:outline-none focus:ring-2 focus:ring-brand-blue/20"
-                                    />
-                                    {profileErrors.name && (
-                                        <p className="text-xs text-red-600 mt-1">{profileErrors.name}</p>
-                                    )}
-                                </div>
+                                <div className="border-t border-gray-100" />
 
-                                <div>
-                                    <label className="block text-xs font-semibold text-slate mb-1.5">
-                                        Alamat Email
-                                    </label>
-                                    <input
-                                        type="email"
-                                        value={user.email}
-                                        disabled
-                                        className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-500 cursor-not-allowed"
-                                    />
-                                    <p className="text-[11px] text-slate mt-1">Email digunakan untuk login dan pengiriman e-tiket resmi.</p>
-                                </div>
-
-                                <div>
-                                    <label className="block text-xs font-semibold text-slate mb-1.5">
-                                        Nomor WhatsApp / HP (Hanya Angka)
-                                    </label>
-                                    <input
-                                        type="tel"
-                                        inputMode="numeric"
-                                        pattern="[0-9]*"
-                                        value={profilePhone}
-                                        onChange={(e) => {
-                                            const onlyNumbers = e.target.value.replace(/\D/g, '');
-                                            setProfilePhone(onlyNumbers);
-                                        }}
-                                        onKeyDown={(e) => {
-                                            if (
-                                                !/[0-9]/.test(e.key) &&
-                                                !['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.key)
-                                            ) {
-                                                e.preventDefault();
-                                            }
-                                        }}
-                                        placeholder="Contoh: 081234567890"
-                                        className="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm focus:border-brand-blue focus:outline-none focus:ring-2 focus:ring-brand-blue/20"
-                                    />
-                                    {profileErrors.phone && (
-                                        <p className="text-xs text-red-600 mt-1">{profileErrors.phone}</p>
-                                    )}
-                                </div>
-
-                                <div className="pt-4 border-t border-gray-100">
-                                    <p className="text-xs font-bold text-navy mb-3">Ganti Password (Kosongkan bila tidak ingin diubah)</p>
+                                {/* Bagian 2: Informasi Data Diri Pribadi */}
+                                <div className="space-y-4">
+                                    <div>
+                                        <h3 className="text-sm font-bold text-navy flex items-center gap-2">
+                                            <UserRound className="size-4 text-brand-blue" />
+                                            <span>Data Diri Pribadi</span>
+                                        </h3>
+                                        <p className="text-xs text-slate-500 mt-0.5">
+                                            Informasi ini digunakan sebagai data pemesan pada e-tiket resmi.
+                                        </p>
+                                    </div>
 
                                     <div className="space-y-4">
                                         <div>
-                                            <label className="block text-xs font-semibold text-slate mb-1.5">
+                                            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                                                Nama Lengkap <span className="text-red-500">*</span>
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={profileName}
+                                                onChange={(e) => setProfileName(e.target.value)}
+                                                placeholder="Nama lengkap sesuai identitas"
+                                                required
+                                                className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-slate-800 placeholder:text-gray-400 focus:border-brand-blue focus:outline-none focus:ring-2 focus:ring-brand-blue/20 transition"
+                                            />
+                                            {profileErrors.name && (
+                                                <p className="text-xs text-red-600 mt-1">{profileErrors.name}</p>
+                                            )}
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-xs font-semibold text-slate-700 mb-1.5 flex items-center justify-between">
+                                                <span>Alamat Email</span>
+                                                <span className="text-[10px] text-slate-400 font-normal">Tidak dapat diubah</span>
+                                            </label>
+                                            <div className="relative">
+                                                <input
+                                                    type="email"
+                                                    value={user.email}
+                                                    disabled
+                                                    className="w-full rounded-xl border border-gray-200 bg-gray-50 pl-4 pr-10 py-2.5 text-sm text-gray-500 cursor-not-allowed select-none"
+                                                />
+                                                <Lock className="size-4 text-gray-400 absolute right-3.5 top-3 pointer-events-none" />
+                                            </div>
+                                            <p className="text-[11px] text-slate-400 mt-1">Alamat email terdaftar digunakan untuk akses login dan pengiriman tiket.</p>
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                                                Nomor WhatsApp / HP (Hanya Angka)
+                                            </label>
+                                            <input
+                                                type="tel"
+                                                inputMode="numeric"
+                                                pattern="[0-9]*"
+                                                value={profilePhone}
+                                                onChange={(e) => {
+                                                    const onlyNumbers = e.target.value.replace(/\D/g, '');
+                                                    setProfilePhone(onlyNumbers);
+                                                }}
+                                                onKeyDown={(e) => {
+                                                    if (
+                                                        !/[0-9]/.test(e.key) &&
+                                                        !['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.key)
+                                                    ) {
+                                                        e.preventDefault();
+                                                    }
+                                                }}
+                                                placeholder="Contoh: 081234567890"
+                                                className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-slate-800 placeholder:text-gray-400 focus:border-brand-blue focus:outline-none focus:ring-2 focus:ring-brand-blue/20 transition"
+                                            />
+                                            {profileErrors.phone && (
+                                                <p className="text-xs text-red-600 mt-1">{profileErrors.phone}</p>
+                                            )}
+                                            <p className="text-[11px] text-slate-400 mt-1">Nomor telepon digunakan untuk pengiriman notifikasi pemesanan via WhatsApp.</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="border-t border-gray-100" />
+
+                                {/* Bagian 3: Keamanan Kata Sandi */}
+                                <div className="space-y-4">
+                                    <div>
+                                        <h3 className="text-sm font-bold text-navy flex items-center gap-2">
+                                            <KeyRound className="size-4 text-brand-blue" />
+                                            <span>Ubah Kata Sandi (Opsional)</span>
+                                        </h3>
+                                        <p className="text-xs text-slate-500 mt-0.5">
+                                            Biarkan kolom di bawah kosong jika Anda tidak bermaksud mengubah kata sandi akun.
+                                        </p>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
                                                 Password Baru
                                             </label>
                                             <input
@@ -670,7 +633,7 @@ export default function Dashboard({ auth, dashboard }) {
                                                 value={profilePassword}
                                                 onChange={(e) => setProfilePassword(e.target.value)}
                                                 placeholder="Minimal 8 karakter"
-                                                className="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm focus:border-brand-blue focus:outline-none focus:ring-2 focus:ring-brand-blue/20"
+                                                className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-slate-800 placeholder:text-gray-400 focus:border-brand-blue focus:outline-none focus:ring-2 focus:ring-brand-blue/20 transition"
                                             />
                                             {profileErrors.password && (
                                                 <p className="text-xs text-red-600 mt-1">{profileErrors.password}</p>
@@ -678,7 +641,7 @@ export default function Dashboard({ auth, dashboard }) {
                                         </div>
 
                                         <div>
-                                            <label className="block text-xs font-semibold text-slate mb-1.5">
+                                            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
                                                 Konfirmasi Password Baru
                                             </label>
                                             <input
@@ -686,19 +649,26 @@ export default function Dashboard({ auth, dashboard }) {
                                                 value={profilePasswordConfirm}
                                                 onChange={(e) => setProfilePasswordConfirm(e.target.value)}
                                                 placeholder="Ulangi password baru"
-                                                className="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm focus:border-brand-blue focus:outline-none focus:ring-2 focus:ring-brand-blue/20"
+                                                className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-slate-800 placeholder:text-gray-400 focus:border-brand-blue focus:outline-none focus:ring-2 focus:ring-brand-blue/20 transition"
                                             />
                                         </div>
                                     </div>
                                 </div>
 
-                                <button
-                                    type="submit"
-                                    disabled={isSavingProfile}
-                                    className="w-full py-3 rounded-xl bg-brand-blue text-white text-xs font-bold hover:bg-blue-800 disabled:opacity-50 transition shadow-sm"
-                                >
-                                    {isSavingProfile ? 'Menyimpan Perubahan...' : 'Simpan Perubahan Profil'}
-                                </button>
+                                {/* Tombol Simpan Perubahan */}
+                                <div className="pt-2 border-t border-gray-100 flex items-center justify-end">
+                                    <button
+                                        type="submit"
+                                        disabled={isSavingProfile}
+                                        className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-blue px-8 py-3 text-xs sm:text-sm font-bold text-white shadow-sm hover:bg-blue-800 disabled:opacity-50 transition"
+                                    >
+                                        {isSavingProfile ? (
+                                            <span>Menyimpan Perubahan...</span>
+                                        ) : (
+                                            <span>Simpan Perubahan Profil</span>
+                                        )}
+                                    </button>
+                                </div>
                             </form>
                         </div>
                     )}
@@ -709,232 +679,6 @@ export default function Dashboard({ auth, dashboard }) {
                     <p>© 2026 Hajirin — Platform E-Ticketing & Management Event Indonesia</p>
                 </footer>
             </div>
-
-            {/* MODAL DETAIL E-TIKET:
-                Jika user membeli 10 tiket dengan jenis berbeda, akan menampilkan tiket apa saja dan kode QR untuk masing-masing tiket yang dibeli */}
-            {selectedETicket && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy/60 backdrop-blur-xs p-4 animate-fade-in overflow-y-auto">
-                    <div className="relative w-full max-w-2xl rounded-3xl bg-white p-6 sm:p-8 shadow-2xl border border-gray-100 max-h-[90vh] flex flex-col my-auto">
-                        <button
-                            type="button"
-                            onClick={() => setSelectedETicket(null)}
-                            className="absolute right-5 top-5 rounded-full p-2 text-slate hover:bg-gray-100 hover:text-navy transition z-10"
-                        >
-                            <X className="size-5" />
-                        </button>
-
-                        <div className="text-center pb-4 border-b border-gray-100">
-                            <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-brand-blue mb-2 border border-blue-200">
-                                <Ticket className="size-3.5" /> E-Tiket Resmi Masuk Acara
-                            </span>
-                            <h3 className="text-xl font-bold text-navy leading-snug">{selectedETicket.eventTitle}</h3>
-                            <p className="text-xs text-slate mt-1.5 flex items-center justify-center gap-2">
-                                <CalendarDays className="size-3.5 text-slate-400" />
-                                <span>{selectedETicket.eventDate}</span>
-                            </p>
-                            <p className="text-xs text-slate mt-0.5 flex items-center justify-center gap-2">
-                                <MapPin className="size-3.5 text-slate-400" />
-                                <span>{selectedETicket.eventLocation}</span>
-                            </p>
-                            <div className="mt-3 flex flex-wrap items-center justify-center gap-2 text-xs">
-                                <span className="bg-emerald-50 text-emerald-800 font-bold px-3 py-1 rounded-full border border-emerald-200">
-                                    Total {selectedETicket.allTickets?.length || selectedETicket.quantity} Tiket Dibeli
-                                </span>
-                                <span className="bg-blue-50 text-brand-blue font-semibold px-3 py-1 rounded-full border border-blue-200">
-                                    No. Pesanan: {selectedETicket.orderReference}
-                                </span>
-                            </div>
-                        </div>
-
-                        {/* List Seluruh Tiket yang Dibeli & Masing-Masing QR Code */}
-                        <div className="flex-1 overflow-y-auto py-5 space-y-4 pr-1">
-                            <p className="text-xs font-bold uppercase tracking-wider text-slate">
-                                Rincian Tiket & QR Code Masuk ({selectedETicket.allTickets?.length || 1} Tiket):
-                            </p>
-
-                            {(selectedETicket.allTickets && selectedETicket.allTickets.length > 0 ? selectedETicket.allTickets : [
-                                {
-                                    ticketNumber: 1,
-                                    code: selectedETicket.ticketCode,
-                                    type: selectedETicket.ticketType,
-                                    attendeeName: selectedETicket.attendeeName,
-                                    status: selectedETicket.status,
-                                }
-                            ]).map((t, idx) => (
-                                <div
-                                    key={t.id || t.code || idx}
-                                    className="rounded-2xl border-2 border-dashed border-blue-200 bg-gradient-to-r from-blue-50/50 via-white to-blue-50/30 p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-2xs hover:border-brand-blue transition"
-                                >
-                                    <div className="flex items-center gap-4 w-full sm:w-auto">
-                                        <div className="p-2 bg-white rounded-xl border border-blue-200 shadow-xs shrink-0">
-                                            <QrCodeSvg value={t.code} className="size-20 sm:size-24" />
-                                        </div>
-                                        <div className="min-w-0 flex-1">
-                                            <div className="flex flex-wrap items-center gap-1.5 mb-1">
-                                                <span className="rounded-md bg-brand-blue px-2 py-0.5 text-[10px] font-bold text-white uppercase">
-                                                    Tiket #{t.ticketNumber || (idx + 1)}
-                                                </span>
-                                                <span className="rounded-md bg-blue-100 px-2 py-0.5 text-[11px] font-bold text-brand-blue">
-                                                    {t.type}
-                                                </span>
-                                            </div>
-                                            <p className="text-xs text-slate mt-1">Nama Peserta: <span className="font-semibold text-navy">{t.attendeeName || user.name}</span></p>
-                                            <p className="font-mono text-xs sm:text-sm font-extrabold text-navy mt-1">{t.code}</p>
-                                            <span className="inline-block mt-1 text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                                                ✓ Siap Discan
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex sm:flex-col items-center gap-2 w-full sm:w-auto justify-end">
-                                        <button
-                                            type="button"
-                                            onClick={() => handleCopyCode(t.code)}
-                                            className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 text-xs font-semibold text-brand-blue bg-white border border-blue-200 px-3 py-2 rounded-xl hover:bg-blue-50 transition shadow-2xs"
-                                        >
-                                            {copiedCode === t.code ? (
-                                                <>
-                                                    <Check className="size-3.5 text-emerald-600" />
-                                                    <span className="text-emerald-600">Disalin</span>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <Copy className="size-3.5" />
-                                                    <span>Salin Kode</span>
-                                                </>
-                                            )}
-                                        </button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-
-                        <div className="pt-4 border-t border-gray-100 flex gap-3">
-                            <button
-                                type="button"
-                                onClick={() => window.print()}
-                                className="flex-1 py-3 border border-gray-300 text-slate hover:bg-gray-50 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5"
-                            >
-                                <Printer className="size-4" />
-                                <span>Cetak Semua E-Tiket</span>
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setSelectedETicket(null)}
-                                className="flex-1 py-3 bg-brand-blue text-white hover:bg-blue-800 rounded-xl text-xs font-bold transition"
-                            >
-                                Tutup
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* MODAL DETAIL RIWAYAT TRANSAKSI / PEMESANAN */}
-            {selectedOrder && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy/60 backdrop-blur-xs p-4 animate-fade-in overflow-y-auto">
-                    <div className="relative w-full max-w-lg rounded-3xl bg-white p-6 sm:p-8 shadow-2xl border border-gray-100 max-h-[90vh] flex flex-col my-auto">
-                        <button
-                            type="button"
-                            onClick={() => setSelectedOrder(null)}
-                            className="absolute right-5 top-5 rounded-full p-2 text-slate hover:bg-gray-100 hover:text-navy transition z-10"
-                        >
-                            <X className="size-5" />
-                        </button>
-
-                        <div className="text-center pb-4 border-b border-gray-100">
-                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 mb-2 border border-emerald-200">
-                                <CheckCircle2 className="size-3.5" /> Pembayaran Berhasil
-                            </span>
-                            <h3 className="text-xl font-bold text-navy leading-snug">Rincian Transaksi Pemesanan</h3>
-                            <p className="font-mono text-xs text-brand-blue font-bold mt-1">{selectedOrder.orderReference}</p>
-                            <p className="text-xs text-slate mt-0.5">{selectedOrder.createdAt}</p>
-                        </div>
-
-                        <div className="flex-1 overflow-y-auto py-5 space-y-5">
-                            {/* Informasi Event */}
-                            <div className="rounded-2xl bg-gray-50 p-4 border border-gray-200/80">
-                                <p className="text-[10px] font-bold uppercase tracking-wider text-slate mb-1">Acara yang Dipesan</p>
-                                <p className="text-sm font-bold text-navy">{selectedOrder.eventTitle}</p>
-                                <p className="text-xs text-slate mt-1 flex items-center gap-1.5">
-                                    <CalendarDays className="size-3.5 text-slate-400" />
-                                    <span>{selectedOrder.eventDate}</span>
-                                </p>
-                                <p className="text-xs text-slate mt-0.5 flex items-center gap-1.5">
-                                    <MapPin className="size-3.5 text-slate-400" />
-                                    <span>{selectedOrder.eventLocation}</span>
-                                </p>
-                            </div>
-
-                            {/* Daftar Item Tiket yang Dibeli */}
-                            <div>
-                                <p className="text-xs font-bold uppercase tracking-wider text-slate mb-3">Item Tiket Dipesan</p>
-                                <div className="space-y-2">
-                                    {(selectedOrder.items && selectedOrder.items.length > 0 ? selectedOrder.items : [
-                                        {
-                                            ticketName: 'Tiket Event',
-                                            quantity: 1,
-                                            formattedUnitPrice: selectedOrder.formattedTotalAmount,
-                                            formattedSubtotal: selectedOrder.formattedTotalAmount,
-                                        }
-                                    ]).map((it, idx) => (
-                                        <div key={idx} className="flex justify-between items-center p-3 rounded-xl bg-white border border-gray-200 text-xs">
-                                            <div>
-                                                <p className="font-bold text-navy">{it.ticketName}</p>
-                                                <p className="text-[11px] text-slate">{it.quantity}x @ {it.formattedUnitPrice || `Rp${Number(it.unitPrice).toLocaleString('id-ID')}`}</p>
-                                            </div>
-                                            <span className="font-bold text-navy">
-                                                {it.formattedSubtotal || `Rp${Number(it.subtotal).toLocaleString('id-ID')}`}
-                                            </span>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Ringkasan Biaya & Pembayaran */}
-                            <div className="rounded-2xl bg-blue-50/50 p-4 border border-blue-100 text-xs space-y-2">
-                                <div className="flex justify-between text-slate">
-                                    <span>Metode Pembayaran</span>
-                                    <span className="font-bold text-navy">{selectedOrder.paymentMethod}</span>
-                                </div>
-                                <div className="flex justify-between text-slate">
-                                    <span>Biaya Layanan Platform</span>
-                                    <span className="font-bold text-emerald-700">Gratis (Rp0)</span>
-                                </div>
-                                <div className="flex justify-between text-slate">
-                                    <span>Status</span>
-                                    <span className="font-bold text-emerald-700">Lunas ({selectedOrder.paidAt})</span>
-                                </div>
-                                <div className="pt-2 border-t border-blue-200 flex justify-between items-baseline text-sm">
-                                    <span className="font-bold text-navy">Total Bayar</span>
-                                    <span className="font-extrabold text-lg text-brand-blue">{selectedOrder.formattedTotalAmount}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="pt-4 border-t border-gray-100 flex gap-3">
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setSelectedOrder(null);
-                                    handleTabChange('tiket');
-                                }}
-                                className="flex-1 py-3 bg-brand-blue text-white hover:bg-blue-800 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5"
-                            >
-                                <Ticket className="size-4" />
-                                <span>Buka E-Tiket Saya</span>
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setSelectedOrder(null)}
-                                className="flex-1 py-3 border border-gray-300 text-slate hover:bg-gray-50 rounded-xl text-xs font-bold transition"
-                            >
-                                Tutup
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
         </>
     );
 }

@@ -66,56 +66,44 @@ export default function TicketDetail({ auth, order = {}, event = {}, tickets = [
                         </div>
                     </div>
 
-                    {/* Banner Event & Informasi Pesanan */}
-                    <section className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-900 via-indigo-950 to-slate-900 text-white shadow-xl p-6 sm:p-8">
-                        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-                            <div className="space-y-3 max-w-2xl">
-                                <div className="flex flex-wrap items-center gap-2">
-                                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/20 border border-emerald-400/40 px-3 py-1 text-xs font-bold text-emerald-300">
-                                        <CheckCircle2 className="size-3.5" /> Pembayaran Lunas
-                                    </span>
-                                    <span className="inline-flex items-center gap-1 rounded-full bg-white/10 border border-white/20 px-3 py-1 text-xs font-mono font-medium text-blue-200">
-                                        Ref: {order.orderReference}
-                                    </span>
-                                    <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/30 px-3 py-1 text-xs font-bold text-blue-100">
-                                        {tickets.length} Tiket Diterbitkan
-                                    </span>
-                                </div>
+                    {/* Banner Event Besar dengan Gambar Event Penuh */}
+                    <section className="relative overflow-hidden rounded-3xl bg-slate-900 text-white shadow-xl min-h-[220px] sm:min-h-[260px] flex flex-col justify-end p-6 sm:p-8">
+                        {/* Gambar Event pada Kotak Besar */}
+                        {event.banner && (
+                            <img
+                                src={event.banner}
+                                alt={event.title}
+                                className="absolute inset-0 size-full object-cover"
+                            />
+                        )}
+                        {/* Lapisan overlay agar teks terbaca jelas dan elegan */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/75 to-slate-900/40" />
 
-                                <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight leading-snug">
-                                    {event.title}
-                                </h1>
+                        <div className="relative z-10 space-y-3 max-w-3xl">
+                            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight leading-snug drop-shadow-sm">
+                                {event.title}
+                            </h1>
 
-                                <div className="flex flex-wrap items-center gap-y-2 gap-x-5 text-xs sm:text-sm text-blue-100/90 font-medium pt-1">
-                                    <span className="inline-flex items-center gap-1.5">
-                                        <CalendarDays className="size-4 text-blue-300 shrink-0" />
-                                        {event.dateFormatted}
-                                    </span>
-                                    <span className="inline-flex items-center gap-1.5">
-                                        <Clock className="size-4 text-blue-300 shrink-0" />
-                                        {event.timeFormatted}
-                                    </span>
-                                    <span className="inline-flex items-center gap-1.5">
-                                        <MapPin className="size-4 text-blue-300 shrink-0" />
-                                        {event.location} {event.city ? `(${event.city})` : ''}
-                                    </span>
-                                </div>
-
-                                {event.address && (
-                                    <p className="text-xs text-blue-200/80 leading-relaxed">
-                                        {event.address}
-                                    </p>
-                                )}
+                            <div className="flex flex-wrap items-center gap-y-2 gap-x-5 text-xs sm:text-sm text-slate-200 font-medium pt-1">
+                                <span className="inline-flex items-center gap-1.5">
+                                    <CalendarDays className="size-4 text-blue-400 shrink-0" />
+                                    {event.dateFormatted}
+                                </span>
+                                <span className="inline-flex items-center gap-1.5">
+                                    <Clock className="size-4 text-blue-400 shrink-0" />
+                                    {event.timeFormatted}
+                                </span>
+                                <span className="inline-flex items-center gap-1.5">
+                                    <MapPin className="size-4 text-blue-400 shrink-0" />
+                                    {event.location} {event.city ? `(${event.city})` : ''}
+                                </span>
                             </div>
 
-                            {/* Thumbnail Event Poster */}
-                            <div className="relative size-28 sm:size-32 rounded-2xl overflow-hidden border-2 border-white/20 shadow-lg shrink-0 hidden md:block">
-                                <img
-                                    src={event.banner}
-                                    alt={event.title}
-                                    className="size-full object-cover"
-                                />
-                            </div>
+                            {event.address && (
+                                <p className="text-xs text-slate-300 leading-relaxed max-w-2xl">
+                                    {event.address}
+                                </p>
+                            )}
                         </div>
                     </section>
 
@@ -293,3 +281,4 @@ export default function TicketDetail({ auth, order = {}, event = {}, tickets = [
         </>
     );
 }
+

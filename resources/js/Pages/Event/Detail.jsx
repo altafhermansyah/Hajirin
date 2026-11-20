@@ -4,7 +4,7 @@ import {
     CalendarDays, MapPin, Share2, Bookmark, Check,
     CircleUserRound, Info, Ticket, ChevronRight, Search,
     Clock, ShieldCheck, Globe, ExternalLink, CheckCircle2,
-    Sparkles, ArrowRight, Minus, Plus, Building2, AlertCircle,
+    Sparkles, Minus, Plus, Building2, AlertCircle,
     Copy, Award, Coffee, FileText, CheckCircle, LogOut
 } from 'lucide-react';
 import AuthModal from '../../Components/Auth/AuthModal';
@@ -648,7 +648,6 @@ export default function EventDetail({ auth, eventSlug, eventData, relatedEvents 
                                         className="w-full flex items-center justify-center gap-2 rounded-xl bg-brand-blue py-3.5 text-sm font-bold text-white shadow-md hover:bg-blue-800 transition duration-150"
                                     >
                                         <span>Lanjut ke Pembayaran ({totalSelectedTicketsCount} Tiket)</span>
-                                        <ArrowRight className="size-4" />
                                     </Link>
                                 ) : (
                                     <button
@@ -681,7 +680,7 @@ export default function EventDetail({ auth, eventSlug, eventData, relatedEvents 
                                     href="/kategori"
                                     className="inline-flex items-center gap-1 text-xs sm:text-sm font-semibold text-brand-blue hover:underline"
                                 >
-                                    Lihat Semua <ArrowRight className="size-3.5" />
+                                    Lihat Semua
                                 </Link>
                             </div>
 
@@ -717,7 +716,7 @@ export default function EventDetail({ auth, eventSlug, eventData, relatedEvents 
                                                     <p className="text-sm font-bold text-brand-blue">{item.price}</p>
                                                 </div>
                                                 <span className="text-xs font-semibold text-brand-blue group-hover:underline">
-                                                    Detail →
+                                                    Detail
                                                 </span>
                                             </div>
                                         </div>

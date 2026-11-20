@@ -5,7 +5,7 @@ import Navbar from '../../Components/Navbar';
 import {
     ShieldCheck, CreditCard, QrCode, Building2,
     ArrowLeft, CheckCircle2, AlertCircle, Ticket,
-    CalendarDays, MapPin, Clock, ArrowRight, Loader2,
+    CalendarDays, MapPin, Clock, Loader2,
     Copy, Check, Sparkles, Search, LogOut
 } from 'lucide-react';
 
@@ -76,10 +76,12 @@ export default function Checkout({
         const primaryCode = orderSuccess.primary_ticket_code || orderSuccess.tickets?.[0]?.code || orderSuccess.order_reference;
 
         return (
-            <div className="bg-[#f8fafc] min-h-screen py-12 px-4 font-sans text-navy flex items-center justify-center">
+            <div className="bg-[#f8fafc] min-h-screen font-sans text-navy flex flex-col">
                 <Head title="Pemesanan Tiket Berhasil - Hajirin" />
+                <Navbar auth={auth} />
 
-                <div className="bg-white p-6 sm:p-10 rounded-3xl border border-gray-100 shadow-xl max-w-xl w-full text-center animate-scale-up">
+                <div className="flex-1 flex items-center justify-center py-12 px-4">
+                    <div className="bg-white p-6 sm:p-10 rounded-3xl border border-gray-100 shadow-xl max-w-xl w-full text-center animate-scale-up">
                     <div className="size-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-5 shadow-sm">
                         <CheckCircle2 className="size-12" />
                     </div>
@@ -176,7 +178,6 @@ export default function Checkout({
                         >
                             <Ticket className="size-4" />
                             <span>Buka Halaman Detail E-Tiket & Scan QR</span>
-                            <ArrowRight className="size-4" />
                         </Link>
                         <div className="flex gap-2">
                             <Link
@@ -206,6 +207,7 @@ export default function Checkout({
                             Kembali ke Beranda
                         </Link>
                     </div>
+                </div>
                 </div>
             </div>
         );
@@ -474,10 +476,7 @@ export default function Checkout({
                                             <span>Memproses Transaksi...</span>
                                         </>
                                     ) : (
-                                        <>
-                                            <span>Bayar & Terbitkan Tiket</span>
-                                            <ArrowRight className="size-4" />
-                                        </>
+                                        <span>Bayar & Terbitkan Tiket</span>
                                     )}
                                 </button>
 

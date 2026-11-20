@@ -147,7 +147,7 @@ export default function Home({ auth, categories = [], events = [], bookmarkedEve
             if (initialQ) {
                 setSearchQuery(initialQ);
                 setTimeout(() => {
-                    const searchEl = document.getElementById('search-section') || document.getElementById('hasil-pencarian');
+                    const searchEl = document.getElementById('hasil-pencarian') || document.getElementById('search-section');
                     if (searchEl) searchEl.scrollIntoView({ behavior: 'smooth' });
                 }, 350);
             }
@@ -258,13 +258,7 @@ export default function Home({ auth, categories = [], events = [], bookmarkedEve
         const q = searchQuery.trim().toLowerCase();
 
         return allSearchableEvents.filter((item) => {
-            const matchText =
-                !q ||
-                (item.title && item.title.toLowerCase().includes(q)) ||
-                (item.category && item.category.toLowerCase().includes(q)) ||
-                (item.place && item.place.toLowerCase().includes(q)) ||
-                (item.location && item.location.toLowerCase().includes(q)) ||
-                (item.organizer && item.organizer.toLowerCase().includes(q));
+            const matchText = !q || (item.title && item.title.toLowerCase().includes(q));
 
             const matchLocation =
                 selectedLocation === 'Semua Kota' ||
@@ -405,7 +399,17 @@ export default function Home({ auth, categories = [], events = [], bookmarkedEve
                 auth={auth}
                 onOpenAuthModal={openAuthModal}
                 initialSearchQuery={searchQuery}
-                onSearch={(q) => setSearchQuery(q)}
+                onSearch={(q) => {
+                    setSearchQuery(q);
+                    if (q.trim().length > 0) {
+                        setTimeout(() => {
+                            const resultsEl = document.getElementById('hasil-pencarian') || document.getElementById('search-section');
+                            if (resultsEl) {
+                                resultsEl.scrollIntoView({ behavior: 'smooth' });
+                            }
+                        }, 50);
+                    }
+                }}
             />
 
             <main>
@@ -431,7 +435,7 @@ export default function Home({ auth, categories = [], events = [], bookmarkedEve
                                             <div><p className="mb-1 text-xs text-gray-300">Harga Tiket Mulai</p><p className="text-2xl font-bold">Mulai dari {event.price}</p></div>
                                             
                                             {/* Link tombol hero ke halaman detail */}
-                                            <Link href={`/event/${event.slug}`} className="inline-flex items-center rounded-lg bg-brand-blue px-6 py-3 text-sm font-semibold shadow-md transition hover:bg-blue-800">Lihat Event <ArrowRight className="ml-2 size-4" /></Link>
+                                            <Link href={`/event/${event.slug}`} className="inline-flex items-center rounded-lg bg-brand-blue px-6 py-3 text-sm font-semibold shadow-md transition hover:bg-blue-800">Lihat Event</Link>
                                             
                                             <button
                                                 type="button"
@@ -472,8 +476,19 @@ export default function Home({ auth, categories = [], events = [], bookmarkedEve
                                     ref={searchInputRef}
                                     type="text"
                                     value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    placeholder="Cari nama event, artis, atau penyelenggara..."
+                                    onChange={(e) => {
+                                        const val = e.target.value;
+                                        setSearchQuery(val);
+                                        if (val.trim().length > 0) {
+                                            setTimeout(() => {
+                                                const resultsEl = document.getElementById('hasil-pencarian');
+                                                if (resultsEl) {
+                                                    resultsEl.scrollIntoView({ behavior: 'smooth' });
+                                                }
+                                            }, 50);
+                                        }
+                                    }}
+                                    placeholder="Cari judul event..."
                                     className="h-12 w-full rounded-lg border border-gray-200 bg-gray-50 py-2 pl-11 pr-10 text-sm placeholder:text-gray-400 focus:border-brand-blue focus:outline-none focus:ring-2 focus:ring-brand-blue/20"
                                 />
                                 {searchQuery && (
@@ -785,7 +800,7 @@ function NearbyCard({ slug, date, time, title, place, organizer, price }) {
                 <div className="flex items-center justify-between">
                     <p className="font-bold text-navy text-base">{price}</p>
                     <span className="inline-flex items-center text-xs font-semibold text-brand-blue opacity-0 group-hover:opacity-100 transition-opacity">
-                        Detail <ArrowRight className="ml-1 size-3" />
+                        Detail
                     </span>
                 </div>
             </div>

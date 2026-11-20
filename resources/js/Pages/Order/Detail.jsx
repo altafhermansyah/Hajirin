@@ -230,3 +230,4 @@ export default function OrderDetail({ auth, order = {}, event = {}, items = [] }
         </>
     );
 }
+

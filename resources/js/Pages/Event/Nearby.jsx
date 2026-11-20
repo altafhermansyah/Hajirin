@@ -103,13 +103,7 @@ export default function Nearby({
     const filteredEvents = useMemo(() => {
         return events.filter((item) => {
             const q = searchQuery.trim().toLowerCase();
-            const matchText =
-                !q ||
-                (item.title && item.title.toLowerCase().includes(q)) ||
-                (item.category && item.category.toLowerCase().includes(q)) ||
-                (item.place && item.place.toLowerCase().includes(q)) ||
-                (item.city && item.city.toLowerCase().includes(q)) ||
-                (item.organizer && item.organizer.toLowerCase().includes(q));
+            const matchText = !q || (item.title && item.title.toLowerCase().includes(q));
 
             const matchCity =
                 selectedCity === 'Semua Kota' ||
@@ -161,7 +155,7 @@ export default function Nearby({
                                     type="text"
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                    placeholder="Cari event terdekat berdasarkan nama, artis, atau tempat..."
+                                    placeholder="Cari judul event..."
                                     className="h-10 w-full rounded-xl border border-gray-200 bg-gray-50 pl-10 pr-9 text-xs placeholder:text-gray-400 transition focus:border-brand-blue focus:bg-white focus:outline-none focus:ring-1 focus:ring-brand-blue"
                                 />
                                 {searchQuery && (

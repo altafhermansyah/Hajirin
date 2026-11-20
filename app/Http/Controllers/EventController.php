@@ -209,11 +209,7 @@ class EventController extends Controller
         }
 
         if ($search) {
-            $query->where(function ($q) use ($search) {
-                $q->where('events.title', 'ILIKE', "%{$search}%")
-                    ->orWhere('categories.name', 'ILIKE', "%{$search}%")
-                    ->orWhere('users.name', 'ILIKE', "%{$search}%");
-            });
+            $query->where('events.title', 'ILIKE', "%{$search}%");
         }
 
         $events = $query->select(
