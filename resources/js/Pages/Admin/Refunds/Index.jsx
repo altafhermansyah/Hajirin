@@ -160,55 +160,85 @@ export default function RefundManagementIndex({
                 </div>
             </div>
 
-            {/* Stat Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Integrated Refund Telemetry Strip */}
+            <div className="rounded-2xl border border-slate-200/90 bg-white shadow-xs overflow-hidden grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-slate-100">
                 {/* Total Refunded */}
-                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between">
-                    <div>
-                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Dana Dikembalikan</p>
-                        <h3 className="text-2xl font-black text-rose-600 mt-1 truncate">
-                            {stats.totalRefundedFormatted || 'Rp0'}
-                        </h3>
-                        <p className="text-xs text-slate-500 mt-1 font-medium">Refund yang telah disetujui</p>
+                <div className="p-5 flex flex-col justify-between">
+                    <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                            Total Dana Dikembalikan
+                        </span>
+                        <span className="flex size-8 items-center justify-center rounded-lg bg-rose-50 text-rose-600">
+                            <TrendingDown className="size-4" />
+                        </span>
                     </div>
-                    <div className="size-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
-                        <TrendingDown className="size-6" />
+                    <div className="mt-3">
+                        <p className="text-2xl font-black text-rose-600 tracking-tight font-mono">
+                            {stats.totalRefundedFormatted || 'Rp0'}
+                        </p>
+                        <p className="text-[11px] text-slate-500 mt-0.5">
+                            Refund yang telah disahkan
+                        </p>
                     </div>
                 </div>
 
                 {/* Total Pengajuan */}
-                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between">
-                    <div>
-                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Pengajuan</p>
-                        <h3 className="text-2xl font-black text-slate-900 mt-1">{stats.total || 0}</h3>
-                        <p className="text-xs text-slate-500 mt-1 font-medium">Akumulasi permohonan</p>
+                <div className="p-5 flex flex-col justify-between">
+                    <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                            Total Pengajuan
+                        </span>
+                        <span className="flex size-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+                            <RefreshCw className="size-4" />
+                        </span>
                     </div>
-                    <div className="size-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                        <RefreshCw className="size-6" />
+                    <div className="mt-3">
+                        <p className="text-2xl font-black text-slate-900 tracking-tight font-mono">
+                            {stats.total || 0}
+                        </p>
+                        <p className="text-[11px] text-slate-500 mt-0.5">
+                            Akumulasi klaim masuk
+                        </p>
                     </div>
                 </div>
 
                 {/* Menunggu Evaluasi */}
-                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between">
-                    <div>
-                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Menunggu Evaluasi</p>
-                        <h3 className="text-2xl font-black text-amber-600 mt-1">{stats.pending || 0}</h3>
-                        <p className="text-xs text-amber-600 mt-1 font-medium">Belum diputuskan</p>
+                <div className="p-5 flex flex-col justify-between">
+                    <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800">
+                            Menunggu Evaluasi
+                        </span>
+                        <span className="flex size-8 items-center justify-center rounded-lg bg-amber-100 text-amber-700">
+                            <Clock className="size-4" />
+                        </span>
                     </div>
-                    <div className="size-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
-                        <Clock className="size-6" />
+                    <div className="mt-3">
+                        <p className="text-2xl font-black text-amber-700 tracking-tight font-mono">
+                            {stats.pending || 0}
+                        </p>
+                        <p className="text-[11px] text-amber-600 font-medium mt-0.5">
+                            Perlu verifikasi admin
+                        </p>
                     </div>
                 </div>
 
                 {/* Disetujui */}
-                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between">
-                    <div>
-                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Refund Disetujui</p>
-                        <h3 className="text-2xl font-black text-emerald-600 mt-1">{stats.approved || 0}</h3>
-                        <p className="text-xs text-emerald-600 mt-1 font-medium">Tiket dibatalkan & kuota kembali</p>
+                <div className="p-5 flex flex-col justify-between">
+                    <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800">
+                            Refund Disetujui
+                        </span>
+                        <span className="flex size-8 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700">
+                            <CheckCircle2 className="size-4" />
+                        </span>
                     </div>
-                    <div className="size-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-                        <CheckCircle2 className="size-6" />
+                    <div className="mt-3">
+                        <p className="text-2xl font-black text-emerald-700 tracking-tight font-mono">
+                            {stats.approved || 0}
+                        </p>
+                        <p className="text-[11px] text-emerald-700 font-medium mt-0.5">
+                            Tiket void & kuota kembali
+                        </p>
                     </div>
                 </div>
             </div>

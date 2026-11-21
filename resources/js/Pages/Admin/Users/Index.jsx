@@ -237,7 +237,7 @@ export default function UserManagementIndex({
                         <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
                             Akun Penyelenggara (EO)
                         </p>
-                        <span className="flex size-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+                        <span className="flex size-10 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
                             <Building2 className="size-5" />
                         </span>
                     </div>
@@ -261,7 +261,7 @@ export default function UserManagementIndex({
                         <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
                             Platform Admin & Owner
                         </p>
-                        <span className="flex size-10 items-center justify-center rounded-xl bg-purple-50 text-purple-600">
+                        <span className="flex size-10 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
                             <Shield className="size-5" />
                         </span>
                     </div>
@@ -272,7 +272,7 @@ export default function UserManagementIndex({
                             </span>
                             <span className="text-xs font-medium text-slate-500">Owners</span>
                         </div>
-                        <p className="mt-1 text-xs font-medium text-purple-700 flex items-center gap-1">
+                        <p className="mt-1 text-xs font-medium text-amber-700 flex items-center gap-1">
                             <ShieldCheck className="size-3.5" />
                             Hak akses penuh (Full Access)
                         </p>
@@ -280,53 +280,57 @@ export default function UserManagementIndex({
                 </div>
             </div>
 
-            {/* Filter Tabs & Search Controls */}
-            <div className="rounded-2xl border border-slate-200 bg-white shadow-xs overflow-hidden">
-                {/* Role Tabs */}
-                <div className="flex items-center gap-2 border-b border-slate-100 px-5 pt-4 overflow-x-auto scrollbar-none">
-                    {[
-                        ['ALL', 'Semua User', stats.totalUsers ?? 0, 'bg-slate-100 text-slate-700'],
-                        ['ADMIN', 'Super Admin', stats.totalAdmin ?? 0, 'bg-purple-50 text-purple-700'],
-                        ['EO', 'Event Organizer', stats.totalEo ?? 0, 'bg-indigo-50 text-indigo-700'],
-                        ['USER', 'Peserta', stats.totalPeserta ?? 0, 'bg-slate-100 text-slate-700'],
-                        ['SUSPENDED_TAB', 'Suspended', stats.totalSuspended ?? 0, 'bg-red-50 text-red-700'],
-                    ].map(([key, label, count, badgeClass]) => {
-                        const isTabActive =
-                            key === 'SUSPENDED_TAB'
-                                ? selectedStatus === 'SUSPENDED'
-                                : selectedRole === key && selectedStatus !== 'SUSPENDED';
+            {/* Role Tabs in Floating Pill Style matching mockup */}
+            <div className="flex items-center gap-1.5 p-1 bg-slate-100/90 rounded-2xl inline-flex overflow-x-auto max-w-full">
+                {[
+                    ['ALL', 'Semua User', stats.totalUsers ?? 0],
+                    ['ADMIN', 'Super Admin', stats.totalAdmin ?? 0],
+                    ['EO', 'Event Organizer', stats.totalEo ?? 0],
+                    ['USER', 'Peserta', stats.totalPeserta ?? 0],
+                    ['SUSPENDED_TAB', 'Suspended', stats.totalSuspended ?? 0],
+                ].map(([key, label, count]) => {
+                    const isTabActive =
+                        key === 'SUSPENDED_TAB'
+                            ? selectedStatus === 'SUSPENDED'
+                            : selectedRole === key && selectedStatus !== 'SUSPENDED';
 
-                        return (
-                            <button
-                                key={key}
-                                type="button"
-                                onClick={() => {
-                                    if (key === 'SUSPENDED_TAB') {
-                                        setSelectedStatus('SUSPENDED');
-                                        setSelectedRole('ALL');
-                                        applyFilters({ status: 'SUSPENDED', role: 'ALL' });
-                                    } else {
-                                        setSelectedStatus('ALL');
-                                        handleRoleTabChange(key);
-                                    }
-                                }}
-                                className={`pb-3 px-3.5 text-xs sm:text-sm font-bold border-b-2 transition flex items-center gap-2 whitespace-nowrap cursor-pointer ${
-                                    isTabActive
-                                        ? 'border-blue-600 text-blue-600'
-                                        : 'border-transparent text-slate-500 hover:text-slate-900'
+                    return (
+                        <button
+                            key={key}
+                            type="button"
+                            onClick={() => {
+                                if (key === 'SUSPENDED_TAB') {
+                                    setSelectedStatus('SUSPENDED');
+                                    setSelectedRole('ALL');
+                                    applyFilters({ status: 'SUSPENDED', role: 'ALL' });
+                                } else {
+                                    setSelectedStatus('ALL');
+                                    handleRoleTabChange(key);
+                                }
+                            }}
+                            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap cursor-pointer ${
+                                isTabActive
+                                    ? 'bg-blue-600 text-white shadow-xs'
+                                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
+                            }`}
+                        >
+                            <span>{label}</span>
+                            <span
+                                className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+                                    isTabActive ? 'bg-white/20 text-white' : 'bg-slate-200/70 text-slate-700'
                                 }`}
                             >
-                                {label}
-                                <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${badgeClass}`}>
-                                    {count}
-                                </span>
-                            </button>
-                        );
-                    })}
-                </div>
+                                {count}
+                            </span>
+                        </button>
+                    );
+                })}
+            </div>
 
-                {/* Filter and Search Bar */}
-                <div className="p-4 sm:p-5 flex flex-col md:flex-row items-center justify-between gap-4 border-b border-slate-100 bg-slate-50/60">
+            {/* Filter and Table Container */}
+            <div className="rounded-2xl border border-slate-200/90 bg-white shadow-xs overflow-hidden">
+                {/* Search & Filter Bar */}
+                <div className="p-3.5 sm:p-4 flex flex-col md:flex-row items-center justify-between gap-3 border-b border-slate-100 bg-slate-50/40">
                     <form onSubmit={handleSearchSubmit} className="relative w-full md:w-80">
                         <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-slate-400 pointer-events-none" />
                         <input
@@ -418,10 +422,10 @@ export default function UserManagementIndex({
                                                     <span
                                                         className={`flex size-9 shrink-0 items-center justify-center rounded-full font-bold text-xs ${
                                                             user.role === 'ADMIN'
-                                                                ? 'bg-purple-100 text-purple-700'
+                                                                ? 'bg-slate-900 text-white'
                                                                 : user.role === 'EO'
-                                                                ? 'bg-blue-100 text-blue-700'
-                                                                : 'bg-emerald-100 text-emerald-700'
+                                                                ? 'bg-blue-600 text-white'
+                                                                : 'bg-emerald-600 text-white'
                                                         }`}
                                                     >
                                                         {userInitials}
@@ -459,7 +463,7 @@ export default function UserManagementIndex({
                                             {/* Role Badge */}
                                             <td className="py-4 px-5">
                                                 {user.role === 'ADMIN' ? (
-                                                    <span className="inline-flex items-center gap-1 rounded-full border border-purple-200 bg-purple-50 px-2.5 py-0.5 text-xs font-semibold text-purple-700">
+                                                    <span className="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-700">
                                                         <Shield className="size-3" />
                                                         Super Admin
                                                     </span>

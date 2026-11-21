@@ -246,7 +246,7 @@ export default function AdminDashboard({
                         <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
                             Akun Penyelenggara (EO)
                         </p>
-                        <span className="flex size-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+                        <span className="flex size-10 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
                             <Building2 className="size-5" />
                         </span>
                     </div>
@@ -270,7 +270,7 @@ export default function AdminDashboard({
                         <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
                             Platform Admin & Owner
                         </p>
-                        <span className="flex size-10 items-center justify-center rounded-xl bg-purple-50 text-purple-600">
+                        <span className="flex size-10 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
                             <Shield className="size-5" />
                         </span>
                     </div>
@@ -281,7 +281,7 @@ export default function AdminDashboard({
                             </span>
                             <span className="text-xs font-medium text-slate-500">Owners</span>
                         </div>
-                        <p className="mt-1 text-xs font-medium text-purple-700 flex items-center gap-1">
+                        <p className="mt-1 text-xs font-medium text-amber-700 flex items-center gap-1">
                             <Shield className="size-3.5" />
                             Hak akses penuh (Full Access)
                         </p>
@@ -321,7 +321,7 @@ export default function AdminDashboard({
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 px-5 py-4">
                     <div>
                         <h2 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
-                            <Building2 className="size-5 text-indigo-600" />
+                            <Building2 className="size-5 text-blue-600" />
                             Verifikasi Pengajuan Event Organizer (EO)
                         </h2>
                         <p className="mt-0.5 text-xs text-slate-500">
@@ -422,7 +422,7 @@ export default function AdminDashboard({
                                             href={app.document_url}
                                             target="_blank"
                                             rel="noreferrer"
-                                            className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-indigo-200 bg-indigo-50/70 px-3.5 py-2 text-xs font-bold text-indigo-700 hover:bg-indigo-100 transition"
+                                            className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50/70 px-3.5 py-2 text-xs font-bold text-blue-700 hover:bg-blue-100 transition"
                                         >
                                             <FileCheck2 className="size-4" />
                                             Buka Berkas Verifikasi
@@ -556,7 +556,7 @@ export default function AdminDashboard({
                                         </h3>
 
                                         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-600">
-                                            <span className="font-semibold text-indigo-700">
+                                            <span className="font-semibold text-blue-700">
                                                 EO: {evt.organizerName} ({evt.organizerEmail})
                                             </span>
                                             <span>· {evt.startsAtFormatted}</span>
@@ -668,7 +668,7 @@ export default function AdminDashboard({
                         }`}
                     >
                         Super Admin
-                        <span className="rounded-full bg-purple-50 px-2 py-0.5 text-xs font-semibold text-purple-700">
+                        <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-700 border border-blue-200/60">
                             {stats.totalAdmin ?? 0}
                         </span>
                     </button>
@@ -683,7 +683,7 @@ export default function AdminDashboard({
                         }`}
                     >
                         Event Organizer
-                        <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-semibold text-indigo-700">
+                        <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-700">
                             {stats.totalEo ?? 0}
                         </span>
                     </button>
@@ -766,10 +766,10 @@ export default function AdminDashboard({
                                                     <span
                                                         className={`flex size-9 shrink-0 items-center justify-center rounded-full font-bold text-xs ${
                                                             item.role === 'ADMIN'
-                                                                ? 'bg-purple-100 text-purple-700'
+                                                                ? 'bg-slate-900 text-white'
                                                                 : item.role === 'EO'
-                                                                ? 'bg-blue-100 text-blue-700'
-                                                                : 'bg-emerald-100 text-emerald-700'
+                                                                ? 'bg-blue-600 text-white'
+                                                                : 'bg-emerald-600 text-white'
                                                         }`}
                                                     >
                                                         {userInitials}
@@ -796,7 +796,7 @@ export default function AdminDashboard({
                                             {/* Role Badge */}
                                             <td className="py-4 px-5">
                                                 {item.role === 'ADMIN' ? (
-                                                    <span className="inline-flex items-center gap-1 rounded-full border border-purple-200 bg-purple-50 px-2.5 py-0.5 text-xs font-semibold text-purple-700">
+                                                    <span className="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-700">
                                                         <Shield className="size-3" />
                                                         Super Admin
                                                     </span>

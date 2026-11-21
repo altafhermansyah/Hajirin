@@ -122,53 +122,85 @@ export default function TicketManagementIndex({
                 </div>
             </div>
 
-            {/* Stat Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Integrated Ticket Telemetry Strip */}
+            <div className="rounded-2xl border border-slate-200/90 bg-white shadow-xs overflow-hidden grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-slate-100">
                 {/* Total Tiket */}
-                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between">
-                    <div>
-                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total E-Tiket Terbit</p>
-                        <h3 className="text-2xl font-black text-slate-900 mt-1">{stats.totalTickets || 0}</h3>
-                        <p className="text-xs text-slate-500 mt-1 font-medium">Seluruh tiket di database</p>
+                <div className="p-5 flex flex-col justify-between">
+                    <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                            Total E-Tiket Terbit
+                        </span>
+                        <span className="flex size-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+                            <Ticket className="size-4" />
+                        </span>
                     </div>
-                    <div className="size-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                        <Ticket className="size-6" />
+                    <div className="mt-3">
+                        <p className="text-2xl font-black text-slate-900 tracking-tight font-mono">
+                            {stats.totalTickets || 0}
+                        </p>
+                        <p className="text-[11px] text-slate-500 mt-0.5">
+                            Seluruh tiket di database
+                        </p>
                     </div>
                 </div>
 
                 {/* Tiket Aktif */}
-                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between">
-                    <div>
-                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Tiket Aktif (Belum Dipakai)</p>
-                        <h3 className="text-2xl font-black text-slate-900 mt-1">{stats.activeTickets || 0}</h3>
-                        <p className="text-xs text-emerald-600 mt-1 font-medium">Valid untuk masuk gerbang</p>
+                <div className="p-5 flex flex-col justify-between">
+                    <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800">
+                            Tiket Aktif (Berlaku)
+                        </span>
+                        <span className="flex size-8 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700">
+                            <CheckCircle2 className="size-4" />
+                        </span>
                     </div>
-                    <div className="size-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-                        <CheckCircle2 className="size-6" />
+                    <div className="mt-3">
+                        <p className="text-2xl font-black text-emerald-800 tracking-tight font-mono">
+                            {stats.activeTickets || 0}
+                        </p>
+                        <p className="text-[11px] text-emerald-700 font-semibold mt-0.5">
+                            Siap dipindai di pintu masuk
+                        </p>
                     </div>
                 </div>
 
                 {/* Tiket Terpakai (Check-in) */}
-                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between">
-                    <div>
-                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Telah Check-In</p>
-                        <h3 className="text-2xl font-black text-slate-900 mt-1">{stats.usedTickets || 0}</h3>
-                        <p className="text-xs text-indigo-600 mt-1 font-medium">Peserta hadir di lokasi</p>
+                <div className="p-5 flex flex-col justify-between">
+                    <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                            Telah Check-In (USED)
+                        </span>
+                        <span className="flex size-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+                            <QrCode className="size-4" />
+                        </span>
                     </div>
-                    <div className="size-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
-                        <QrCode className="size-6" />
+                    <div className="mt-3">
+                        <p className="text-2xl font-black text-slate-900 tracking-tight font-mono">
+                            {stats.usedTickets || 0}
+                        </p>
+                        <p className="text-[11px] text-blue-600 font-medium mt-0.5">
+                            Peserta telah hadir di lokasi
+                        </p>
                     </div>
                 </div>
 
                 {/* Tiket Batal */}
-                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between">
-                    <div>
-                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Tiket Batal (Void)</p>
-                        <h3 className="text-2xl font-black text-slate-900 mt-1">{stats.cancelledTickets || 0}</h3>
-                        <p className="text-xs text-rose-600 mt-1 font-medium">Refund atau dibatalkan</p>
+                <div className="p-5 flex flex-col justify-between">
+                    <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                            Tiket Batal (Void)
+                        </span>
+                        <span className="flex size-8 items-center justify-center rounded-lg bg-rose-50 text-rose-600">
+                            <XCircle className="size-4" />
+                        </span>
                     </div>
-                    <div className="size-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
-                        <XCircle className="size-6" />
+                    <div className="mt-3">
+                        <p className="text-2xl font-black text-slate-900 tracking-tight font-mono">
+                            {stats.cancelledTickets || 0}
+                        </p>
+                        <p className="text-[11px] text-rose-600 font-medium mt-0.5">
+                            Refund atau dibatalkan
+                        </p>
                     </div>
                 </div>
             </div>
@@ -433,14 +465,14 @@ export default function TicketManagementIndex({
                 <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
                     <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl w-full max-w-md overflow-hidden animate-scale-in">
                         {/* Ticket Header Graphic */}
-                        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-6 text-white text-center relative">
-                            <span className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-white/20 text-white mb-2">
+                        <div className="bg-slate-950 p-6 text-white text-center relative border-b border-slate-800">
+                            <span className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-white/10 text-slate-200 border border-white/10 mb-2">
                                 E-Tiket Resmi Hajirin
                             </span>
                             <h3 className="font-black text-lg text-white leading-tight">
                                 {detailTicket.event.title}
                             </h3>
-                            <p className="text-xs text-blue-100 mt-1">
+                            <p className="text-xs text-slate-300 mt-1">
                                 {detailTicket.event.venueName} • {detailTicket.event.startsAtFormatted}
                             </p>
                         </div>

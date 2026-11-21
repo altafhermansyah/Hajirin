@@ -184,42 +184,46 @@ export default function AdminEventsIndex({
                 </div>
             </div>
 
-            {/* Filter Tabs & Search Controls */}
-            <div className="rounded-2xl border border-slate-200 bg-white shadow-xs overflow-hidden">
-                {/* Status Tabs matching mockup */}
-                <div className="flex items-center gap-2 border-b border-slate-100 px-5 pt-4 overflow-x-auto scrollbar-none">
-                    {[
-                        ['ALL', 'Semua Event', stats.total ?? 0, 'bg-slate-100 text-slate-700'],
-                        ['PUBLISHED', 'Published', stats.published ?? 0, 'bg-emerald-50 text-emerald-700'],
-                        ['DRAFT', 'Draft', stats.draft ?? 0, 'bg-slate-100 text-slate-700'],
-                        ['PENDING_REVIEW', 'Pending Review', stats.pendingReview ?? 0, 'bg-amber-50 text-amber-700'],
-                        ['CANCELLED', 'Cancelled', stats.cancelled ?? 0, 'bg-red-50 text-red-700'],
-                        ['REJECTED', 'Rejected', stats.rejected ?? 0, 'bg-rose-50 text-rose-700'],
-                    ].map(([key, label, count, badgeClass]) => {
-                        const isTabActive = selectedStatus === key;
+            {/* Status Tabs in Floating Pill Style matching mockup */}
+            <div className="flex items-center gap-1.5 p-1 bg-slate-100/90 rounded-2xl inline-flex overflow-x-auto max-w-full">
+                {[
+                    ['ALL', 'Semua Event', stats.total ?? 0],
+                    ['PUBLISHED', 'Published', stats.published ?? 0],
+                    ['DRAFT', 'Draft', stats.draft ?? 0],
+                    ['PENDING_REVIEW', 'Pending Review', stats.pendingReview ?? 0],
+                    ['CANCELLED', 'Cancelled', stats.cancelled ?? 0],
+                    ['REJECTED', 'Rejected', stats.rejected ?? 0],
+                ].map(([key, label, count]) => {
+                    const isTabActive = selectedStatus === key;
 
-                        return (
-                            <button
-                                key={key}
-                                type="button"
-                                onClick={() => handleStatusTabChange(key)}
-                                className={`pb-3 px-3.5 text-xs sm:text-sm font-bold border-b-2 transition flex items-center gap-2 whitespace-nowrap cursor-pointer ${
-                                    isTabActive
-                                        ? 'border-blue-600 text-blue-600'
-                                        : 'border-transparent text-slate-500 hover:text-slate-900'
+                    return (
+                        <button
+                            key={key}
+                            type="button"
+                            onClick={() => handleStatusTabChange(key)}
+                            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap cursor-pointer ${
+                                isTabActive
+                                    ? 'bg-blue-600 text-white shadow-xs'
+                                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
+                            }`}
+                        >
+                            <span>{label}</span>
+                            <span
+                                className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+                                    isTabActive ? 'bg-white/20 text-white' : 'bg-slate-200/70 text-slate-700'
                                 }`}
                             >
-                                {label}
-                                <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${badgeClass}`}>
-                                    {count}
-                                </span>
-                            </button>
-                        );
-                    })}
-                </div>
+                                {count}
+                            </span>
+                        </button>
+                    );
+                })}
+            </div>
 
+            {/* Filter & Table Container */}
+            <div className="rounded-2xl border border-slate-200/90 bg-white shadow-xs overflow-hidden">
                 {/* Search & Filter Bar */}
-                <div className="p-4 sm:p-5 flex flex-col md:flex-row items-center justify-between gap-4 border-b border-slate-100 bg-slate-50/60">
+                <div className="p-3.5 sm:p-4 flex flex-col md:flex-row items-center justify-between gap-3 border-b border-slate-100 bg-slate-50/40">
                     <form onSubmit={handleSearchSubmit} className="relative w-full md:w-80">
                         <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-slate-400 pointer-events-none" />
                         <input

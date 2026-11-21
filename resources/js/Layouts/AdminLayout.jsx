@@ -282,9 +282,9 @@ export default function AdminLayout({ title, children }) {
                                             <div className="px-4 py-2 border-b border-slate-100">
                                                 <p className="font-semibold text-slate-900">{user.name}</p>
                                                 <p className="text-xs text-slate-500 truncate">{user.email}</p>
-                                                <span className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-purple-50 px-2 py-0.5 text-[10px] font-semibold text-purple-700">
+                                                <span className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-blue-700 border border-blue-200/60">
                                                     <Shield className="size-3" />
-                                                    Platform Owner
+                                                    Super Administrator
                                                 </span>
                                             </div>
 

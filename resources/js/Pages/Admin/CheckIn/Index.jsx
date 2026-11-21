@@ -79,7 +79,7 @@ export default function AdminCheckInIndex() {
                         </div>
 
                         <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/70">
-                            <div className="flex items-center gap-2.5 text-purple-700 font-bold text-xs mb-1">
+                            <div className="flex items-center gap-2.5 text-amber-700 font-bold text-xs mb-1">
                                 <Calendar className="size-4" />
                                 <span>Laporan Kehadiran</span>
                             </div>

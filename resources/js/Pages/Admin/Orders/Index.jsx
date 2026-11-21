@@ -133,58 +133,86 @@ export default function OrderManagementIndex({
                 </div>
             </div>
 
-            {/* Summary Stat Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Integrated Financial & Order Telemetry Strip */}
+            <div className="rounded-2xl border border-slate-200/90 bg-white shadow-xs overflow-hidden grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-slate-100">
                 {/* Total Revenue */}
-                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between">
-                    <div>
-                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Omset Terbayar (PAID)</p>
-                        <h3 className="text-2xl font-black text-slate-900 mt-1 truncate">
+                <div className="p-5 flex flex-col justify-between">
+                    <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                            Omset Terbayar (PAID)
+                        </span>
+                        <span className="flex size-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700">
+                            <TrendingUp className="size-4" />
+                        </span>
+                    </div>
+                    <div className="mt-3">
+                        <p className="text-2xl font-black text-slate-900 tracking-tight font-mono">
                             {stats.totalRevenueFormatted || 'Rp0'}
-                        </h3>
-                        <p className="text-xs text-emerald-600 mt-1 font-semibold flex items-center gap-1">
+                        </p>
+                        <p className="text-[11px] text-emerald-700 font-semibold mt-0.5 flex items-center gap-1">
                             <CheckCircle2 className="size-3.5" />
                             {stats.paidOrdersCount || 0} Transaksi Lunas
                         </p>
                     </div>
-                    <div className="size-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-                        <TrendingUp className="size-6" />
-                    </div>
                 </div>
 
                 {/* Total Orders */}
-                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between">
-                    <div>
-                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Semua Pesanan</p>
-                        <h3 className="text-2xl font-black text-slate-900 mt-1">{stats.totalOrders || 0}</h3>
-                        <p className="text-xs text-slate-500 mt-1 font-medium">Akumulasi seluruh checkout</p>
+                <div className="p-5 flex flex-col justify-between">
+                    <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                            Semua Pesanan
+                        </span>
+                        <span className="flex size-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+                            <ShoppingBag className="size-4" />
+                        </span>
                     </div>
-                    <div className="size-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                        <ShoppingBag className="size-6" />
+                    <div className="mt-3">
+                        <p className="text-2xl font-black text-slate-900 tracking-tight font-mono">
+                            {stats.totalOrders || 0}
+                        </p>
+                        <p className="text-[11px] text-slate-500 mt-0.5">
+                            Akumulasi seluruh checkout
+                        </p>
                     </div>
                 </div>
 
                 {/* Menunggu Pembayaran */}
-                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between">
-                    <div>
-                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Menunggu Pembayaran</p>
-                        <h3 className="text-2xl font-black text-slate-900 mt-1">{stats.pendingOrdersCount || 0}</h3>
-                        <p className="text-xs text-amber-600 mt-1 font-medium">Dalam batas waktu 15 menit</p>
+                <div className="p-5 flex flex-col justify-between">
+                    <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                            Menunggu Pembayaran
+                        </span>
+                        <span className="flex size-8 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
+                            <Clock className="size-4" />
+                        </span>
                     </div>
-                    <div className="size-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
-                        <Clock className="size-6" />
+                    <div className="mt-3">
+                        <p className="text-2xl font-black text-slate-900 tracking-tight font-mono">
+                            {stats.pendingOrdersCount || 0}
+                        </p>
+                        <p className="text-[11px] text-amber-600 font-medium mt-0.5">
+                            Batas waktu 15 menit
+                        </p>
                     </div>
                 </div>
 
                 {/* Dibatalkan / Kedaluwarsa */}
-                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between">
-                    <div>
-                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Batal / Kedaluwarsa</p>
-                        <h3 className="text-2xl font-black text-slate-900 mt-1">{stats.cancelledOrdersCount || 0}</h3>
-                        <p className="text-xs text-rose-600 mt-1 font-medium">Kuota tiket dikembalikan</p>
+                <div className="p-5 flex flex-col justify-between">
+                    <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                            Batal / Kedaluwarsa
+                        </span>
+                        <span className="flex size-8 items-center justify-center rounded-lg bg-rose-50 text-rose-600">
+                            <XCircle className="size-4" />
+                        </span>
                     </div>
-                    <div className="size-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
-                        <XCircle className="size-6" />
+                    <div className="mt-3">
+                        <p className="text-2xl font-black text-slate-900 tracking-tight font-mono">
+                            {stats.cancelledOrdersCount || 0}
+                        </p>
+                        <p className="text-[11px] text-rose-600 font-medium mt-0.5">
+                            Kuota tiket dikembalikan
+                        </p>
                     </div>
                 </div>
             </div>

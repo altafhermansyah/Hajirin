@@ -107,12 +107,12 @@ export default function AdminReportPrint({
                             </p>
                         </div>
 
-                        <div className="p-4 rounded-xl border border-purple-200 bg-purple-50/50">
-                            <p className="text-[11px] font-bold text-purple-800 uppercase">Hak Bersih EO (Settlement)</p>
-                            <p className="text-lg font-black text-purple-900 mt-1">
+                        <div className="p-4 rounded-xl border border-slate-200 bg-slate-50">
+                            <p className="text-[11px] font-bold text-slate-700 uppercase">Hak Bersih EO (Settlement)</p>
+                            <p className="text-lg font-black text-slate-900 mt-1">
                                 {summary.netEoSettlementFormatted || 'Rp0'}
                             </p>
-                            <p className="text-[10px] text-purple-700 mt-0.5">
+                            <p className="text-[10px] text-slate-500 mt-0.5">
                                 Hak pencairan dana EO
                             </p>
                         </div>
@@ -145,7 +145,7 @@ export default function AdminReportPrint({
                                     <th className="px-4 py-3 text-right">Omset (GMV)</th>
                                     <th className="px-4 py-3 text-right">Refund</th>
                                     <th className="px-4 py-3 text-right text-emerald-800">Komisi (5%)</th>
-                                    <th className="px-4 py-3 text-right text-purple-900">Hak Bersih EO</th>
+                                    <th className="px-4 py-3 text-right text-slate-900">Hak Bersih EO</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-200 text-slate-800">
@@ -179,7 +179,7 @@ export default function AdminReportPrint({
                                             <td className="px-4 py-2.5 text-right font-bold text-emerald-800">
                                                 {evt.platformCommissionFormatted}
                                             </td>
-                                            <td className="px-4 py-2.5 text-right font-extrabold text-purple-900">
+                                            <td className="px-4 py-2.5 text-right font-extrabold text-slate-900">
                                                 {evt.netEoPayoutFormatted}
                                             </td>
                                         </tr>
@@ -203,7 +203,7 @@ export default function AdminReportPrint({
                                     <td className="px-4 py-3 text-right text-emerald-800">
                                         {summary.platformCommissionFormatted || 'Rp0'}
                                     </td>
-                                    <td className="px-4 py-3 text-right text-purple-900">
+                                    <td className="px-4 py-3 text-right text-slate-900">
                                         {summary.netEoSettlementFormatted || 'Rp0'}
                                     </td>
                                 </tr>

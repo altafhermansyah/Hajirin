@@ -181,64 +181,86 @@ export default function OrganizerManagementIndex({
                 </div>
             </div>
 
-            {/* Stat Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Integrated Organizer Telemetry Strip */}
+            <div className="rounded-2xl border border-slate-200/90 bg-white shadow-xs overflow-hidden grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-slate-100">
                 {/* Total EO */}
-                <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs flex items-center justify-between">
-                    <div>
-                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Penyelenggara</p>
-                        <h3 className="text-2xl font-black text-slate-900 mt-1">{stats.totalEo || 0}</h3>
-                        <p className="text-xs text-slate-500 mt-1 flex items-center gap-1 font-medium">
-                            <span className="text-emerald-600 font-bold">{stats.activeEo || 0} Aktif</span> •{' '}
+                <div className="p-5 flex flex-col justify-between">
+                    <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                            Total Penyelenggara
+                        </span>
+                        <span className="flex size-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+                            <Building2 className="size-4" />
+                        </span>
+                    </div>
+                    <div className="mt-3">
+                        <p className="text-2xl font-black text-slate-900 tracking-tight font-mono">
+                            {stats.totalEo || 0}
+                        </p>
+                        <p className="text-[11px] text-slate-500 mt-0.5 flex items-center gap-1 font-medium">
+                            <span className="text-emerald-700 font-bold">{stats.activeEo || 0} Aktif</span> •{' '}
                             <span className="text-rose-600 font-bold">{stats.suspendedEo || 0} Suspended</span>
                         </p>
-                    </div>
-                    <div className="size-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                        <Building2 className="size-6" />
                     </div>
                 </div>
 
                 {/* Event Diselenggarakan */}
-                <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs flex items-center justify-between">
-                    <div>
-                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Event Dibuat EO</p>
-                        <h3 className="text-2xl font-black text-slate-900 mt-1">{stats.totalEventsByEo || 0}</h3>
-                        <p className="text-xs text-slate-500 mt-1 font-medium">
+                <div className="p-5 flex flex-col justify-between">
+                    <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                            Event Dibuat EO
+                        </span>
+                        <span className="flex size-8 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
+                            <Calendar className="size-4" />
+                        </span>
+                    </div>
+                    <div className="mt-3">
+                        <p className="text-2xl font-black text-slate-900 tracking-tight font-mono">
+                            {stats.totalEventsByEo || 0}
+                        </p>
+                        <p className="text-[11px] text-slate-500 mt-0.5">
                             Total event terdaftar di platform
                         </p>
-                    </div>
-                    <div className="size-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
-                        <Calendar className="size-6" />
                     </div>
                 </div>
 
                 {/* Tiket Terjual */}
-                <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs flex items-center justify-between">
-                    <div>
-                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Tiket Terjual (EO)</p>
-                        <h3 className="text-2xl font-black text-slate-900 mt-1">{stats.totalTicketsSoldByEo || 0}</h3>
-                        <p className="text-xs text-emerald-600 mt-1 font-medium">
+                <div className="p-5 flex flex-col justify-between">
+                    <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                            Tiket Terjual (EO)
+                        </span>
+                        <span className="flex size-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+                            <Ticket className="size-4" />
+                        </span>
+                    </div>
+                    <div className="mt-3">
+                        <p className="text-2xl font-black text-slate-900 tracking-tight font-mono">
+                            {stats.totalTicketsSoldByEo || 0}
+                        </p>
+                        <p className="text-[11px] text-emerald-700 font-semibold mt-0.5">
                             Tiket terkonfirmasi lunas
                         </p>
-                    </div>
-                    <div className="size-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
-                        <Ticket className="size-6" />
                     </div>
                 </div>
 
                 {/* Total Transaksi EO */}
-                <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs flex items-center justify-between">
-                    <div>
-                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Akumulasi Omset EO</p>
-                        <h3 className="text-xl font-black text-slate-900 mt-1 truncate">
+                <div className="p-5 flex flex-col justify-between">
+                    <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800">
+                            Akumulasi Omset EO
+                        </span>
+                        <span className="flex size-8 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700">
+                            <TrendingUp className="size-4" />
+                        </span>
+                    </div>
+                    <div className="mt-3">
+                        <p className="text-2xl font-black text-emerald-800 tracking-tight font-mono">
                             {stats.totalRevenueByEoFormatted || 'Rp0'}
-                        </h3>
-                        <p className="text-xs text-slate-500 mt-1 font-medium">
+                        </p>
+                        <p className="text-[11px] text-emerald-700 font-medium mt-0.5">
                             Gross merchandise value
                         </p>
-                    </div>
-                    <div className="size-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-                        <TrendingUp className="size-6" />
                     </div>
                 </div>
             </div>
