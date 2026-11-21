@@ -8,7 +8,6 @@ import {
     QrCode,
     Users,
     FileText,
-    Settings,
     Search,
     Bell,
     Clock,
@@ -141,23 +140,9 @@ export default function AdminLayout({ title, children }) {
         },
         {
             name: 'Laporan & Keuangan',
+            href: '/admin/reports',
             icon: FileText,
-            active: false,
-            children: [
-                { name: 'Ringkasan Pendapatan', href: '#reports-revenue' },
-                { name: 'Komisi Platform', href: '#reports-commission' },
-                { name: 'Rekapitulasi Penjualan', href: '#reports-sales' },
-            ],
-        },
-        {
-            name: 'Pengaturan Sistem',
-            icon: Settings,
-            active: false,
-            children: [
-                { name: 'Pengaturan Umum', href: '#settings-general' },
-                { name: 'Tarif Biaya Layanan', href: '#settings-fees' },
-                { name: 'Log & Keamanan Sistem', href: '#settings-security' },
-            ],
+            active: currentPath.startsWith('/admin/reports'),
         },
     ];
 

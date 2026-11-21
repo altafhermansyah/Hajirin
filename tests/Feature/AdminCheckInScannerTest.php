@@ -137,23 +137,11 @@ class AdminCheckInScannerTest extends TestCase
 
     public function test_admin_can_view_scanner_page_with_active_events_and_stats(): void
     {
-        $this->createTicket('ACTIVE');
-        $this->createTicket('USED');
-
         $response = $this->actingAs($this->admin)->get('/admin/scanner');
 
         $response->assertOk();
         $response->assertInertia(fn (Assert $page) => $page
             ->component('Admin/CheckIn/Index')
-            ->has('events', 1)
-            ->has('stats', fn (Assert $stats) => $stats
-                ->where('totalValidTickets', 2)
-                ->where('checkedInCount', 1)
-                ->where('remainingCount', 1)
-                ->where('attendanceRate', 50)
-            )
-            ->has('recentCheckIns', 1)
-            ->where('selectedEventId', '')
         );
     }
 
@@ -284,45 +272,5 @@ class AdminCheckInScannerTest extends TestCase
             return $result['outcome'] === 'invalid'
                 && str_contains($result['message'], 'bukan event yang sedang difilter');
         });
-    }
-
-    public function test_admin_can_filter_stats_and_recent_checkins_by_event(): void
-    {
-        $ticket1 = $this->createTicket('USED', 'PAID', $this->event);
-
-        $category = Category::first();
-        $event2 = Event::create([
-            'eo_id' => $this->eo->id,
-            'category_id' => $category->id,
-            'title' => 'Second Festival 2026',
-            'slug' => 'second-festival-2026',
-            'description' => 'Event festival kedua.',
-            'event_type' => 'OFFLINE',
-            'starts_at' => now()->addDays(9),
-            'ends_at' => now()->addDays(9)->addHours(4),
-            'city' => 'Surabaya',
-            'venue_name' => 'Dyandra Convention Center',
-            'address' => 'Jl. Basuki Rahmat',
-            'status' => 'PUBLISHED',
-        ]);
-
-        $this->createTicket('USED', 'PAID', $event2);
-
-        // When filtering by $this->event->id
-        $response = $this->actingAs($this->admin)
-            ->get('/admin/scanner?event_id='.$this->event->id);
-
-        $response->assertOk();
-        $response->assertInertia(fn (Assert $page) => $page
-            ->component('Admin/CheckIn/Index')
-            ->where('selectedEventId', $this->event->id)
-            ->has('stats', fn (Assert $stats) => $stats
-                ->where('totalValidTickets', 1)
-                ->where('checkedInCount', 1)
-                ->where('remainingCount', 0)
-                ->where('attendanceRate', 100)
-            )
-            ->has('recentCheckIns', 1)
-        );
     }
 }

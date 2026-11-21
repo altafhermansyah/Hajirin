@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\AdminEventController;
 use App\Http\Controllers\Admin\AdminOrderController;
 use App\Http\Controllers\Admin\AdminOrganizerController;
 use App\Http\Controllers\Admin\AdminRefundController;
+use App\Http\Controllers\Admin\AdminReportController;
 use App\Http\Controllers\Admin\AdminTicketController;
 use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
@@ -207,6 +208,10 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         ->middleware('throttle:60,1')
         ->name('scanner.store');
     Route::get('/check-in', fn () => redirect()->route('admin.scanner.index'))->name('check-in');
+
+    // Laporan & Keuangan Platform (Financial Reporting & Settlements)
+    Route::get('/reports', [AdminReportController::class, 'index'])->name('reports.index');
+    Route::get('/reports/export-pdf', [AdminReportController::class, 'exportPdf'])->name('reports.export-pdf');
 });
 
 // Route Autentikasi (Guest)
