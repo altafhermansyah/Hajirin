@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Category;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -10,12 +11,20 @@ use Inertia\Response;
 class CategoryController extends Controller
 {
     /**
-     * Menampilkan halaman kategori secara dinamis berdasarkan parameter URL.
+     * Menampilkan halaman kategori secara dinamis berdasarkan data kategori dari database.
      * Jika tidak ada parameter yang diberikan, default-nya adalah 'Semua'.
      */
-    public function index(string $type = 'Semua'): Response
+    public function index(string $type = 'semua'): Response
     {
-        $formattedType = ucfirst(strtolower($type));
+        $categories = Category::query()
+            ->orderBy('name')
+            ->get(['id', 'name', 'slug', 'icon']);
+
+        $normalizedType = mb_strtolower(trim($type));
+        $matchedCategory = $normalizedType !== '' && $normalizedType !== 'semua'
+            ? $categories->first(fn (Category $category): bool => mb_strtolower($category->slug) === $normalizedType
+                || mb_strtolower($category->name) === $normalizedType)
+            : null;
 
         $minPrices = DB::table('ticket_prices')
             ->join('ticket_types', 'ticket_types.id', '=', 'ticket_prices.ticket_type_id')
@@ -38,6 +47,7 @@ class CategoryController extends Controller
                 'events.event_type',
                 'events.banner_path',
                 'categories.name as category_name',
+                'categories.slug as category_slug',
                 'users.name as organizer_name'
             )
             ->orderBy('events.starts_at')
@@ -50,6 +60,7 @@ class CategoryController extends Controller
                     'id' => $event->id,
                     'slug' => $event->slug,
                     'category' => $event->category_name,
+                    'category_slug' => $event->category_slug,
                     'tag' => strtoupper($event->category_name),
                     'title' => $event->title,
                     'date' => Carbon::parse($event->starts_at)->locale('id')->translatedFormat('D, d M Y • H:i').' WIB',
@@ -60,9 +71,16 @@ class CategoryController extends Controller
                 ];
             });
 
+        $bookmarkedEventIds = auth()->check()
+            ? DB::table('bookmarks')->where('user_id', auth()->id())->pluck('event_id')->toArray()
+            : [];
+
         return Inertia::render('Kategori/Index', [
-            'initialCategory' => $formattedType,
+            'categories' => $categories,
+            'initialCategory' => $matchedCategory?->name ?? 'Semua',
+            'initialCategorySlug' => $matchedCategory?->slug ?? 'semua',
             'events' => $events,
+            'bookmarkedEventIds' => $bookmarkedEventIds,
         ]);
     }
 }

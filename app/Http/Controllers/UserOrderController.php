@@ -2,10 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreRefundRequest;
+use App\Models\Order;
+use App\Models\Refund;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -79,10 +83,48 @@ class UserOrderController extends Controller
         $totalAmount = (float) $order->total_amount;
         $totalTickets = $items->sum('quantity');
 
-        // Cek apakah ada tiket aktif yang bisa dilihat
-        $ticketCount = DB::table('tickets')
+        // Cek jumlah tiket dan apakah ada tiket yang sudah digunakan check-in
+        $ticketSummary = DB::table('tickets')
             ->where('order_id', $order->order_id)
-            ->count();
+            ->selectRaw('COUNT(*) as total')
+            ->selectRaw("COUNT(CASE WHEN status = 'USED' THEN 1 END) as used_count")
+            ->first();
+
+        $ticketCount = (int) ($ticketSummary->total ?? 0);
+        $hasUsedTickets = ((int) ($ticketSummary->used_count ?? 0)) > 0;
+
+        $latestRefund = Refund::query()
+            ->where('order_id', $order->order_id)
+            ->latest('requested_at')
+            ->first();
+
+        $hasActiveRefund = $latestRefund !== null
+            && in_array($latestRefund->status, ['PENDING', 'APPROVED', 'COMPLETED'], true);
+
+        $refundBlockedReason = null;
+        if ($hasActiveRefund) {
+            $refundBlockedReason = null;
+        } elseif ($order->order_status !== 'PAID') {
+            $refundBlockedReason = 'Hanya pesanan yang sudah lunas yang dapat diajukan pengembalian dana.';
+        } elseif ($totalAmount <= 0) {
+            $refundBlockedReason = 'Pesanan tiket gratis tidak memerlukan pengembalian dana.';
+        } elseif ($hasUsedTickets) {
+            $refundBlockedReason = 'Tiket pada pesanan ini sudah digunakan untuk check-in sehingga tidak dapat di-refund.';
+        }
+
+        $canRequestRefund = ! $hasActiveRefund && $refundBlockedReason === null;
+
+        $refundData = $latestRefund ? [
+            'id' => $latestRefund->id,
+            'status' => $latestRefund->status,
+            'amountFormatted' => 'Rp'.number_format((float) $latestRefund->amount, 0, ',', '.'),
+            'reason' => $latestRefund->reason,
+            'resolutionNote' => $latestRefund->resolution_note,
+            'requestedAtFormatted' => Carbon::parse($latestRefund->requested_at)->locale('id')->translatedFormat('d M Y, H:i').' WIB',
+            'processedAtFormatted' => $latestRefund->processed_at
+                ? Carbon::parse($latestRefund->processed_at)->locale('id')->translatedFormat('d M Y, H:i').' WIB'
+                : null,
+        ] : null;
 
         $orderData = [
             'id' => $order->order_id,
@@ -118,6 +160,72 @@ class UserOrderController extends Controller
             'order' => $orderData,
             'event' => $eventData,
             'items' => $items,
+            'refund' => $refundData,
+            'canRequestRefund' => $canRequestRefund,
+            'refundBlockedReason' => $refundBlockedReason,
         ]);
+    }
+
+    /**
+     * Ajukan permohonan pengembalian dana (refund) untuk pesanan milik pengguna.
+     */
+    public function requestRefund(StoreRefundRequest $request, string $orderReference): RedirectResponse
+    {
+        $user = $request->user();
+        $validated = $request->validated();
+
+        DB::transaction(function () use ($user, $orderReference, $validated): void {
+            $order = Order::query()
+                ->where('order_reference', $orderReference)
+                ->where('user_id', $user->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if ($order->status !== 'PAID') {
+                throw ValidationException::withMessages([
+                    'refund' => 'Hanya pesanan berstatus lunas (PAID) yang dapat diajukan pengembalian dana.',
+                ]);
+            }
+
+            if ((float) $order->total_amount <= 0) {
+                throw ValidationException::withMessages([
+                    'refund' => 'Pesanan tiket gratis tidak dapat diajukan pengembalian dana.',
+                ]);
+            }
+
+            $hasUsedTicket = DB::table('tickets')
+                ->where('order_id', $order->id)
+                ->where('status', 'USED')
+                ->exists();
+
+            if ($hasUsedTicket) {
+                throw ValidationException::withMessages([
+                    'refund' => 'Pengembalian dana tidak dapat diajukan karena tiket pada pesanan ini sudah digunakan untuk check-in.',
+                ]);
+            }
+
+            $hasExistingRefund = Refund::query()
+                ->where('order_id', $order->id)
+                ->whereIn('status', ['PENDING', 'APPROVED', 'COMPLETED'])
+                ->exists();
+
+            if ($hasExistingRefund) {
+                throw ValidationException::withMessages([
+                    'refund' => 'Pesanan ini sudah memiliki pengajuan pengembalian dana yang aktif atau telah disetujui.',
+                ]);
+            }
+
+            $refund = new Refund;
+            $refund->forceFill([
+                'order_id' => $order->id,
+                'requested_by' => $user->id,
+                'amount' => $order->total_amount,
+                'reason' => $validated['reason'],
+                'status' => 'PENDING',
+                'requested_at' => now(),
+            ])->save();
+        });
+
+        return back()->with('success', 'Permohonan pengembalian dana berhasil dikirim dan sedang menunggu peninjauan Administrator.');
     }
 }
