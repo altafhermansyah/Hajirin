@@ -1,23 +1,24 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Link, router } from '@inertiajs/react';
+import { Link, router, useForm, usePage } from '@inertiajs/react';
 import EoLayout from '../../Layouts/EoLayout';
-import {
-    Card,
-    CardHeader,
-    eoButtonClass,
-    StatCard,
-    StatusBadge,
-    UnderlineTabs,
-} from '../../Components/eo/Primitives';
 import {
     CheckCircle2,
     Download,
+    Megaphone,
     QrCode,
     Search,
     Ticket,
     Users,
     Wallet,
 } from 'lucide-react';
+import { Card, CardHeader } from '../../Components/ui/Card';
+import { StatCard } from '../../Components/ui/StatCard';
+import { StatusBadge } from '../../Components/ui/StatusBadge';
+import { UnderlineTabs } from '../../Components/ui/UnderlineTabs';
+import { Pagination } from '../../Components/ui/Pagination';
+import { FlashBanner } from '../../Components/ui/FlashBanner';
+import { Button, buttonClass } from '../../Components/ui/Button';
+import { Modal } from '../../Components/ui/Dialog';
 
 const TICKET_STATUS_MAP = {
     ACTIVE: { tone: 'warning', label: 'Siap Check-in' },
@@ -25,11 +26,8 @@ const TICKET_STATUS_MAP = {
     CANCELLED: { tone: 'danger', label: 'Dibatalkan' },
 };
 
-function formatPaginationLabel(label) {
-    if (label.includes('Previous')) return 'Sebelumnya';
-    if (label.includes('Next')) return 'Berikutnya';
-    return label;
-}
+const INPUT_CLASS =
+    'w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-blue focus:outline-none focus:ring-2 focus:ring-brand-blue/15 transition';
 
 export default function EoAttendees({
     organizerName,
@@ -39,8 +37,37 @@ export default function EoAttendees({
     ticketTypeBreakdown = [],
     attendees = { data: [], links: [], total: 0, from: null, to: null },
 }) {
+    const { flash } = usePage().props;
     const [searchInput, setSearchInput] = useState(filters.search || '');
+    const [isBroadcastOpen, setIsBroadcastOpen] = useState(false);
     const isFirstRender = useRef(true);
+
+    const broadcastForm = useForm({
+        event_id: filters.eventId || events[0]?.id || '',
+        title: '',
+        message: '',
+    });
+
+    const openBroadcastModal = () => {
+        broadcastForm.setData({
+            event_id: filters.eventId || events[0]?.id || '',
+            title: '',
+            message: '',
+        });
+        broadcastForm.clearErrors();
+        setIsBroadcastOpen(true);
+    };
+
+    const handleBroadcastSubmit = (e) => {
+        e.preventDefault();
+        broadcastForm.post('/eo/broadcasts', {
+            preserveScroll: true,
+            onSuccess: () => {
+                setIsBroadcastOpen(false);
+                broadcastForm.reset('title', 'message');
+            },
+        });
+    };
 
     useEffect(() => {
         setSearchInput(filters.search || '');
@@ -96,39 +123,45 @@ export default function EoAttendees({
     const attendanceRate = summary.attendanceRate ?? 0;
 
     return (
-        <EoLayout
-            title="Peserta & Laporan Penjualan"
-            organizerName={organizerName}
-        >
+        <EoLayout title="Peserta & Laporan Penjualan" organizerName={organizerName}>
             {/* Page Header */}
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-semibold text-gray-900">
+                    <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-slate-900">
                         Peserta &amp; Laporan Penjualan
                     </h1>
-                    <p className="mt-1 text-sm text-gray-600">
+                    <p className="mt-1 text-sm text-slate-500">
                         Pantau rincian pendapatan per kategori tiket dan kelola daftar peserta event Anda.
                     </p>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
+                    {events.length > 0 && (
+                        <Button variant="outline" size="md" onClick={openBroadcastModal}>
+                            <Megaphone className="size-4 text-slate-500" aria-hidden="true" />
+                            <span>Kirim Pengumuman</span>
+                        </Button>
+                    )}
                     <Link
                         href={
                             filters.eventId
                                 ? `/eo/check-in?event_id=${filters.eventId}`
                                 : '/eo/check-in'
                         }
-                        className={eoButtonClass('outline', 'md')}
+                        className={buttonClass('outline', 'md')}
                     >
-                        <QrCode className="size-4" strokeWidth={1.75} aria-hidden="true" />
-                        Buka Scanner Check-in
+                        <QrCode className="size-4 text-slate-500" aria-hidden="true" />
+                        <span>Buka Scanner Check-in</span>
                     </Link>
-                    <a href={exportUrl} className={eoButtonClass('primary', 'md')}>
-                        <Download className="size-4" strokeWidth={2} aria-hidden="true" />
-                        Export CSV
+                    <a href={exportUrl} className={buttonClass('primary', 'md')}>
+                        <Download className="size-4" aria-hidden="true" />
+                        <span>Export CSV</span>
                     </a>
                 </div>
             </div>
+
+            {flash?.success && <FlashBanner tone="success" message={flash.success} />}
+            {flash?.error && <FlashBanner tone="error" message={flash.error} />}
 
             {/* 4 Summary Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -138,7 +171,6 @@ export default function EoAttendees({
                     value={summary.formattedRevenue || 'Rp0'}
                     subtext={`Dari ${summary.paidOrdersCount ?? 0} pesanan lunas`}
                 />
-
                 <StatCard
                     label="Tiket terjual"
                     icon={Ticket}
@@ -146,7 +178,6 @@ export default function EoAttendees({
                     valueSuffix="tiket"
                     subtext={`${summary.pendingCheckInCount ?? 0} menunggu check-in`}
                 />
-
                 <StatCard
                     label="Sudah check-in"
                     icon={CheckCircle2}
@@ -154,7 +185,6 @@ export default function EoAttendees({
                     valueSuffix="peserta"
                     subtext={`Dari ${summary.totalTicketsSold ?? 0} tiket valid`}
                 />
-
                 <StatCard
                     label="Tingkat kehadiran"
                     icon={Users}
@@ -175,56 +205,56 @@ export default function EoAttendees({
                     tabIndex={0}
                     role="region"
                     aria-labelledby="breakdown-table-caption"
-                    className="overflow-x-auto focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+                    className="overflow-x-auto focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue"
                 >
                     <table className="w-full text-left text-sm">
                         <caption id="breakdown-table-caption" className="sr-only">
                             Ringkasan penjualan dan pendapatan per kategori tiket
                         </caption>
-                        <thead className="border-b border-gray-200 bg-gray-50 text-sm font-medium text-gray-600">
+                        <thead className="border-b border-slate-200 bg-slate-50/70 text-xs font-medium text-slate-500">
                             <tr>
-                                <th scope="col" className="py-3 px-5 font-medium">
+                                <th scope="col" className="py-3 px-5">
                                     Event
                                 </th>
-                                <th scope="col" className="py-3 px-5 font-medium">
+                                <th scope="col" className="py-3 px-5">
                                     Kategori tiket
                                 </th>
-                                <th scope="col" className="py-3 px-5 font-medium">
+                                <th scope="col" className="py-3 px-5">
                                     Terjual / kuota
                                 </th>
-                                <th scope="col" className="py-3 px-5 font-medium">
+                                <th scope="col" className="py-3 px-5">
                                     Check-in
                                 </th>
-                                <th scope="col" className="py-3 px-5 text-right font-medium">
+                                <th scope="col" className="py-3 px-5 text-right">
                                     Pendapatan
                                 </th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-200">
+                        <tbody className="divide-y divide-slate-100">
                             {ticketTypeBreakdown.length > 0 ? (
                                 ticketTypeBreakdown.map((item) => (
                                     <tr
                                         key={item.id}
-                                        className="hover:bg-gray-50/70 transition-colors"
+                                        className="hover:bg-slate-50/60 transition-colors"
                                     >
-                                        <td className="py-3 px-5 font-medium text-gray-900">
+                                        <td className="py-3 px-5 font-medium text-slate-900">
                                             {item.eventTitle}
                                         </td>
-                                        <td className="py-3 px-5 text-gray-700">
+                                        <td className="py-3 px-5 text-slate-700">
                                             {item.ticketTypeName}
                                         </td>
-                                        <td className="py-3 px-5 tabular-nums text-gray-700">
-                                            <span className="font-medium text-gray-900">
+                                        <td className="py-3 px-5 tabular-nums text-slate-700">
+                                            <span className="font-medium text-slate-900">
                                                 {item.soldCount}
                                             </span>{' '}
-                                            <span className="text-gray-500">
+                                            <span className="text-slate-400">
                                                 / {item.initialQuota}
                                             </span>
                                         </td>
-                                        <td className="py-3 px-5 tabular-nums text-gray-700">
+                                        <td className="py-3 px-5 tabular-nums text-slate-700">
                                             {item.checkedInCount} hadir
                                         </td>
-                                        <td className="py-3 px-5 text-right font-medium text-gray-900 tabular-nums">
+                                        <td className="py-3 px-5 text-right font-medium text-slate-900 tabular-nums">
                                             {item.formattedRevenue}
                                         </td>
                                     </tr>
@@ -233,7 +263,7 @@ export default function EoAttendees({
                                 <tr>
                                     <td
                                         colSpan={5}
-                                        className="py-10 px-5 text-center text-sm text-gray-500"
+                                        className="py-10 px-5 text-center text-sm text-slate-500"
                                     >
                                         Belum ada kategori tiket untuk event yang dipilih.
                                     </td>
@@ -253,7 +283,7 @@ export default function EoAttendees({
                         ['ALL', 'Semua Peserta', summary.totalTicketsSold ?? 0],
                         ['ACTIVE', 'Siap Check-in', summary.pendingCheckInCount ?? 0],
                         ['USED', 'Sudah Check-in', summary.checkedInCount ?? 0],
-                        ['CANCELLED', 'Dibatalkan', '—'],
+                        ['CANCELLED', 'Dibatalkan', '-'],
                     ]}
                 />
 
@@ -263,7 +293,7 @@ export default function EoAttendees({
                         e.preventDefault();
                         applyFilters({ search: searchInput });
                     }}
-                    className="p-4 sm:px-5 flex flex-col md:flex-row md:items-center md:justify-between gap-3 border-b border-gray-200 bg-white"
+                    className="px-5 py-3.5 flex flex-col md:flex-row md:items-center md:justify-between gap-3 border-b border-slate-200 bg-slate-50/40"
                 >
                     <div className="flex flex-col sm:flex-row sm:items-center gap-3 flex-1">
                         <div className="relative w-full sm:w-80">
@@ -271,8 +301,7 @@ export default function EoAttendees({
                                 Cari kode tiket, nama peserta, email, atau nomor pesanan
                             </label>
                             <Search
-                                className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400 pointer-events-none"
-                                strokeWidth={1.75}
+                                className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400 pointer-events-none"
                                 aria-hidden="true"
                             />
                             <input
@@ -281,7 +310,7 @@ export default function EoAttendees({
                                 value={searchInput}
                                 onChange={(e) => setSearchInput(e.target.value)}
                                 placeholder="Cari kode tiket, nama, email, no. order..."
-                                className="w-full h-9 pl-9 pr-3 rounded-md border border-gray-200 bg-white text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/15"
+                                className="w-full h-9 pl-9 pr-3 rounded-lg border border-slate-200 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/15"
                             />
                         </div>
 
@@ -293,7 +322,7 @@ export default function EoAttendees({
                                 id="attendee-event-filter"
                                 value={filters.eventId || ''}
                                 onChange={(e) => applyFilters({ eventId: e.target.value })}
-                                className="w-full h-9 px-3 rounded-md border border-gray-200 bg-white text-sm text-gray-900 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/15"
+                                className="w-full h-9 px-3 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-700 focus:outline-none focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/15"
                             >
                                 <option value="">Semua event</option>
                                 {events.map((ev) => (
@@ -305,9 +334,9 @@ export default function EoAttendees({
                         </div>
                     </div>
 
-                    <p className="text-xs text-gray-500 tabular-nums">
+                    <p className="text-xs text-slate-500 tabular-nums">
                         Total{' '}
-                        <span className="font-medium text-gray-900">
+                        <span className="font-medium text-slate-900">
                             {attendees.total ?? rows.length}
                         </span>{' '}
                         peserta
@@ -319,32 +348,32 @@ export default function EoAttendees({
                     tabIndex={0}
                     role="region"
                     aria-labelledby="attendees-table-caption"
-                    className="overflow-x-auto focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+                    className="overflow-x-auto focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue"
                 >
                     <table className="w-full text-left text-sm">
                         <caption id="attendees-table-caption" className="sr-only">
                             Daftar peserta dan status check-in e-tiket
                         </caption>
-                        <thead className="border-b border-gray-200 bg-gray-50 text-sm font-medium text-gray-600">
+                        <thead className="border-b border-slate-200 bg-slate-50/70 text-xs font-medium text-slate-500">
                             <tr>
-                                <th scope="col" className="py-3 px-5 font-medium">
+                                <th scope="col" className="py-3 px-5">
                                     Kode e-tiket
                                 </th>
-                                <th scope="col" className="py-3 px-5 font-medium">
+                                <th scope="col" className="py-3 px-5">
                                     Peserta
                                 </th>
-                                <th scope="col" className="py-3 px-5 font-medium">
+                                <th scope="col" className="py-3 px-5">
                                     Event &amp; tiket
                                 </th>
-                                <th scope="col" className="py-3 px-5 font-medium">
+                                <th scope="col" className="py-3 px-5">
                                     Pesanan
                                 </th>
-                                <th scope="col" className="py-3 px-5 font-medium">
+                                <th scope="col" className="py-3 px-5">
                                     Status
                                 </th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-200">
+                        <tbody className="divide-y divide-slate-100">
                             {rows.length > 0 ? (
                                 rows.map((ticket) => {
                                     const statusInfo =
@@ -354,19 +383,19 @@ export default function EoAttendees({
                                     return (
                                         <tr
                                             key={ticket.id}
-                                            className="hover:bg-gray-50/70 transition-colors"
+                                            className="hover:bg-slate-50/60 transition-colors"
                                         >
                                             <td className="py-3.5 px-5 align-top">
-                                                <span className="font-mono text-xs font-medium text-gray-900">
+                                                <span className="font-mono text-xs font-medium text-slate-900">
                                                     {ticket.ticketCode}
                                                 </span>
                                             </td>
 
                                             <td className="py-3.5 px-5 align-top">
-                                                <p className="text-sm font-medium text-gray-900">
+                                                <p className="text-sm font-medium text-slate-900">
                                                     {ticket.attendeeName}
                                                 </p>
-                                                <p className="mt-0.5 text-xs text-gray-500">
+                                                <p className="mt-0.5 text-xs text-slate-500">
                                                     {ticket.attendeeEmail}
                                                     {ticket.attendeePhone !== '-'
                                                         ? ` · ${ticket.attendeePhone}`
@@ -375,10 +404,10 @@ export default function EoAttendees({
                                             </td>
 
                                             <td className="py-3.5 px-5 align-top">
-                                                <p className="text-sm text-gray-900">
+                                                <p className="text-sm text-slate-900">
                                                     {ticket.eventTitle}
                                                 </p>
-                                                <p className="mt-0.5 text-xs text-gray-500">
+                                                <p className="mt-0.5 text-xs text-slate-500">
                                                     {ticket.ticketTypeName} ·{' '}
                                                     <span className="tabular-nums">
                                                         {ticket.unitPriceFormatted}
@@ -387,10 +416,10 @@ export default function EoAttendees({
                                             </td>
 
                                             <td className="py-3.5 px-5 align-top">
-                                                <p className="font-mono text-xs text-gray-900">
+                                                <p className="font-mono text-xs text-slate-900">
                                                     {ticket.orderReference}
                                                 </p>
-                                                <p className="mt-0.5 text-xs text-gray-500">
+                                                <p className="mt-0.5 text-xs text-slate-500 tabular-nums">
                                                     {ticket.paymentMethod} · {ticket.paidAtFormatted}
                                                 </p>
                                             </td>
@@ -401,7 +430,7 @@ export default function EoAttendees({
                                                     label={statusInfo.label}
                                                 />
                                                 {ticket.checkedInAtFormatted && (
-                                                    <p className="mt-1 text-xs text-gray-500">
+                                                    <p className="mt-1 text-xs text-slate-500 tabular-nums">
                                                         {ticket.checkedInAtFormatted}
                                                         {ticket.checkedInByName
                                                             ? ` · ${ticket.checkedInByName}`
@@ -416,14 +445,13 @@ export default function EoAttendees({
                                 <tr>
                                     <td colSpan={5} className="py-12 px-5 text-center">
                                         <Users
-                                            className="mx-auto size-5 text-gray-400 mb-2"
-                                            strokeWidth={1.75}
+                                            className="mx-auto size-6 text-slate-300 mb-2"
                                             aria-hidden="true"
                                         />
-                                        <p className="text-sm font-medium text-gray-900">
+                                        <p className="text-sm font-medium text-slate-800">
                                             Belum ada peserta yang sesuai filter
                                         </p>
-                                        <p className="mt-1 text-xs text-gray-500">
+                                        <p className="mt-1 text-xs text-slate-500">
                                             Tiket dari pesanan yang sudah lunas akan otomatis muncul di daftar ini.
                                         </p>
                                     </td>
@@ -433,43 +461,123 @@ export default function EoAttendees({
                     </table>
                 </div>
 
-                {/* Pagination */}
-                {attendees.links && attendees.links.length > 3 && (
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-t border-gray-200 px-5 py-3.5 text-xs text-gray-600">
-                        <p className="tabular-nums">
-                            Menampilkan {attendees.from ?? 0}–{attendees.to ?? 0} dari{' '}
-                            {attendees.total ?? 0} peserta
-                        </p>
-                        <nav aria-label="Paginasi daftar peserta" className="flex flex-wrap gap-1.5">
-                            {attendees.links.map((link, index) =>
-                                link.url ? (
-                                    <Link
-                                        key={`${link.label}-${index}`}
-                                        href={link.url}
-                                        preserveScroll
-                                        preserveState
-                                        className={eoButtonClass(
-                                            link.active ? 'primary' : 'outline',
-                                            'sm',
-                                            'min-w-8'
-                                        )}
-                                    >
-                                        {formatPaginationLabel(link.label)}
-                                    </Link>
-                                ) : (
-                                    <span
-                                        key={`${link.label}-${index}`}
-                                        aria-disabled="true"
-                                        className="inline-flex h-8 min-w-8 items-center justify-center rounded-md border border-gray-200 px-2.5 text-xs text-gray-400"
-                                    >
-                                        {formatPaginationLabel(link.label)}
-                                    </span>
-                                )
-                            )}
-                        </nav>
-                    </div>
-                )}
+                <Pagination
+                    links={attendees.links}
+                    from={attendees.from}
+                    to={attendees.to}
+                    total={attendees.total}
+                    itemLabel="peserta"
+                />
             </Card>
+
+            {/* Modal Kirim Pengumuman (Native <dialog>) */}
+            <Modal
+                open={isBroadcastOpen}
+                onClose={() => {
+                    if (!broadcastForm.processing) setIsBroadcastOpen(false);
+                }}
+                title="Kirim Pengumuman ke Peserta"
+                description="Pesan akan dikirimkan ke notifikasi akun seluruh pemegang tiket aktif pada event terpilih."
+                maxWidth="max-w-lg"
+            >
+                <form onSubmit={handleBroadcastSubmit} className="space-y-4">
+                    <div>
+                        <label
+                            htmlFor="broadcast-event"
+                            className="block text-xs font-medium text-slate-700 mb-1.5"
+                        >
+                            Event Tujuan
+                        </label>
+                        <select
+                            id="broadcast-event"
+                            value={broadcastForm.data.event_id}
+                            onChange={(e) => broadcastForm.setData('event_id', e.target.value)}
+                            className={INPUT_CLASS}
+                            required
+                        >
+                            {events.map((ev) => (
+                                <option key={ev.id} value={ev.id}>
+                                    {ev.title}
+                                </option>
+                            ))}
+                        </select>
+                        {broadcastForm.errors.event_id && (
+                            <p role="alert" className="mt-1 text-xs text-rose-600">
+                                {broadcastForm.errors.event_id}
+                            </p>
+                        )}
+                    </div>
+
+                    <div>
+                        <label
+                            htmlFor="broadcast-subject"
+                            className="block text-xs font-medium text-slate-700 mb-1.5"
+                        >
+                            Judul Pengumuman
+                        </label>
+                        <input
+                            id="broadcast-subject"
+                            type="text"
+                            value={broadcastForm.data.title}
+                            onChange={(e) => broadcastForm.setData('title', e.target.value)}
+                            placeholder="Contoh: Info Open Gate & Link Zoom Acara"
+                            className={INPUT_CLASS}
+                            required
+                            minLength={4}
+                            maxLength={150}
+                        />
+                        {broadcastForm.errors.title && (
+                            <p role="alert" className="mt-1 text-xs text-rose-600">
+                                {broadcastForm.errors.title}
+                            </p>
+                        )}
+                    </div>
+
+                    <div>
+                        <label
+                            htmlFor="broadcast-message"
+                            className="block text-xs font-medium text-slate-700 mb-1.5"
+                        >
+                            Isi Pengumuman
+                        </label>
+                        <textarea
+                            id="broadcast-message"
+                            rows={4}
+                            value={broadcastForm.data.message}
+                            onChange={(e) => broadcastForm.setData('message', e.target.value)}
+                            placeholder="Tulis informasi penting untuk seluruh pemegang tiket aktif..."
+                            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-blue focus:outline-none focus:ring-2 focus:ring-brand-blue/15 transition"
+                            required
+                            minLength={10}
+                            maxLength={1000}
+                        />
+                        {broadcastForm.errors.message && (
+                            <p role="alert" className="mt-1 text-xs text-rose-600">
+                                {broadcastForm.errors.message}
+                            </p>
+                        )}
+                    </div>
+
+                    <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-200">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={broadcastForm.processing}
+                            onClick={() => setIsBroadcastOpen(false)}
+                        >
+                            Batal
+                        </Button>
+                        <Button
+                            type="submit"
+                            variant="primary"
+                            size="sm"
+                            loading={broadcastForm.processing}
+                        >
+                            {broadcastForm.processing ? 'Mengirim...' : 'Kirim ke Peserta'}
+                        </Button>
+                    </div>
+                </form>
+            </Modal>
         </EoLayout>
     );
 }
