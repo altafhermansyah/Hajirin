@@ -230,6 +230,22 @@ class UserDashboardController extends Controller
                 ];
             });
 
+        $staffEvents = DB::table('event_staff')
+            ->join('events', 'events.id', '=', 'event_staff.event_id')
+            ->where('event_staff.user_id', $userId)
+            ->where('event_staff.role', 'CHECKIN')
+            ->whereIn('events.status', ['PUBLISHED', 'ONGOING'])
+            ->orderBy('events.starts_at')
+            ->get(['events.id', 'events.title', 'events.status', 'events.starts_at'])
+            ->map(fn ($event): array => [
+                'id' => $event->id,
+                'title' => $event->title,
+                'status' => $event->status,
+                'startsAtFormatted' => Carbon::parse($event->starts_at)
+                    ->locale('id')
+                    ->translatedFormat('d M Y, H:i').' WIB',
+            ]);
+
         return Inertia::render('Dashboard', [
             'dashboard' => [
                 'orderCount' => DB::table('orders')->where('user_id', $userId)->count(),
@@ -243,6 +259,7 @@ class UserDashboardController extends Controller
                 'recentOrders' => $recentOrders,
                 'myTickets' => $myTickets,
                 'bookmarkedEvents' => $bookmarkedEvents,
+                'staffEvents' => $staffEvents,
             ],
         ]);
     }

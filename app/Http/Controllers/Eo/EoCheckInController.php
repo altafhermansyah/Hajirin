@@ -96,10 +96,63 @@ class EoCheckInController extends Controller
                     ->translatedFormat('d M Y, H:i').' WIB',
             ]);
 
+        $searchQuery = trim((string) $request->query('q', ''));
+        $searchResults = [];
+
+        if (mb_strlen($searchQuery) >= 2) {
+            $like = '%'.strtolower($searchQuery).'%';
+
+            $searchResults = DB::table('tickets')
+                ->join('orders', 'orders.id', '=', 'tickets.order_id')
+                ->join('events', 'events.id', '=', 'orders.event_id')
+                ->join('order_items', 'order_items.id', '=', 'tickets.order_item_id')
+                ->join('ticket_types', 'ticket_types.id', '=', 'order_items.ticket_type_id')
+                ->where('events.eo_id', $eoId)
+                ->where('orders.status', 'PAID')
+                ->whereIn('tickets.status', ['ACTIVE', 'USED'])
+                ->when($selectedEventId, fn (Builder $query) => $query->where('events.id', $selectedEventId))
+                ->where(function (Builder $sub) use ($like): void {
+                    $sub->whereRaw('LOWER(tickets.attendee_name) LIKE ?', [$like])
+                        ->orWhereRaw('LOWER(tickets.attendee_email) LIKE ?', [$like])
+                        ->orWhereRaw('LOWER(tickets.ticket_code) LIKE ?', [$like]);
+                })
+                ->select(
+                    'tickets.id',
+                    'tickets.ticket_code',
+                    'tickets.attendee_name',
+                    'tickets.attendee_email',
+                    'tickets.status',
+                    'tickets.checked_in_at',
+                    'events.id as event_id',
+                    'events.title as event_title',
+                    'ticket_types.name as ticket_type_name'
+                )
+                ->orderByRaw("CASE WHEN tickets.status = 'ACTIVE' THEN 0 ELSE 1 END")
+                ->orderBy('tickets.attendee_name')
+                ->limit(15)
+                ->get()
+                ->map(fn ($row): array => [
+                    'id' => $row->id,
+                    'ticketCode' => $row->ticket_code,
+                    'attendeeName' => $row->attendee_name,
+                    'attendeeEmail' => $row->attendee_email,
+                    'status' => $row->status,
+                    'eventId' => $row->event_id,
+                    'eventTitle' => $row->event_title,
+                    'ticketTypeName' => $row->ticket_type_name,
+                    'checkedInAtFormatted' => $row->checked_in_at
+                        ? Carbon::parse($row->checked_in_at)->locale('id')->translatedFormat('d M Y, H:i').' WIB'
+                        : null,
+                ])
+                ->all();
+        }
+
         return Inertia::render('Eo/CheckIn', [
             'organizerName' => $approvedApplication->organization_name ?? $user->name,
             'events' => $events,
             'selectedEventId' => $selectedEventId ?? '',
+            'searchQuery' => $searchQuery,
+            'searchResults' => $searchResults,
             'stats' => [
                 'totalValidTickets' => $totalValid,
                 'checkedInCount' => $checkedIn,
@@ -224,8 +277,13 @@ class EoCheckInController extends Controller
             ];
         });
 
+        $result['eventTimestamp'] = now()->getPreciseTimestamp(3);
+
         return redirect()
-            ->route('eo.check-in.index', array_filter(['event_id' => $selectedEventId]))
+            ->route('eo.check-in.index', array_filter([
+                'event_id' => $selectedEventId,
+                'q' => trim((string) $request->input('q', '')) ?: null,
+            ]))
             ->with('checkin_result', $result);
     }
 }

@@ -363,7 +363,7 @@ export default function EoEventsTable({
                                                         </EoButton>
                                                     </div>
                                                 ) : (
-                                                    <span className="text-xs text-gray-400">—</span>
+                                                    <span className="text-xs text-gray-400">-</span>
                                                 )}
                                             </td>
                                         </tr>
@@ -424,6 +424,14 @@ export default function EoEventsTable({
                                 Scanner check-in
                             </Link>
                         )}
+                        <Link
+                            href={`/eo/staff?event_id=${actionMenu.event.id}`}
+                            role="menuitem"
+                            onClick={() => setActionMenu(null)}
+                            className="block w-full px-3 py-2 text-left text-xs font-medium text-gray-700 hover:bg-gray-50 hover:text-gray-900 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-blue-600"
+                        >
+                            Kelola staff
+                        </Link>
                         <button
                             type="button"
                             role="menuitem"

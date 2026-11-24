@@ -80,4 +80,9 @@ class Event extends Model
     {
         return $this->hasMany(Bookmark::class);
     }
+
+    public function staff(): HasMany
+    {
+        return $this->hasMany(EventStaff::class);
+    }
 }
