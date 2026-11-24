@@ -1,66 +1,81 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useId, useRef } from 'react';
 import { X } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
-export function Dialog({ open, onOpenChange, children }) {
+export function Dialog({ open, onOpenChange, ariaLabelledBy, ariaLabel, maxWidth = 'max-w-[440px]', children }) {
+    const dialogRef = useRef(null);
+    const pressedOutsideRef = useRef(false);
+
     useEffect(() => {
-        const handleKeyDown = (e) => {
-            if (e.key === 'Escape' && open) {
-                onOpenChange(false);
-            }
-        };
+        const dialog = dialogRef.current;
+        if (!dialog) return;
 
         if (open) {
-            document.body.style.overflow = 'hidden';
-            window.addEventListener('keydown', handleKeyDown);
-        } else {
-            document.body.style.overflow = '';
+            if (!dialog.open) {
+                dialog.showModal();
+            }
+        } else if (dialog.open) {
+            dialog.close();
+        }
+    }, [open]);
+
+    useEffect(() => {
+        const dialog = dialogRef.current;
+        if (!dialog) return;
+
+        const handleClose = () => {
+            dialog.returnValue = '';
+            onOpenChange?.(false);
+        };
+
+        const isOutside = (event) => {
+            const rect = dialog.getBoundingClientRect();
+            return (
+                event.clientX < rect.left ||
+                event.clientX > rect.right ||
+                event.clientY < rect.top ||
+                event.clientY > rect.bottom
+            );
+        };
+
+        const handlePointerDown = (event) => {
+            pressedOutsideRef.current = isOutside(event);
+        };
+
+        const handlePointerUp = (event) => {
+            if (pressedOutsideRef.current && isOutside(event) && dialog.open) {
+                dialog.close();
+            }
+            pressedOutsideRef.current = false;
+        };
+
+        dialog.addEventListener('close', handleClose);
+
+        const needsLightDismissFallback = !('closedBy' in HTMLDialogElement.prototype);
+        if (needsLightDismissFallback) {
+            dialog.addEventListener('pointerdown', handlePointerDown);
+            dialog.addEventListener('pointerup', handlePointerUp);
         }
 
         return () => {
-            document.body.style.overflow = '';
-            window.removeEventListener('keydown', handleKeyDown);
+            dialog.removeEventListener('close', handleClose);
+            if (needsLightDismissFallback) {
+                dialog.removeEventListener('pointerdown', handlePointerDown);
+                dialog.removeEventListener('pointerup', handlePointerUp);
+            }
         };
-    }, [open, onOpenChange]);
-
-    if (!open) return null;
+    }, [onOpenChange]);
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
-            {/* Inline keyframes for guaranteed 60fps smooth spring transitions */}
-            <style>{`
-                @keyframes hajirinFadeIn {
-                    from { opacity: 0; }
-                    to { opacity: 1; }
-                }
-                @keyframes hajirinSpringIn {
-                    0% {
-                        opacity: 0;
-                        transform: scale(0.94) translateY(14px);
-                    }
-                    100% {
-                        opacity: 1;
-                        transform: scale(1) translateY(0);
-                    }
-                }
-            `}</style>
-
-            {/* Backdrop Overlay */}
-            <div
-                className="fixed inset-0 bg-[#0D1B2A]/60 backdrop-blur-sm transition-opacity"
-                style={{ animation: 'hajirinFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards' }}
-                onClick={() => onOpenChange(false)}
-                aria-hidden="true"
-            />
-
-            {/* Modal Body */}
-            <div
-                className="relative w-full max-w-[440px] z-10 my-auto"
-                style={{ animation: 'hajirinSpringIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards' }}
-            >
-                {children}
-            </div>
-        </div>
+        <dialog
+            ref={dialogRef}
+            aria-labelledby={ariaLabelledBy}
+            aria-label={!ariaLabelledBy ? ariaLabel : undefined}
+            className={cn('hajirin-dialog m-auto w-full', maxWidth)}
+            {...{ closedby: 'any' }}
+        >
+            {open ? children : null}
+        </dialog>
     );
 }
 
@@ -68,20 +83,19 @@ export function DialogContent({ className, children, onClose, ...props }) {
     return (
         <div
             className={cn(
-                'relative w-full bg-white rounded-2xl shadow-2xl border border-gray-100 p-6 sm:p-8 text-left overflow-hidden',
+                'relative w-full bg-white rounded-xl shadow-lg border border-slate-200 p-6 sm:p-7 text-left overflow-y-auto max-h-[calc(100dvh-2rem)]',
                 className
             )}
-            onClick={(e) => e.stopPropagation()}
             {...props}
         >
             {onClose && (
                 <button
                     type="button"
                     onClick={onClose}
-                    className="absolute top-4 right-4 p-2 rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100/80 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-[#1D4ED8]/30 active:scale-90"
-                    aria-label="Tutup"
+                    className="absolute top-4 right-4 inline-flex size-8 items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue cursor-pointer"
+                    aria-label="Tutup dialog"
                 >
-                    <X className="w-4 h-4" />
+                    <X className="size-4" aria-hidden="true" />
                 </button>
             )}
             {children}
@@ -91,12 +105,60 @@ export function DialogContent({ className, children, onClose, ...props }) {
 
 export function DialogTitle({ className, ...props }) {
     return (
-        <h2 className={cn('text-xl font-bold tracking-tight text-gray-900', className)} {...props} />
+        <h1 className={cn('text-lg font-semibold tracking-tight text-slate-900', className)} {...props} />
     );
 }
 
 export function DialogDescription({ className, ...props }) {
     return (
-        <p className={cn('text-xs text-gray-500 leading-relaxed', className)} {...props} />
+        <p className={cn('text-sm text-slate-500 leading-relaxed', className)} {...props} />
+    );
+}
+
+/**
+ * Structured modal built on native `<dialog>` with consistent header, scrollable body, and optional footer.
+ */
+export function Modal({
+    open,
+    onClose,
+    title,
+    description = null,
+    maxWidth = 'max-w-lg',
+    footer = null,
+    children,
+}) {
+    const titleId = useId();
+
+    return (
+        <Dialog open={open} onOpenChange={(next) => !next && onClose?.()} ariaLabelledBy={titleId} maxWidth={maxWidth}>
+            <div className="w-full rounded-xl border border-slate-200 bg-white text-left shadow-lg overflow-hidden flex flex-col max-h-[calc(100dvh-2rem)]">
+                <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-4 shrink-0">
+                    <div className="min-w-0">
+                        <h1 id={titleId} className="text-base font-semibold text-slate-900">
+                            {title}
+                        </h1>
+                        {description && (
+                            <p className="mt-0.5 text-xs text-slate-500 leading-relaxed">{description}</p>
+                        )}
+                    </div>
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        aria-label="Tutup dialog"
+                        className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue transition-colors cursor-pointer"
+                    >
+                        <X className="size-4" aria-hidden="true" />
+                    </button>
+                </div>
+
+                <div className="overflow-y-auto p-5 flex-1">{children}</div>
+
+                {footer && (
+                    <div className="flex items-center justify-end gap-2 border-t border-slate-200 bg-slate-50/70 px-5 py-3.5 shrink-0">
+                        {footer}
+                    </div>
+                )}
+            </div>
+        </Dialog>
     );
 }

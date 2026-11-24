@@ -23,6 +23,17 @@
     to { opacity: 1; transform: scale(1) translateY(0); }
 }
 
+@keyframes tabFadeSlide {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 .animate-fade-in {
     animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
@@ -31,3 +42,65 @@
     animation: scaleUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+.tab-enter {
+    animation: tabFadeSlide 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Native <dialog> modal scroll containment & backdrop styling */
+@layer components {
+    dialog.hajirin-dialog {
+        padding: 0;
+        border: 0;
+        background: transparent;
+        width: calc(100vw - 2rem);
+        max-width: 440px;
+        max-height: calc(100dvh - 2rem);
+        overflow: visible;
+    }
+
+    dialog.hajirin-dialog[open] {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        animation: scaleUp 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+}
+
+/* Keep top-layer centering immune to parent space-y-* utilities in @layer utilities */
+dialog.hajirin-dialog:modal {
+    position: fixed;
+    inset: 0;
+    margin: auto;
+    height: fit-content;
+    overscroll-behavior: contain;
+}
+
+dialog:modal {
+    overscroll-behavior: contain;
+}
+
+@media print {
+    @page {
+        size: A4 portrait;
+        margin: 12mm;
+    }
+}
+
+dialog::backdrop {
+    background: rgba(13, 27, 42, 0.6);
+    backdrop-filter: blur(4px);
+    overflow: hidden;
+    overscroll-behavior: contain;
+    animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
