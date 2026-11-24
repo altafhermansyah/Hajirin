@@ -1,29 +1,36 @@
 import React, { useState } from 'react';
-import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
+import { Link, router, useForm, usePage } from '@inertiajs/react';
 import AdminLayout from '../../../Layouts/AdminLayout';
 import {
     Calendar,
-    CalendarDays,
-    Building2,
     CheckCircle2,
-    XCircle,
-    AlertCircle,
     Search,
     MapPin,
     ExternalLink,
-    Filter,
     X,
-    Clock,
-    Ticket,
-    Eye,
     PlusCircle,
     Ban,
     Trash2,
-    ChevronDown,
-    SlidersHorizontal,
     Globe,
-    Layers,
 } from 'lucide-react';
+import { Card } from '../../../Components/ui/Card';
+import { StatusBadge, NeutralTag } from '../../../Components/ui/StatusBadge';
+import { UnderlineTabs } from '../../../Components/ui/UnderlineTabs';
+import { Pagination } from '../../../Components/ui/Pagination';
+import { FlashBanner } from '../../../Components/ui/FlashBanner';
+import { Button, buttonClass } from '../../../Components/ui/Button';
+import { Modal } from '../../../Components/ui/Dialog';
+
+const EVENT_STATUS_META = {
+    PUBLISHED: { tone: 'success', label: 'Published' },
+    PENDING_REVIEW: { tone: 'warning', label: 'Pending Review' },
+    DRAFT: { tone: 'neutral', label: 'Draft' },
+    CANCELLED: { tone: 'danger', label: 'Cancelled' },
+    REJECTED: { tone: 'danger', label: 'Rejected' },
+};
+
+const TEXTAREA_CLASS =
+    'w-full p-3 rounded-lg border border-slate-200 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-blue focus:outline-none focus:ring-2 focus:ring-brand-blue/15 transition';
 
 export default function AdminEventsIndex({
     events = { data: [], links: [] },
@@ -33,19 +40,17 @@ export default function AdminEventsIndex({
 }) {
     const { flash } = usePage().props;
 
-    // Filters
     const [search, setSearch] = useState(filters.search || '');
     const [selectedStatus, setSelectedStatus] = useState(filters.status || 'ALL');
     const [selectedCategory, setSelectedCategory] = useState(filters.category || 'ALL');
     const [selectedSort, setSelectedSort] = useState(filters.sort || 'latest');
 
-    // Modals
     const [rejectingEvent, setRejectingEvent] = useState(null);
     const [cancellingEvent, setCancellingEvent] = useState(null);
     const [detailEvent, setDetailEvent] = useState(null);
+    const [deletingEvent, setDeletingEvent] = useState(null);
     const [processingApproveId, setProcessingApproveId] = useState(null);
 
-    // Forms
     const rejectForm = useForm({
         rejection_reason: '',
     });
@@ -132,129 +137,94 @@ export default function AdminEventsIndex({
         });
     };
 
-    const handleDelete = (evt) => {
-        if (!confirm(`Hapus event "${evt.title}" secara permanen?`)) return;
+    const handleDeleteConfirm = () => {
+        if (!deletingEvent) return;
 
-        router.delete(`/admin/events/${evt.id}`, {
+        router.delete(`/admin/events/${deletingEvent.id}`, {
             preserveScroll: true,
+            onFinish: () => setDeletingEvent(null),
         });
     };
 
+    const statusTabs = [
+        ['ALL', 'Semua Event', stats.total ?? 0],
+        ['PUBLISHED', 'Published', stats.published ?? 0],
+        ['DRAFT', 'Draft', stats.draft ?? 0],
+        ['PENDING_REVIEW', 'Pending Review', stats.pendingReview ?? 0],
+        ['CANCELLED', 'Cancelled', stats.cancelled ?? 0],
+        ['REJECTED', 'Rejected', stats.rejected ?? 0],
+    ];
+
     return (
         <AdminLayout title="Kelola Event">
-            {/* Flash Messages */}
-            {flash?.success && (
-                <div className="flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900 shadow-xs animate-fade-in">
-                    <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-emerald-600" />
-                    <p className="font-semibold">{flash.success}</p>
-                </div>
-            )}
+            {flash?.success && <FlashBanner tone="success" message={flash.success} />}
+            {flash?.error && <FlashBanner tone="error" message={flash.error} />}
 
-            {flash?.error && (
-                <div className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-900 shadow-xs animate-fade-in">
-                    <AlertCircle className="mt-0.5 size-5 shrink-0 text-red-600" />
-                    <p className="font-semibold">{flash.error}</p>
-                </div>
-            )}
-
-            {/* Page Header matching mockup */}
+            {/* Page Header */}
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div>
-                    <div className="flex items-center gap-2.5">
-                        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
-                            Kelola Event
-                        </h1>
-                        <span className="inline-flex items-center rounded-full bg-blue-50 border border-blue-200 px-3 py-0.5 text-xs font-bold text-blue-700">
-                            Total {stats.total ?? 0} Event
-                        </span>
-                    </div>
-                    <p className="mt-1 text-xs sm:text-sm text-slate-500">
-                        Kelola event, review, kurasi dan publikasi, serta pantau kuota tiket seluruh penyelenggara.
+                    <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-slate-900">
+                        Kelola Event
+                    </h1>
+                    <p className="mt-1 text-sm text-slate-500">
+                        Kelola moderasi publikasi, status acara, dan pantau kuota tiket dari seluruh penyelenggara.
                     </p>
                 </div>
 
-                <div className="flex items-center gap-3">
-                    <Link
-                        href="/eo/events/create"
-                        className="inline-flex items-center gap-2 rounded-xl bg-slate-950 px-4 py-2.5 text-xs sm:text-sm font-semibold text-white shadow-sm hover:bg-slate-800 transition"
-                    >
-                        <PlusCircle className="size-4" />
-                        Buat Event Baru
-                    </Link>
-                </div>
-            </div>
-
-            {/* Status Tabs in Floating Pill Style matching mockup */}
-            <div className="flex items-center gap-1.5 p-1 bg-slate-100/90 rounded-2xl inline-flex overflow-x-auto max-w-full">
-                {[
-                    ['ALL', 'Semua Event', stats.total ?? 0],
-                    ['PUBLISHED', 'Published', stats.published ?? 0],
-                    ['DRAFT', 'Draft', stats.draft ?? 0],
-                    ['PENDING_REVIEW', 'Pending Review', stats.pendingReview ?? 0],
-                    ['CANCELLED', 'Cancelled', stats.cancelled ?? 0],
-                    ['REJECTED', 'Rejected', stats.rejected ?? 0],
-                ].map(([key, label, count]) => {
-                    const isTabActive = selectedStatus === key;
-
-                    return (
-                        <button
-                            key={key}
-                            type="button"
-                            onClick={() => handleStatusTabChange(key)}
-                            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap cursor-pointer ${
-                                isTabActive
-                                    ? 'bg-blue-600 text-white shadow-xs'
-                                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
-                            }`}
-                        >
-                            <span>{label}</span>
-                            <span
-                                className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
-                                    isTabActive ? 'bg-white/20 text-white' : 'bg-slate-200/70 text-slate-700'
-                                }`}
-                            >
-                                {count}
-                            </span>
-                        </button>
-                    );
-                })}
+                <Link href="/eo/events/create" className={buttonClass('primary', 'md')}>
+                    <PlusCircle className="size-4" aria-hidden="true" />
+                    <span>Buat Event Baru</span>
+                </Link>
             </div>
 
             {/* Filter & Table Container */}
-            <div className="rounded-2xl border border-slate-200/90 bg-white shadow-xs overflow-hidden">
+            <Card className="overflow-hidden">
+                <UnderlineTabs
+                    items={statusTabs}
+                    activeKey={selectedStatus}
+                    onChange={handleStatusTabChange}
+                />
+
                 {/* Search & Filter Bar */}
-                <div className="p-3.5 sm:p-4 flex flex-col md:flex-row items-center justify-between gap-3 border-b border-slate-100 bg-slate-50/40">
+                <div className="px-5 py-3.5 flex flex-col md:flex-row items-center justify-between gap-3 border-b border-slate-200 bg-slate-50/40">
                     <form onSubmit={handleSearchSubmit} className="relative w-full md:w-80">
-                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-slate-400 pointer-events-none" />
+                        <Search
+                            className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400 pointer-events-none"
+                            aria-hidden="true"
+                        />
                         <input
                             type="text"
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             placeholder="Cari nama event, venue, atau EO..."
-                            className="w-full h-10 pl-10 pr-10 rounded-xl border border-slate-200 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10 transition"
+                            aria-label="Cari event"
+                            className="w-full h-9 pl-9 pr-9 rounded-lg border border-slate-200 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-blue focus:outline-none focus:ring-2 focus:ring-brand-blue/15 transition"
                         />
                         {search && (
                             <button
                                 type="button"
+                                aria-label="Hapus pencarian"
                                 onClick={() => {
                                     setSearch('');
                                     applyFilters({ search: '' });
                                 }}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
                             >
-                                <X className="size-4" />
+                                <X className="size-4" aria-hidden="true" />
                             </button>
                         )}
                     </form>
 
                     <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-                        {/* Kategori Filter */}
-                        <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
-                            <span>Kategori:</span>
+                        <div className="flex items-center gap-2 text-xs text-slate-500">
+                            <label htmlFor="event-category-filter" className="font-medium">
+                                Kategori:
+                            </label>
                             <select
+                                id="event-category-filter"
                                 value={selectedCategory}
                                 onChange={(e) => handleCategoryChange(e.target.value)}
-                                className="h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 focus:border-blue-600 focus:outline-none"
+                                className="h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-medium text-slate-700 focus:border-brand-blue focus:outline-none"
                             >
                                 <option value="ALL">Semua Kategori</option>
                                 {categories.map((cat) => (
@@ -265,13 +235,15 @@ export default function AdminEventsIndex({
                             </select>
                         </div>
 
-                        {/* Sort Filter */}
-                        <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
-                            <span>Urutkan:</span>
+                        <div className="flex items-center gap-2 text-xs text-slate-500">
+                            <label htmlFor="event-sort-filter" className="font-medium">
+                                Urutkan:
+                            </label>
                             <select
+                                id="event-sort-filter"
                                 value={selectedSort}
                                 onChange={(e) => handleSortChange(e.target.value)}
-                                className="h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 focus:border-blue-600 focus:outline-none"
+                                className="h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-medium text-slate-700 focus:border-brand-blue focus:outline-none"
                             >
                                 <option value="latest">Terbaru</option>
                                 <option value="oldest">Terlama</option>
@@ -282,186 +254,149 @@ export default function AdminEventsIndex({
                     </div>
                 </div>
 
-                {/* Table Data matching Mockup Screen 1 */}
+                {/* Table Data */}
                 <div className="overflow-x-auto">
                     <table className="w-full text-left text-sm">
-                        <thead className="bg-slate-50/70 border-b border-slate-200/80 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                        <thead className="border-b border-slate-200 bg-slate-50/70 text-xs font-medium text-slate-500">
                             <tr>
-                                <th scope="col" className="py-3.5 px-5">Event & Banner</th>
-                                <th scope="col" className="py-3.5 px-5">Penyelenggara (EO)</th>
-                                <th scope="col" className="py-3.5 px-5">Kategori & Tanggal</th>
-                                <th scope="col" className="py-3.5 px-5">Lokasi / Venue</th>
-                                <th scope="col" className="py-3.5 px-5">Tiket Terjual / Kuota</th>
-                                <th scope="col" className="py-3.5 px-5">Status</th>
-                                <th scope="col" className="py-3.5 px-5 text-right">Aksi</th>
+                                <th scope="col" className="py-3 px-5">Event & Jadwal</th>
+                                <th scope="col" className="py-3 px-5">Penyelenggara</th>
+                                <th scope="col" className="py-3 px-5">Kategori & Waktu</th>
+                                <th scope="col" className="py-3 px-5">Lokasi</th>
+                                <th scope="col" className="py-3 px-5">Tiket Terjual</th>
+                                <th scope="col" className="py-3 px-5">Status</th>
+                                <th scope="col" className="py-3 px-5 text-right">Aksi</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                             {events.data && events.data.length > 0 ? (
                                 events.data.map((evt, idx) => {
+                                    const statusMeta = EVENT_STATUS_META[evt.status] || {
+                                        tone: 'neutral',
+                                        label: evt.status,
+                                    };
+
                                     return (
-                                        <tr key={evt.id} className="hover:bg-slate-50/70 transition">
-                                            {/* Event & Banner with Date Badge */}
-                                            <td className="py-4 px-5">
+                                        <tr key={evt.id} className="hover:bg-slate-50/60 transition-colors">
+                                            <td className="py-3.5 px-5">
                                                 <div className="flex items-center gap-3">
-                                                    {/* Date Badge Box */}
-                                                    <div className="flex size-11 shrink-0 flex-col items-center justify-center rounded-xl bg-blue-600 text-white font-extrabold shadow-2xs">
-                                                        <span className="text-[10px] uppercase tracking-wider leading-none">
+                                                    <div className="flex size-10 shrink-0 flex-col items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-900">
+                                                        <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-500 leading-none">
                                                             {evt.monthBadge}
                                                         </span>
-                                                        <span className="text-base font-black leading-none mt-0.5">
+                                                        <span className="text-sm font-semibold tabular-nums leading-none mt-1">
                                                             {evt.dayBadge}
                                                         </span>
                                                     </div>
 
                                                     <div className="min-w-0 max-w-xs">
-                                                        <p className="font-bold text-slate-900 leading-snug line-clamp-2">
+                                                        <p className="font-medium text-slate-900 leading-snug line-clamp-2">
                                                             {evt.title}
                                                         </p>
-                                                        <span className="text-[11px] font-mono text-slate-400">
-                                                            ID: #EVT-{String(idx + 1).padStart(3, '0')}
+                                                        <span className="text-xs font-mono text-slate-400">
+                                                            #EVT-{String(idx + 1).padStart(3, '0')}
                                                         </span>
                                                     </div>
                                                 </div>
                                             </td>
 
-                                            {/* Penyelenggara */}
-                                            <td className="py-4 px-5">
-                                                <div className="flex items-center gap-1.5">
-                                                    <p className="font-semibold text-slate-900 text-xs sm:text-sm">
-                                                        {evt.organizerName}
-                                                    </p>
+                                            <td className="py-3.5 px-5">
+                                                <p className="font-medium text-slate-900 text-sm leading-snug">
+                                                    <span>{evt.organizerName}</span>
                                                     {evt.isVerifiedEo && (
                                                         <CheckCircle2
-                                                            className="size-3.5 text-blue-600 shrink-0"
-                                                            title="EO Terverifikasi"
+                                                            className="inline-block size-3.5 text-brand-blue ml-1.5 align-text-bottom"
+                                                            aria-label="Penyelenggara terverifikasi"
                                                         />
                                                     )}
-                                                </div>
-                                                <p className="text-[11px] text-slate-400">
-                                                    {evt.isVerifiedEo ? 'EO Terverifikasi' : 'Penyelenggara Akun'}
                                                 </p>
                                             </td>
 
-                                            {/* Kategori & Tanggal */}
-                                            <td className="py-4 px-5">
-                                                <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-blue-700">
-                                                    {evt.category}
-                                                </span>
-                                                <p className="text-xs text-slate-600 mt-1 flex items-center gap-1">
-                                                    <Clock className="size-3 text-slate-400" />
+                                            <td className="py-3.5 px-5 whitespace-nowrap">
+                                                <NeutralTag>{evt.category}</NeutralTag>
+                                                <p className="text-xs text-slate-500 mt-1.5 tabular-nums">
                                                     {evt.startsAtFormatted}
                                                 </p>
                                             </td>
 
-                                            {/* Lokasi / Venue */}
-                                            <td className="py-4 px-5">
-                                                <p className="text-xs font-semibold text-slate-800">
+                                            <td className="py-3.5 px-5">
+                                                <p className="text-xs font-medium text-slate-800">
                                                     {evt.venueName}
                                                 </p>
-                                                <span className="inline-flex items-center gap-1 text-[11px] text-slate-500 mt-0.5">
+                                                <span className="inline-flex items-center gap-1 text-xs text-slate-500 mt-0.5">
                                                     {evt.eventType === 'ONLINE' ? (
                                                         <>
-                                                            <Globe className="size-3 text-blue-500" />
+                                                            <Globe className="size-3 text-slate-400" aria-hidden="true" />
                                                             Online Event
                                                         </>
                                                     ) : (
                                                         <>
-                                                            <MapPin className="size-3 text-slate-400" />
+                                                            <MapPin className="size-3 text-slate-400" aria-hidden="true" />
                                                             {evt.city || 'Offline'}
                                                         </>
                                                     )}
                                                 </span>
                                             </td>
 
-                                            {/* Tiket Terjual / Kuota with Progress Bar */}
-                                            <td className="py-4 px-5">
-                                                <div className="flex items-center justify-between text-xs font-semibold text-slate-800 mb-1 max-w-[130px]">
-                                                    <span>
+                                            <td className="py-3.5 px-5">
+                                                <div className="flex items-center justify-between text-xs text-slate-700 mb-1.5 max-w-[130px] tabular-nums">
+                                                    <span className="font-medium">
                                                         {evt.ticketsSold.toLocaleString('id-ID')} /{' '}
                                                         {evt.initialQuota.toLocaleString('id-ID')}
                                                     </span>
-                                                    <span className="text-[11px] text-emerald-600 font-bold ml-1.5">
+                                                    <span className="text-slate-500 ml-2">
                                                         {evt.soldPercentage}%
                                                     </span>
                                                 </div>
-                                                <div className="w-28 h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                                                <div className="w-28 h-1 rounded-xs bg-slate-200 overflow-hidden">
                                                     <div
-                                                        className="h-full bg-emerald-500 rounded-full transition-all duration-300"
+                                                        className="h-full bg-brand-blue transition-all duration-300"
                                                         style={{ width: `${Math.min(100, evt.soldPercentage)}%` }}
                                                     />
                                                 </div>
                                             </td>
 
-                                            {/* Status Badge */}
-                                            <td className="py-4 px-5">
-                                                {evt.status === 'PUBLISHED' && (
-                                                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 border border-emerald-200/70">
-                                                        <span className="size-1.5 rounded-full bg-emerald-500" />
-                                                        Published
-                                                    </span>
-                                                )}
-                                                {evt.status === 'PENDING_REVIEW' && (
-                                                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-700 border border-amber-200/70">
-                                                        <span className="size-1.5 rounded-full bg-amber-500 animate-pulse" />
-                                                        Pending Review
-                                                    </span>
-                                                )}
-                                                {evt.status === 'DRAFT' && (
-                                                    <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600 border border-slate-200">
-                                                        Draft
-                                                    </span>
-                                                )}
-                                                {evt.status === 'CANCELLED' && (
-                                                    <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-semibold text-red-700 border border-red-200">
-                                                        Cancelled
-                                                    </span>
-                                                )}
-                                                {evt.status === 'REJECTED' && (
-                                                    <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2.5 py-0.5 text-xs font-semibold text-rose-700 border border-rose-200">
-                                                        Rejected
-                                                    </span>
-                                                )}
+                                            <td className="py-3.5 px-5">
+                                                <StatusBadge
+                                                    tone={statusMeta.tone}
+                                                    label={statusMeta.label}
+                                                />
                                             </td>
 
-                                            {/* Aksi Kolom */}
-                                            <td className="py-4 px-5 text-right">
+                                            <td className="py-3.5 px-5 text-right">
                                                 <div className="inline-flex items-center gap-1.5">
-                                                    {/* Tombol Detail Preview */}
-                                                    <button
-                                                        type="button"
+                                                    <Button
+                                                        variant="outline"
+                                                        size="xs"
                                                         onClick={() => setDetailEvent(evt)}
-                                                        className="px-2.5 py-1 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
                                                     >
                                                         Detail
-                                                    </button>
+                                                    </Button>
 
-                                                    {/* Jika PENDING_REVIEW: Approve & Reject */}
                                                     {evt.status === 'PENDING_REVIEW' && (
                                                         <>
-                                                            <button
-                                                                type="button"
+                                                            <Button
+                                                                variant="primary"
+                                                                size="xs"
+                                                                loading={processingApproveId === evt.id}
                                                                 onClick={() => handleApprove(evt)}
-                                                                disabled={processingApproveId === evt.id}
-                                                                className="px-2.5 py-1 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 disabled:opacity-50 transition"
                                                             >
                                                                 {processingApproveId === evt.id ? '...' : 'Approve'}
-                                                            </button>
-                                                            <button
-                                                                type="button"
+                                                            </Button>
+                                                            <Button
+                                                                variant="danger-outline"
+                                                                size="xs"
                                                                 onClick={() => {
                                                                     rejectForm.reset();
                                                                     rejectForm.clearErrors();
                                                                     setRejectingEvent(evt);
                                                                 }}
-                                                                className="px-2.5 py-1 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold hover:bg-rose-100 transition"
                                                             >
                                                                 Reject
-                                                            </button>
+                                                            </Button>
                                                         </>
                                                     )}
 
-                                                    {/* Jika PUBLISHED: Tombol Take Down / Batalkan */}
                                                     {evt.status === 'PUBLISHED' && (
                                                         <button
                                                             type="button"
@@ -470,30 +405,31 @@ export default function AdminEventsIndex({
                                                                 cancelForm.clearErrors();
                                                                 setCancellingEvent(evt);
                                                             }}
-                                                            className="p-1 rounded-lg border border-red-200 bg-white text-red-600 hover:bg-red-50 transition"
+                                                            className={buttonClass('danger-outline', 'icon')}
                                                             title="Tarik / Batalkan Event"
+                                                            aria-label={`Batalkan event ${evt.title}`}
                                                         >
-                                                            <Ban className="size-3.5" />
+                                                            <Ban className="size-3.5" aria-hidden="true" />
                                                         </button>
                                                     )}
 
-                                                    {/* Jika DRAFT: Tombol Publish & Delete */}
                                                     {evt.status === 'DRAFT' && (
                                                         <>
-                                                            <button
-                                                                type="button"
+                                                            <Button
+                                                                variant="primary"
+                                                                size="xs"
                                                                 onClick={() => handleApprove(evt)}
-                                                                className="px-2.5 py-1 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 transition"
                                                             >
                                                                 Publish
-                                                            </button>
+                                                            </Button>
                                                             <button
                                                                 type="button"
-                                                                onClick={() => handleDelete(evt)}
-                                                                className="p-1 rounded-lg border border-slate-200 text-slate-500 hover:text-red-600 hover:bg-slate-50 transition"
+                                                                onClick={() => setDeletingEvent(evt)}
+                                                                className={buttonClass('danger-outline', 'icon')}
                                                                 title="Hapus Event"
+                                                                aria-label={`Hapus event ${evt.title}`}
                                                             >
-                                                                <Trash2 className="size-3.5" />
+                                                                <Trash2 className="size-3.5" aria-hidden="true" />
                                                             </button>
                                                         </>
                                                     )}
@@ -504,10 +440,14 @@ export default function AdminEventsIndex({
                                 })
                             ) : (
                                 <tr>
-                                    <td colSpan="7" className="py-12 text-center text-slate-400">
-                                        <Calendar className="mx-auto size-8 text-slate-300 mb-2" />
-                                        <p className="font-semibold text-slate-600">Tidak ada event ditemukan.</p>
-                                        <p className="text-xs text-slate-400 mt-1">Coba sesuaikan kata kunci pencarian atau filter status.</p>
+                                    <td colSpan="7" className="py-12 text-center text-slate-500">
+                                        <Calendar className="mx-auto size-7 text-slate-300 mb-2" aria-hidden="true" />
+                                        <p className="text-sm font-medium text-slate-700">
+                                            Tidak ada event ditemukan.
+                                        </p>
+                                        <p className="text-xs text-slate-400 mt-1">
+                                            Coba sesuaikan kata kunci pencarian atau filter status.
+                                        </p>
                                     </td>
                                 </tr>
                             )}
@@ -515,262 +455,236 @@ export default function AdminEventsIndex({
                     </table>
                 </div>
 
-                {/* Table Footer / Pagination matching mockup */}
-                {events.links && events.links.length > 3 && (
-                    <div className="p-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
-                        <p>
-                            Menampilkan <span className="font-semibold text-slate-900">{events.from || 0}</span> sampai{' '}
-                            <span className="font-semibold text-slate-900">{events.to || 0}</span> dari{' '}
-                            <span className="font-semibold text-slate-900">{events.total || 0}</span> Event
-                        </p>
-                        <div className="flex items-center gap-1">
-                            {events.links.map((link, idx) => {
-                                const cleanLabel = link.label
-                                    .replace('&laquo; Previous', 'Sebelumnya')
-                                    .replace('Next &raquo;', 'Berikutnya');
+                <Pagination
+                    links={events.links}
+                    from={events.from}
+                    to={events.to}
+                    total={events.total}
+                    itemLabel="event"
+                />
+            </Card>
 
-                                return link.url ? (
-                                    <Link
-                                        key={idx}
-                                        href={link.url}
-                                        className={`px-3 py-1.5 rounded-lg font-semibold transition ${
-                                            link.active
-                                                ? 'bg-blue-600 text-white'
-                                                : 'border border-slate-200 hover:bg-slate-50 text-slate-700'
-                                        }`}
-                                    >
-                                        {cleanLabel}
-                                    </Link>
-                                ) : (
-                                    <span
-                                        key={idx}
-                                        className="px-2.5 py-1 text-slate-300 border border-slate-100 rounded-lg"
-                                    >
-                                        {cleanLabel}
-                                    </span>
-                                );
-                            })}
+            {/* Modal 1: Reject Event */}
+            <Modal
+                open={Boolean(rejectingEvent)}
+                onClose={() => setRejectingEvent(null)}
+                title="Tolak Publikasi Event"
+                description={
+                    rejectingEvent
+                        ? `Berikan catatan revisi untuk penyelenggara: ${rejectingEvent.title}`
+                        : null
+                }
+                maxWidth="max-w-lg"
+            >
+                {rejectingEvent && (
+                    <form onSubmit={handleRejectSubmit} className="space-y-4">
+                        <div>
+                            <label
+                                htmlFor="admin-event-reject-reason"
+                                className="block text-xs font-medium text-slate-700 mb-1.5"
+                            >
+                                Catatan Revisi / Alasan Penolakan <span className="text-rose-600">*</span>
+                            </label>
+                            <textarea
+                                id="admin-event-reject-reason"
+                                rows={4}
+                                value={rejectForm.data.rejection_reason}
+                                onChange={(e) => rejectForm.setData('rejection_reason', e.target.value)}
+                                placeholder="Jelaskan bagian deskripsi, jadwal, atau kelengkapan yang perlu diperbaiki oleh EO..."
+                                className={TEXTAREA_CLASS}
+                                required
+                            />
+                            {rejectForm.errors.rejection_reason && (
+                                <p role="alert" className="mt-1 text-xs text-rose-600">
+                                    {rejectForm.errors.rejection_reason}
+                                </p>
+                            )}
+                        </div>
+
+                        <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-200">
+                            <Button variant="outline" size="sm" onClick={() => setRejectingEvent(null)}>
+                                Batal
+                            </Button>
+                            <Button type="submit" variant="danger" size="sm" loading={rejectForm.processing}>
+                                {rejectForm.processing ? 'Menyimpan...' : 'Tolak & Kembalikan ke EO'}
+                            </Button>
+                        </div>
+                    </form>
+                )}
+            </Modal>
+
+            {/* Modal 2: Cancel / Take Down Event */}
+            <Modal
+                open={Boolean(cancellingEvent)}
+                onClose={() => setCancellingEvent(null)}
+                title="Tarik / Batalkan Event Publik"
+                description={
+                    cancellingEvent
+                        ? `Event "${cancellingEvent.title}" akan diturunkan dari katalog publik.`
+                        : null
+                }
+                maxWidth="max-w-lg"
+            >
+                {cancellingEvent && (
+                    <form onSubmit={handleCancelSubmit} className="space-y-4">
+                        <div>
+                            <label
+                                htmlFor="admin-event-cancel-reason"
+                                className="block text-xs font-medium text-slate-700 mb-1.5"
+                            >
+                                Alasan Pembatalan / Take Down <span className="text-rose-600">*</span>
+                            </label>
+                            <textarea
+                                id="admin-event-cancel-reason"
+                                rows={4}
+                                value={cancelForm.data.cancellation_reason}
+                                onChange={(e) => cancelForm.setData('cancellation_reason', e.target.value)}
+                                placeholder="Contoh: Pembatalan oleh pihak berwenang, pelanggaran syarat ketentuan, atau force majeure..."
+                                className={TEXTAREA_CLASS}
+                                required
+                            />
+                            {cancelForm.errors.cancellation_reason && (
+                                <p role="alert" className="mt-1 text-xs text-rose-600">
+                                    {cancelForm.errors.cancellation_reason}
+                                </p>
+                            )}
+                        </div>
+
+                        <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-200">
+                            <Button variant="outline" size="sm" onClick={() => setCancellingEvent(null)}>
+                                Batal
+                            </Button>
+                            <Button type="submit" variant="danger" size="sm" loading={cancelForm.processing}>
+                                {cancelForm.processing ? 'Memproses...' : 'Ya, Batalkan Event'}
+                            </Button>
+                        </div>
+                    </form>
+                )}
+            </Modal>
+
+            {/* Modal 3: Detail Event Quick View */}
+            <Modal
+                open={Boolean(detailEvent)}
+                onClose={() => setDetailEvent(null)}
+                title={detailEvent?.title || 'Detail Event'}
+                description={
+                    detailEvent
+                        ? `Oleh: ${detailEvent.organizerName} (${detailEvent.organizerEmail})`
+                        : null
+                }
+                maxWidth="max-w-2xl"
+                footer={
+                    <div className="flex w-full items-center justify-between gap-2">
+                        {detailEvent?.status === 'PUBLISHED' ? (
+                            <Link
+                                href={`/event/${detailEvent.slug}`}
+                                className={buttonClass('outline', 'sm')}
+                            >
+                                <span>Buka Halaman Publik Event</span>
+                                <ExternalLink className="size-3.5 text-slate-400" aria-hidden="true" />
+                            </Link>
+                        ) : (
+                            <div />
+                        )}
+
+                        <Button variant="outline" size="sm" onClick={() => setDetailEvent(null)}>
+                            Tutup
+                        </Button>
+                    </div>
+                }
+            >
+                {detailEvent && (
+                    <div className="space-y-4 text-sm text-slate-700">
+                        <div className="flex flex-wrap items-center gap-2.5">
+                            <NeutralTag>{detailEvent.category}</NeutralTag>
+                            <StatusBadge
+                                tone={EVENT_STATUS_META[detailEvent.status]?.tone || 'neutral'}
+                                label={EVENT_STATUS_META[detailEvent.status]?.label || detailEvent.status}
+                            />
+                        </div>
+
+                        <div className="rounded-lg overflow-hidden max-h-48 bg-slate-100 border border-slate-200">
+                            <img
+                                src={detailEvent.banner}
+                                alt={detailEvent.title}
+                                className="w-full h-48 object-cover"
+                            />
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50 p-4 rounded-lg border border-slate-200 text-xs">
+                            <div>
+                                <p className="font-medium text-slate-500">Jadwal Acara</p>
+                                <p className="font-semibold text-slate-900 mt-0.5 tabular-nums">
+                                    {detailEvent.startsAtFormatted}
+                                </p>
+                            </div>
+                            <div>
+                                <p className="font-medium text-slate-500">Lokasi / Venue</p>
+                                <p className="font-semibold text-slate-900 mt-0.5">{detailEvent.location}</p>
+                            </div>
+                            <div>
+                                <p className="font-medium text-slate-500">Tiket Terjual / Kuota</p>
+                                <p className="font-semibold text-slate-900 mt-0.5 tabular-nums">
+                                    {detailEvent.ticketsSold} / {detailEvent.initialQuota} ({detailEvent.soldPercentage}%)
+                                </p>
+                            </div>
+                            <div>
+                                <p className="font-medium text-slate-500">Status Saat Ini</p>
+                                <p className="font-semibold text-slate-900 mt-0.5">
+                                    {EVENT_STATUS_META[detailEvent.status]?.label || detailEvent.status}
+                                </p>
+                            </div>
+                        </div>
+
+                        {detailEvent.rejectionReason && (
+                            <div className="p-3.5 rounded-lg bg-rose-50/70 border border-rose-200 text-rose-800 text-xs">
+                                <p className="font-semibold">Catatan Evaluasi / Penolakan Terakhir:</p>
+                                <p className="mt-1 leading-relaxed">{detailEvent.rejectionReason}</p>
+                            </div>
+                        )}
+
+                        {detailEvent.cancellationReason && (
+                            <div className="p-3.5 rounded-lg bg-rose-50/70 border border-rose-200 text-rose-800 text-xs">
+                                <p className="font-semibold">Alasan Penarikan / Pembatalan:</p>
+                                <p className="mt-1 leading-relaxed">{detailEvent.cancellationReason}</p>
+                            </div>
+                        )}
+
+                        <div>
+                            <p className="text-xs font-medium text-slate-500 mb-1.5">Deskripsi Singkat Acara</p>
+                            <p className="text-xs leading-relaxed text-slate-600 whitespace-pre-line bg-slate-50 p-3.5 rounded-lg border border-slate-200">
+                                {detailEvent.description}
+                            </p>
                         </div>
                     </div>
                 )}
-            </div>
+            </Modal>
 
-            {/* Modal 1: Reject Event with Revision Reason */}
-            {rejectingEvent && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-xs animate-fade-in">
-                    <div className="relative w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl border border-slate-200">
-                        <div className="flex items-center justify-between pb-4 border-b border-slate-100">
-                            <div>
-                                <h3 className="text-lg font-bold text-slate-900">Tolak Publikasi Event</h3>
-                                <p className="text-xs text-slate-500">
-                                    Berikan catatan revisi atau alasan evaluasi bagi penyelenggara: <span className="font-semibold text-slate-700">{rejectingEvent.title}</span>
-                                </p>
-                            </div>
-                            <button
-                                type="button"
-                                onClick={() => setRejectingEvent(null)}
-                                className="p-1 rounded-lg text-slate-400 hover:text-slate-600"
-                            >
-                                <X className="size-5" />
-                            </button>
-                        </div>
-
-                        <form onSubmit={handleRejectSubmit} className="space-y-4 pt-4">
-                            <div>
-                                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1">
-                                    Catatan Revisi / Alasan Penolakan *
-                                </label>
-                                <textarea
-                                    rows="4"
-                                    value={rejectForm.data.rejection_reason}
-                                    onChange={(e) => rejectForm.setData('rejection_reason', e.target.value)}
-                                    placeholder="Jelaskan bagian deskripsi, jadwal, atau kelengkapan yang perlu diperbaiki oleh EO..."
-                                    className="w-full p-3 rounded-xl border border-slate-200 text-sm focus:border-red-500 focus:outline-none focus:ring-4 focus:ring-red-500/10"
-                                    required
-                                />
-                                {rejectForm.errors.rejection_reason && (
-                                    <p className="mt-1 text-xs text-red-600">{rejectForm.errors.rejection_reason}</p>
-                                )}
-                            </div>
-
-                            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-                                <button
-                                    type="button"
-                                    onClick={() => setRejectingEvent(null)}
-                                    className="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-slate-600 hover:bg-slate-100 transition"
-                                >
-                                    Batal
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={rejectForm.processing}
-                                    className="px-5 py-2 rounded-xl text-xs sm:text-sm font-semibold text-white bg-rose-600 hover:bg-rose-700 disabled:opacity-50 transition"
-                                >
-                                    {rejectForm.processing ? 'Menyimpan...' : 'Tolak & Kembalikan ke EO'}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
-
-            {/* Modal 2: Cancel / Take Down Event */}
-            {cancellingEvent && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-xs animate-fade-in">
-                    <div className="relative w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl border border-slate-200">
-                        <div className="flex items-center justify-between pb-4 border-b border-slate-100">
-                            <div>
-                                <h3 className="text-lg font-bold text-red-600 flex items-center gap-2">
-                                    <Ban className="size-5" />
-                                    Tarik / Batalkan Event Publik
-                                </h3>
-                                <p className="text-xs text-slate-500 mt-0.5">
-                                    Event <span className="font-semibold text-slate-700">{cancellingEvent.title}</span> akan diturunkan dari katalog publik.
-                                </p>
-                            </div>
-                            <button
-                                type="button"
-                                onClick={() => setCancellingEvent(null)}
-                                className="p-1 rounded-lg text-slate-400 hover:text-slate-600"
-                            >
-                                <X className="size-5" />
-                            </button>
-                        </div>
-
-                        <form onSubmit={handleCancelSubmit} className="space-y-4 pt-4">
-                            <div>
-                                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1">
-                                    Alasan Pembatalan / Take Down *
-                                </label>
-                                <textarea
-                                    rows="4"
-                                    value={cancelForm.data.cancellation_reason}
-                                    onChange={(e) => cancelForm.setData('cancellation_reason', e.target.value)}
-                                    placeholder="Contoh: Pembatalan oleh pihak berwenang, pelanggaran syarat ketentuan, atau force majeure..."
-                                    className="w-full p-3 rounded-xl border border-slate-200 text-sm focus:border-red-500 focus:outline-none focus:ring-4 focus:ring-red-500/10"
-                                    required
-                                />
-                                {cancelForm.errors.cancellation_reason && (
-                                    <p className="mt-1 text-xs text-red-600">{cancelForm.errors.cancellation_reason}</p>
-                                )}
-                            </div>
-
-                            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-                                <button
-                                    type="button"
-                                    onClick={() => setCancellingEvent(null)}
-                                    className="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-slate-600 hover:bg-slate-100 transition"
-                                >
-                                    Batal
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={cancelForm.processing}
-                                    className="px-5 py-2 rounded-xl text-xs sm:text-sm font-semibold text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 transition"
-                                >
-                                    {cancelForm.processing ? 'Memproses...' : 'Ya, Batalkan Event'}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
-
-            {/* Modal 3: Detail Event Quick View */}
-            {detailEvent && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-xs animate-fade-in">
-                    <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl border border-slate-200">
-                        <div className="flex items-start justify-between pb-4 border-b border-slate-100">
-                            <div>
-                                <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-700 mb-1">
-                                    {detailEvent.category}
-                                </span>
-                                <h3 className="text-lg font-bold text-slate-900">{detailEvent.title}</h3>
-                                <p className="text-xs text-slate-500 mt-0.5">Oleh: {detailEvent.organizerName} ({detailEvent.organizerEmail})</p>
-                            </div>
-                            <button
-                                type="button"
-                                onClick={() => setDetailEvent(null)}
-                                className="p-1 rounded-lg text-slate-400 hover:text-slate-600"
-                            >
-                                <X className="size-5" />
-                            </button>
-                        </div>
-
-                        <div className="space-y-4 pt-4 text-xs sm:text-sm text-slate-700">
-                            <div className="rounded-xl overflow-hidden max-h-48 bg-slate-100 border border-slate-200">
-                                <img
-                                    src={detailEvent.banner}
-                                    alt={detailEvent.title}
-                                    className="w-full h-48 object-cover"
-                                />
-                            </div>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
-                                <div>
-                                    <p className="text-[11px] font-bold uppercase text-slate-400">Jadwal Acara</p>
-                                    <p className="font-semibold text-slate-900 mt-0.5">{detailEvent.startsAtFormatted}</p>
-                                </div>
-                                <div>
-                                    <p className="text-[11px] font-bold uppercase text-slate-400">Lokasi / Venue</p>
-                                    <p className="font-semibold text-slate-900 mt-0.5">{detailEvent.location}</p>
-                                </div>
-                                <div>
-                                    <p className="text-[11px] font-bold uppercase text-slate-400">Total Kuota / Tiket Terjual</p>
-                                    <p className="font-semibold text-slate-900 mt-0.5">
-                                        {detailEvent.ticketsSold} / {detailEvent.initialQuota} ({detailEvent.soldPercentage}%)
-                                    </p>
-                                </div>
-                                <div>
-                                    <p className="text-[11px] font-bold uppercase text-slate-400">Status Saat Ini</p>
-                                    <p className="font-semibold text-slate-900 mt-0.5">{detailEvent.status}</p>
-                                </div>
-                            </div>
-
-                            {detailEvent.rejectionReason && (
-                                <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs">
-                                    <p className="font-bold">Catatan Evaluasi / Penolakan Terakhir:</p>
-                                    <p className="mt-0.5">{detailEvent.rejectionReason}</p>
-                                </div>
-                            )}
-
-                            {detailEvent.cancellationReason && (
-                                <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-800 text-xs">
-                                    <p className="font-bold">Alasan Penarikan / Pembatalan:</p>
-                                    <p className="mt-0.5">{detailEvent.cancellationReason}</p>
-                                </div>
-                            )}
-
-                            <div>
-                                <p className="text-xs font-bold uppercase text-slate-400 mb-1">Deskripsi Singkat Acara</p>
-                                <p className="text-xs leading-relaxed text-slate-600 whitespace-pre-line bg-slate-50 p-3 rounded-xl border border-slate-100">
-                                    {detailEvent.description}
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="flex items-center justify-between pt-4 mt-4 border-t border-slate-100">
-                            {detailEvent.status === 'PUBLISHED' ? (
-                                <Link
-                                    href={`/event/${detailEvent.slug}`}
-                                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-700 hover:text-blue-800"
-                                    target="_blank"
-                                >
-                                    Buka Halaman Publik Event <ExternalLink className="size-3.5" />
-                                </Link>
-                            ) : <div />}
-
-                            <button
-                                type="button"
-                                onClick={() => setDetailEvent(null)}
-                                className="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition"
-                            >
-                                Tutup
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            {/* Modal 4: Konfirmasi Hapus Draft Event */}
+            <Modal
+                open={Boolean(deletingEvent)}
+                onClose={() => setDeletingEvent(null)}
+                title="Hapus Event Permanen?"
+                maxWidth="max-w-md"
+                footer={
+                    <>
+                        <Button variant="outline" size="sm" onClick={() => setDeletingEvent(null)}>
+                            Batal
+                        </Button>
+                        <Button variant="danger" size="sm" onClick={handleDeleteConfirm}>
+                            Ya, Hapus Event
+                        </Button>
+                    </>
+                }
+            >
+                {deletingEvent && (
+                    <p className="text-sm text-slate-600 leading-relaxed">
+                        Hapus draft event{' '}
+                        <span className="font-semibold text-slate-900">{deletingEvent.title}</span> secara
+                        permanen? Tindakan ini tidak dapat dibatalkan.
+                    </p>
+                )}
+            </Modal>
         </AdminLayout>
     );
 }

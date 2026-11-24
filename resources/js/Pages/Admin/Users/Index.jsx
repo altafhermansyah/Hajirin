@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
+import { router, useForm, usePage } from '@inertiajs/react';
 import AdminLayout from '../../../Layouts/AdminLayout';
 import {
     Users,
@@ -7,9 +7,6 @@ import {
     Shield,
     UserPlus,
     Search,
-    ChevronDown,
-    AlertCircle,
-    CheckCircle2,
     Phone,
     Mail,
     Edit2,
@@ -17,13 +14,25 @@ import {
     UserCheck,
     Trash2,
     X,
-    Filter,
-    ShieldCheck,
-    Lock,
-    Key,
-    Sparkles,
-    Calendar,
 } from 'lucide-react';
+import { Card } from '../../../Components/ui/Card';
+import { StatCard } from '../../../Components/ui/StatCard';
+import { StatusBadge, NeutralTag } from '../../../Components/ui/StatusBadge';
+import { UnderlineTabs } from '../../../Components/ui/UnderlineTabs';
+import { Pagination } from '../../../Components/ui/Pagination';
+import { Avatar } from '../../../Components/ui/Avatar';
+import { FlashBanner } from '../../../Components/ui/FlashBanner';
+import { Button, buttonClass } from '../../../Components/ui/Button';
+import { Modal } from '../../../Components/ui/Dialog';
+
+const ROLE_LABELS = {
+    ADMIN: 'Super Admin',
+    EO: 'Event Organizer',
+    USER: 'Peserta',
+};
+
+const INPUT_CLASS =
+    'w-full h-10 px-3 rounded-lg border border-slate-200 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-blue focus:outline-none focus:ring-2 focus:ring-brand-blue/15 transition';
 
 export default function UserManagementIndex({
     users = { data: [], links: [] },
@@ -33,19 +42,16 @@ export default function UserManagementIndex({
     const { flash, auth } = usePage().props;
     const currentAdminId = auth?.user?.id;
 
-    // Filter states
     const [search, setSearch] = useState(filters.search || '');
     const [selectedRole, setSelectedRole] = useState(filters.role || 'ALL');
     const [selectedStatus, setSelectedStatus] = useState(filters.status || 'ALL');
     const [selectedSort, setSelectedSort] = useState(filters.sort || 'latest');
 
-    // Modals
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [editingUser, setEditingUser] = useState(null);
     const [statusConfirmUser, setStatusConfirmUser] = useState(null);
     const [deleteConfirmUser, setDeleteConfirmUser] = useState(null);
 
-    // Form Tambah User
     const createForm = useForm({
         name: '',
         email: '',
@@ -55,7 +61,6 @@ export default function UserManagementIndex({
         password: '',
     });
 
-    // Form Edit User
     const editForm = useForm({
         name: '',
         email: '',
@@ -73,7 +78,6 @@ export default function UserManagementIndex({
             sort: newFilters.sort !== undefined ? newFilters.sort : selectedSort,
         };
 
-        // Bersihkan parameter jika ALL atau kosong
         if (!queryParams.search) delete queryParams.search;
         if (queryParams.role === 'ALL') delete queryParams.role;
         if (queryParams.status === 'ALL') delete queryParams.status;
@@ -91,9 +95,16 @@ export default function UserManagementIndex({
         applyFilters({ search });
     };
 
-    const handleRoleTabChange = (role) => {
-        setSelectedRole(role);
-        applyFilters({ role });
+    const handleTabChange = (key) => {
+        if (key === 'SUSPENDED_TAB') {
+            setSelectedStatus('SUSPENDED');
+            setSelectedRole('ALL');
+            applyFilters({ status: 'SUSPENDED', role: 'ALL' });
+        } else {
+            setSelectedStatus('ALL');
+            setSelectedRole(key);
+            applyFilters({ status: 'ALL', role: key });
+        }
     };
 
     const handleStatusFilterChange = (status) => {
@@ -161,207 +172,118 @@ export default function UserManagementIndex({
         });
     };
 
+    const activeTabKey = selectedStatus === 'SUSPENDED' ? 'SUSPENDED_TAB' : selectedRole;
+    const roleTabs = [
+        ['ALL', 'Semua User', stats.totalUsers ?? 0],
+        ['ADMIN', 'Super Admin', stats.totalAdmin ?? 0],
+        ['EO', 'Event Organizer', stats.totalEo ?? 0],
+        ['USER', 'Peserta', stats.totalPeserta ?? 0],
+        ['SUSPENDED_TAB', 'Suspended', stats.totalSuspended ?? 0],
+    ];
+
     return (
         <AdminLayout title="Kelola Pengguna">
-            {/* Flash Messages */}
-            {flash?.success && (
-                <div className="flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900 shadow-xs animate-fade-in">
-                    <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-emerald-600" />
-                    <p className="font-semibold">{flash.success}</p>
-                </div>
-            )}
-
-            {flash?.error && (
-                <div className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-900 shadow-xs animate-fade-in">
-                    <AlertCircle className="mt-0.5 size-5 shrink-0 text-red-600" />
-                    <p className="font-semibold">{flash.error}</p>
-                </div>
-            )}
+            {flash?.success && <FlashBanner tone="success" message={flash.success} />}
+            {flash?.error && <FlashBanner tone="error" message={flash.error} />}
 
             {/* Page Header */}
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
-                        Kelola Pengguna (User Management)
+                    <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-slate-900">
+                        Kelola Pengguna
                     </h1>
-                    <p className="mt-1 text-xs sm:text-sm text-slate-500">
-                        Atur hak akses pengguna (RBAC), kelola status akun peserta, EO, dan admin platform.
+                    <p className="mt-1 text-sm text-slate-500">
+                        Atur hak akses pengguna (RBAC) serta kelola status akun peserta, EO, dan admin platform.
                     </p>
                 </div>
 
-                {/* Header Action Button */}
-                <div className="flex items-center gap-3">
-                    <button
-                        type="button"
-                        onClick={() => {
-                            createForm.reset();
-                            createForm.clearErrors();
-                            setIsCreateModalOpen(true);
-                        }}
-                        className="inline-flex items-center gap-2 rounded-xl bg-slate-950 px-4 py-2.5 text-xs sm:text-sm font-semibold text-white shadow-sm hover:bg-slate-800 transition cursor-pointer"
-                    >
-                        <UserPlus className="size-4" />
-                        Tambah User Baru
-                    </button>
-                </div>
+                <Button
+                    variant="primary"
+                    size="md"
+                    onClick={() => {
+                        createForm.reset();
+                        createForm.clearErrors();
+                        setIsCreateModalOpen(true);
+                    }}
+                >
+                    <UserPlus className="size-4" aria-hidden="true" />
+                    <span>Tambah User Baru</span>
+                </Button>
             </div>
 
-            {/* Stat Cards matching mockup */}
+            {/* Stat Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {/* 1. Total Peserta Terdaftar */}
-                <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs flex flex-col justify-between">
-                    <div className="flex items-center justify-between">
-                        <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                            Total Peserta Terdaftar
-                        </p>
-                        <span className="flex size-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
-                            <Users className="size-5" />
-                        </span>
-                    </div>
-                    <div className="mt-4">
-                        <div className="flex items-baseline gap-2">
-                            <span className="text-3xl font-extrabold text-slate-950 tracking-tight">
-                                {Number(stats.totalPeserta ?? 0).toLocaleString('id-ID')}
-                            </span>
-                            <span className="text-xs font-medium text-slate-500">Users</span>
-                        </div>
-                        <p className="mt-1 text-xs font-semibold text-emerald-600 flex items-center gap-1">
-                            <span>+{stats.totalPeserta ?? 0} akun peserta aktif</span>
-                        </p>
-                    </div>
-                </div>
-
-                {/* 2. Akun Penyelenggara (EO) */}
-                <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs flex flex-col justify-between">
-                    <div className="flex items-center justify-between">
-                        <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                            Akun Penyelenggara (EO)
-                        </p>
-                        <span className="flex size-10 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
-                            <Building2 className="size-5" />
-                        </span>
-                    </div>
-                    <div className="mt-4">
-                        <div className="flex items-baseline gap-2">
-                            <span className="text-3xl font-extrabold text-slate-950 tracking-tight">
-                                {Number(stats.totalEo ?? 0).toLocaleString('id-ID')}
-                            </span>
-                            <span className="text-xs font-medium text-slate-500">Accounts</span>
-                        </div>
-                        <p className="mt-1 text-xs text-slate-500">
-                            <span className="font-semibold text-slate-700">{stats.totalEo ?? 0} Terverifikasi</span>,{' '}
-                            <span className="font-semibold text-amber-600">{stats.pendingEoCount ?? 0} Pending</span>
-                        </p>
-                    </div>
-                </div>
-
-                {/* 3. Platform Admin & Owner */}
-                <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs flex flex-col justify-between">
-                    <div className="flex items-center justify-between">
-                        <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                            Platform Admin & Owner
-                        </p>
-                        <span className="flex size-10 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
-                            <Shield className="size-5" />
-                        </span>
-                    </div>
-                    <div className="mt-4">
-                        <div className="flex items-baseline gap-2">
-                            <span className="text-3xl font-extrabold text-slate-950 tracking-tight">
-                                {stats.totalAdmin ?? 1}
-                            </span>
-                            <span className="text-xs font-medium text-slate-500">Owners</span>
-                        </div>
-                        <p className="mt-1 text-xs font-medium text-amber-700 flex items-center gap-1">
-                            <ShieldCheck className="size-3.5" />
-                            Hak akses penuh (Full Access)
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            {/* Role Tabs in Floating Pill Style matching mockup */}
-            <div className="flex items-center gap-1.5 p-1 bg-slate-100/90 rounded-2xl inline-flex overflow-x-auto max-w-full">
-                {[
-                    ['ALL', 'Semua User', stats.totalUsers ?? 0],
-                    ['ADMIN', 'Super Admin', stats.totalAdmin ?? 0],
-                    ['EO', 'Event Organizer', stats.totalEo ?? 0],
-                    ['USER', 'Peserta', stats.totalPeserta ?? 0],
-                    ['SUSPENDED_TAB', 'Suspended', stats.totalSuspended ?? 0],
-                ].map(([key, label, count]) => {
-                    const isTabActive =
-                        key === 'SUSPENDED_TAB'
-                            ? selectedStatus === 'SUSPENDED'
-                            : selectedRole === key && selectedStatus !== 'SUSPENDED';
-
-                    return (
-                        <button
-                            key={key}
-                            type="button"
-                            onClick={() => {
-                                if (key === 'SUSPENDED_TAB') {
-                                    setSelectedStatus('SUSPENDED');
-                                    setSelectedRole('ALL');
-                                    applyFilters({ status: 'SUSPENDED', role: 'ALL' });
-                                } else {
-                                    setSelectedStatus('ALL');
-                                    handleRoleTabChange(key);
-                                }
-                            }}
-                            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap cursor-pointer ${
-                                isTabActive
-                                    ? 'bg-blue-600 text-white shadow-xs'
-                                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
-                            }`}
-                        >
-                            <span>{label}</span>
-                            <span
-                                className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
-                                    isTabActive ? 'bg-white/20 text-white' : 'bg-slate-200/70 text-slate-700'
-                                }`}
-                            >
-                                {count}
-                            </span>
-                        </button>
-                    );
-                })}
+                <StatCard
+                    label="Total Peserta Terdaftar"
+                    icon={Users}
+                    value={Number(stats.totalPeserta ?? 0).toLocaleString('id-ID')}
+                    valueSuffix="akun"
+                    subtext={`${stats.totalPeserta ?? 0} akun peserta aktif`}
+                />
+                <StatCard
+                    label="Akun Penyelenggara (EO)"
+                    icon={Building2}
+                    value={Number(stats.totalEo ?? 0).toLocaleString('id-ID')}
+                    valueSuffix="mitra"
+                    subtext={`${stats.totalEo ?? 0} terverifikasi, ${stats.pendingEoCount ?? 0} pending`}
+                />
+                <StatCard
+                    label="Platform Admin & Owner"
+                    icon={Shield}
+                    value={Number(stats.totalAdmin ?? 1).toLocaleString('id-ID')}
+                    valueSuffix="admin"
+                    subtext="Hak akses penuh platform"
+                />
             </div>
 
             {/* Filter and Table Container */}
-            <div className="rounded-2xl border border-slate-200/90 bg-white shadow-xs overflow-hidden">
+            <Card className="overflow-hidden">
+                <UnderlineTabs
+                    items={roleTabs}
+                    activeKey={activeTabKey}
+                    onChange={handleTabChange}
+                />
+
                 {/* Search & Filter Bar */}
-                <div className="p-3.5 sm:p-4 flex flex-col md:flex-row items-center justify-between gap-3 border-b border-slate-100 bg-slate-50/40">
+                <div className="px-5 py-3.5 flex flex-col md:flex-row items-center justify-between gap-3 border-b border-slate-200 bg-slate-50/40">
                     <form onSubmit={handleSearchSubmit} className="relative w-full md:w-80">
-                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-slate-400 pointer-events-none" />
+                        <Search
+                            className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400 pointer-events-none"
+                            aria-hidden="true"
+                        />
                         <input
                             type="text"
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             placeholder="Cari nama, email, nomor HP, atau ID..."
-                            className="w-full h-10 pl-10 pr-10 rounded-xl border border-slate-200 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10 transition"
+                            aria-label="Cari pengguna"
+                            className="w-full h-9 pl-9 pr-9 rounded-lg border border-slate-200 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-blue focus:outline-none focus:ring-2 focus:ring-brand-blue/15 transition"
                         />
                         {search && (
                             <button
                                 type="button"
+                                aria-label="Hapus pencarian"
                                 onClick={() => {
                                     setSearch('');
                                     applyFilters({ search: '' });
                                 }}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
                             >
-                                <X className="size-4" />
+                                <X className="size-4" aria-hidden="true" />
                             </button>
                         )}
                     </form>
 
                     <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-                        {/* Filter Status Dropdown */}
-                        <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
-                            <span>Status:</span>
+                        <div className="flex items-center gap-2 text-xs text-slate-500">
+                            <label htmlFor="user-status-filter" className="font-medium">
+                                Status:
+                            </label>
                             <select
+                                id="user-status-filter"
                                 value={selectedStatus}
                                 onChange={(e) => handleStatusFilterChange(e.target.value)}
-                                className="h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 focus:border-blue-600 focus:outline-none"
+                                className="h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-medium text-slate-700 focus:border-brand-blue focus:outline-none"
                             >
                                 <option value="ALL">Semua Status</option>
                                 <option value="ACTIVE">Aktif</option>
@@ -369,13 +291,15 @@ export default function UserManagementIndex({
                             </select>
                         </div>
 
-                        {/* Sort Dropdown */}
-                        <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
-                            <span>Urutkan:</span>
+                        <div className="flex items-center gap-2 text-xs text-slate-500">
+                            <label htmlFor="user-sort-filter" className="font-medium">
+                                Urutkan:
+                            </label>
                             <select
+                                id="user-sort-filter"
                                 value={selectedSort}
                                 onChange={(e) => handleSortChange(e.target.value)}
-                                className="h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 focus:border-blue-600 focus:outline-none"
+                                className="h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-medium text-slate-700 focus:border-brand-blue focus:outline-none"
                             >
                                 <option value="latest">Terbaru</option>
                                 <option value="oldest">Terlama</option>
@@ -389,132 +313,83 @@ export default function UserManagementIndex({
                 {/* Table Data */}
                 <div className="overflow-x-auto">
                     <table className="w-full text-left text-sm">
-                        <thead className="bg-slate-50/70 border-b border-slate-200/80 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                        <thead className="border-b border-slate-200 bg-slate-50/70 text-xs font-medium text-slate-500">
                             <tr>
-                                <th scope="col" className="py-3.5 px-5">User & Profil</th>
-                                <th scope="col" className="py-3.5 px-5">Kontak (Email & HP)</th>
-                                <th scope="col" className="py-3.5 px-5">Role / Hak Akses</th>
-                                <th scope="col" className="py-3.5 px-5">Tanggal Join</th>
-                                <th scope="col" className="py-3.5 px-5">Status</th>
-                                <th scope="col" className="py-3.5 px-5">Aktivitas</th>
-                                <th scope="col" className="py-3.5 px-5 text-right">Aksi</th>
+                                <th scope="col" className="py-3 px-5">User & Profil</th>
+                                <th scope="col" className="py-3 px-5">Kontak</th>
+                                <th scope="col" className="py-3 px-5">Role</th>
+                                <th scope="col" className="py-3 px-5">Tanggal Join</th>
+                                <th scope="col" className="py-3 px-5">Status</th>
+                                <th scope="col" className="py-3 px-5">Aktivitas</th>
+                                <th scope="col" className="py-3 px-5 text-right">Aksi</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                             {users.data && users.data.length > 0 ? (
                                 users.data.map((user) => {
-                                    const userInitials = user.name
-                                        ? user.name
-                                            .split(' ')
-                                            .map((n) => n[0])
-                                            .slice(0, 2)
-                                            .join('')
-                                            .toUpperCase()
-                                        : 'U';
-
                                     const isSelf = user.id === currentAdminId;
 
                                     return (
-                                        <tr key={user.id} className="hover:bg-slate-50/70 transition">
-                                            {/* User & Profil */}
-                                            <td className="py-4 px-5">
+                                        <tr key={user.id} className="hover:bg-slate-50/60 transition-colors">
+                                            <td className="py-3.5 px-5">
                                                 <div className="flex items-center gap-3">
-                                                    <span
-                                                        className={`flex size-9 shrink-0 items-center justify-center rounded-full font-bold text-xs ${
-                                                            user.role === 'ADMIN'
-                                                                ? 'bg-slate-900 text-white'
-                                                                : user.role === 'EO'
-                                                                ? 'bg-blue-600 text-white'
-                                                                : 'bg-emerald-600 text-white'
-                                                        }`}
-                                                    >
-                                                        {userInitials}
-                                                    </span>
-                                                    <div>
+                                                    <Avatar name={user.name} size="md" />
+                                                    <div className="min-w-0">
                                                         <div className="flex items-center gap-2">
-                                                            <p className="font-semibold text-slate-900 leading-tight">
+                                                            <p className="font-medium text-slate-900 leading-tight truncate">
                                                                 {user.name}
                                                             </p>
-                                                            {isSelf && (
-                                                                <span className="rounded bg-blue-100 px-1.5 py-0.5 text-[10px] font-bold text-blue-700">
-                                                                    Anda
-                                                                </span>
-                                                            )}
+                                                            {isSelf && <NeutralTag>Anda</NeutralTag>}
                                                         </div>
-                                                        <span className="text-[11px] font-mono text-slate-400">
+                                                        <p className="text-xs font-mono text-slate-400 mt-0.5">
                                                             ID: {String(user.id).slice(0, 8)}...
-                                                        </span>
+                                                        </p>
                                                     </div>
                                                 </div>
                                             </td>
 
-                                            {/* Kontak */}
-                                            <td className="py-4 px-5">
-                                                <p className="text-slate-700 font-medium flex items-center gap-1.5 text-xs">
-                                                    <Mail className="size-3 text-slate-400" />
-                                                    {user.email}
+                                            <td className="py-3.5 px-5">
+                                                <p className="text-slate-700 flex items-center gap-1.5 text-xs">
+                                                    <Mail className="size-3.5 text-slate-400 shrink-0" aria-hidden="true" />
+                                                    <span>{user.email}</span>
                                                 </p>
                                                 <p className="text-xs text-slate-400 font-mono mt-0.5 flex items-center gap-1.5">
-                                                    <Phone className="size-3 text-slate-400" />
-                                                    {user.phone}
+                                                    <Phone className="size-3.5 text-slate-400 shrink-0" aria-hidden="true" />
+                                                    <span>{user.phone}</span>
                                                 </p>
                                             </td>
 
-                                            {/* Role Badge */}
-                                            <td className="py-4 px-5">
-                                                {user.role === 'ADMIN' ? (
-                                                    <span className="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-700">
-                                                        <Shield className="size-3" />
-                                                        Super Admin
-                                                    </span>
-                                                ) : user.role === 'EO' ? (
-                                                    <span className="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-700">
-                                                        <Building2 className="size-3" />
-                                                        Event Organizer
-                                                    </span>
-                                                ) : (
-                                                    <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-700">
-                                                        <Users className="size-3" />
-                                                        Peserta
-                                                    </span>
-                                                )}
+                                            <td className="py-3.5 px-5">
+                                                <NeutralTag>
+                                                    {ROLE_LABELS[user.role] || 'Peserta'}
+                                                </NeutralTag>
                                             </td>
 
-                                            {/* Tanggal Join */}
-                                            <td className="py-4 px-5 text-slate-600 text-xs">
+                                            <td className="py-3.5 px-5 text-slate-600 text-xs tabular-nums">
                                                 {user.created_at_formatted}
                                             </td>
 
-                                            {/* Status */}
-                                            <td className="py-4 px-5">
-                                                {user.status === 'SUSPENDED' ? (
-                                                    <span className="inline-flex items-center gap-1.5 rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-semibold text-red-700 border border-red-200/70">
-                                                        <span className="size-1.5 rounded-full bg-red-500" />
-                                                        Suspended
-                                                    </span>
-                                                ) : (
-                                                    <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 border border-emerald-200/70">
-                                                        <span className="size-1.5 rounded-full bg-emerald-500" />
-                                                        Aktif
-                                                    </span>
-                                                )}
+                                            <td className="py-3.5 px-5">
+                                                <StatusBadge
+                                                    tone={user.status === 'SUSPENDED' ? 'danger' : 'success'}
+                                                    label={user.status === 'SUSPENDED' ? 'Suspended' : 'Aktif'}
+                                                />
                                             </td>
 
-                                            {/* Aktivitas */}
-                                            <td className="py-4 px-5 text-xs text-slate-600">
-                                                <span className="font-medium">{user.activity}</span>
+                                            <td className="py-3.5 px-5 text-xs text-slate-600">
+                                                {user.activity}
                                             </td>
 
-                                            {/* Aksi */}
-                                            <td className="py-4 px-5 text-right">
+                                            <td className="py-3.5 px-5 text-right">
                                                 <div className="inline-flex items-center gap-1.5">
                                                     <button
                                                         type="button"
                                                         onClick={() => openEditModal(user)}
-                                                        className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 hover:text-blue-700 transition"
+                                                        className={buttonClass('outline', 'icon')}
                                                         title="Edit Data / Role"
+                                                        aria-label={`Edit pengguna ${user.name}`}
                                                     >
-                                                        <Edit2 className="size-3.5" />
+                                                        <Edit2 className="size-3.5" aria-hidden="true" />
                                                     </button>
 
                                                     {!isSelf && (
@@ -522,31 +397,33 @@ export default function UserManagementIndex({
                                                             <button
                                                                 type="button"
                                                                 onClick={() => setStatusConfirmUser(user)}
-                                                                className={`p-1.5 rounded-lg border transition ${
-                                                                    user.status === 'SUSPENDED'
-                                                                        ? 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
-                                                                        : 'border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100'
-                                                                }`}
+                                                                className={buttonClass('outline', 'icon')}
                                                                 title={
                                                                     user.status === 'SUSPENDED'
                                                                         ? 'Aktifkan Kembali'
                                                                         : 'Tangguhkan (Suspend) Akun'
                                                                 }
+                                                                aria-label={
+                                                                    user.status === 'SUSPENDED'
+                                                                        ? `Aktifkan kembali ${user.name}`
+                                                                        : `Tangguhkan akun ${user.name}`
+                                                                }
                                                             >
                                                                 {user.status === 'SUSPENDED' ? (
-                                                                    <UserCheck className="size-3.5" />
+                                                                    <UserCheck className="size-3.5" aria-hidden="true" />
                                                                 ) : (
-                                                                    <UserX className="size-3.5" />
+                                                                    <UserX className="size-3.5" aria-hidden="true" />
                                                                 )}
                                                             </button>
 
                                                             <button
                                                                 type="button"
                                                                 onClick={() => setDeleteConfirmUser(user)}
-                                                                className="p-1.5 rounded-lg border border-red-200 bg-white text-red-600 hover:bg-red-50 transition"
+                                                                className={buttonClass('danger-outline', 'icon')}
                                                                 title="Hapus Akun"
+                                                                aria-label={`Hapus akun ${user.name}`}
                                                             >
-                                                                <Trash2 className="size-3.5" />
+                                                                <Trash2 className="size-3.5" aria-hidden="true" />
                                                             </button>
                                                         </>
                                                     )}
@@ -557,10 +434,14 @@ export default function UserManagementIndex({
                                 })
                             ) : (
                                 <tr>
-                                    <td colSpan="7" className="py-12 text-center text-slate-400">
-                                        <Users className="mx-auto size-8 text-slate-300 mb-2" />
-                                        <p className="font-semibold text-slate-600">Tidak ada data pengguna ditemukan.</p>
-                                        <p className="text-xs text-slate-400 mt-1">Coba sesuaikan kata kunci pencarian atau filter Anda.</p>
+                                    <td colSpan="7" className="py-12 text-center text-slate-500">
+                                        <Users className="mx-auto size-7 text-slate-300 mb-2" aria-hidden="true" />
+                                        <p className="text-sm font-medium text-slate-700">
+                                            Tidak ada data pengguna ditemukan.
+                                        </p>
+                                        <p className="text-xs text-slate-400 mt-1">
+                                            Coba sesuaikan kata kunci pencarian atau filter Anda.
+                                        </p>
                                     </td>
                                 </tr>
                             )}
@@ -568,413 +449,339 @@ export default function UserManagementIndex({
                     </table>
                 </div>
 
-                {/* Table Footer / Pagination */}
-                {users.links && users.links.length > 3 && (
-                    <div className="p-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
-                        <p>
-                            Menampilkan <span className="font-semibold text-slate-900">{users.from || 0}</span> sampai{' '}
-                            <span className="font-semibold text-slate-900">{users.to || 0}</span> dari{' '}
-                            <span className="font-semibold text-slate-900">{users.total || 0}</span> Pengguna
-                        </p>
-                        <div className="flex items-center gap-1">
-                            {users.links.map((link, idx) => {
-                                const isNumber = !link.label.includes('&laquo;') && !link.label.includes('&raquo;');
-                                const cleanLabel = link.label
-                                    .replace('&laquo; Previous', '‹')
-                                    .replace('Next &raquo;', '›');
-
-                                return link.url ? (
-                                    <Link
-                                        key={idx}
-                                        href={link.url}
-                                        className={`px-3 py-1.5 rounded-lg font-semibold transition ${
-                                            link.active
-                                                ? 'bg-blue-600 text-white'
-                                                : 'border border-slate-200 hover:bg-slate-50 text-slate-700'
-                                        }`}
-                                    >
-                                        {cleanLabel}
-                                    </Link>
-                                ) : (
-                                    <span
-                                        key={idx}
-                                        className="px-2.5 py-1 text-slate-300 border border-slate-100 rounded-lg"
-                                    >
-                                        {cleanLabel}
-                                    </span>
-                                );
-                            })}
-                        </div>
-                    </div>
-                )}
-            </div>
+                <Pagination
+                    links={users.links}
+                    from={users.from}
+                    to={users.to}
+                    total={users.total}
+                    itemLabel="pengguna"
+                />
+            </Card>
 
             {/* Modal 1: Tambah User Baru */}
-            {isCreateModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-xs animate-fade-in">
-                    <div className="relative w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl border border-slate-200">
-                        <div className="flex items-center justify-between pb-4 border-b border-slate-100">
-                            <div>
-                                <h3 className="text-lg font-bold text-slate-900">Tambah Pengguna Baru</h3>
-                                <p className="text-xs text-slate-500">Buat akun untuk Peserta, Event Organizer, atau Super Admin.</p>
-                            </div>
-                            <button
-                                type="button"
-                                onClick={() => setIsCreateModalOpen(false)}
-                                className="p-1 rounded-lg text-slate-400 hover:text-slate-600"
-                            >
-                                <X className="size-5" />
-                            </button>
+            <Modal
+                open={isCreateModalOpen}
+                onClose={() => setIsCreateModalOpen(false)}
+                title="Tambah Pengguna Baru"
+                description="Buat akun baru untuk Peserta, Event Organizer, atau Super Admin."
+                maxWidth="max-w-lg"
+            >
+                <form onSubmit={handleCreateUser} className="space-y-4">
+                    <div>
+                        <label htmlFor="create-name" className="block text-xs font-medium text-slate-700 mb-1.5">
+                            Nama Lengkap <span className="text-rose-600">*</span>
+                        </label>
+                        <input
+                            id="create-name"
+                            type="text"
+                            value={createForm.data.name}
+                            onChange={(e) => createForm.setData('name', e.target.value)}
+                            placeholder="Contoh: Budi Pratama"
+                            className={INPUT_CLASS}
+                            required
+                        />
+                        {createForm.errors.name && (
+                            <p role="alert" className="mt-1 text-xs text-rose-600">{createForm.errors.name}</p>
+                        )}
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label htmlFor="create-email" className="block text-xs font-medium text-slate-700 mb-1.5">
+                                Alamat Email <span className="text-rose-600">*</span>
+                            </label>
+                            <input
+                                id="create-email"
+                                type="email"
+                                value={createForm.data.email}
+                                onChange={(e) => createForm.setData('email', e.target.value)}
+                                placeholder="user@example.com"
+                                className={INPUT_CLASS}
+                                required
+                            />
+                            {createForm.errors.email && (
+                                <p role="alert" className="mt-1 text-xs text-rose-600">{createForm.errors.email}</p>
+                            )}
                         </div>
 
-                        <form onSubmit={handleCreateUser} className="space-y-4 pt-4">
-                            <div>
-                                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1">
-                                    Nama Lengkap *
-                                </label>
-                                <input
-                                    type="text"
-                                    value={createForm.data.name}
-                                    onChange={(e) => createForm.setData('name', e.target.value)}
-                                    placeholder="Contoh: Budi Pratama"
-                                    className="w-full h-10 px-3.5 rounded-xl border border-slate-200 text-sm focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-600/10"
-                                    required
-                                />
-                                {createForm.errors.name && (
-                                    <p className="mt-1 text-xs text-red-600">{createForm.errors.name}</p>
-                                )}
-                            </div>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1">
-                                        Alamat Email *
-                                    </label>
-                                    <input
-                                        type="email"
-                                        value={createForm.data.email}
-                                        onChange={(e) => createForm.setData('email', e.target.value)}
-                                        placeholder="user@example.com"
-                                        className="w-full h-10 px-3.5 rounded-xl border border-slate-200 text-sm focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-600/10"
-                                        required
-                                    />
-                                    {createForm.errors.email && (
-                                        <p className="mt-1 text-xs text-red-600">{createForm.errors.email}</p>
-                                    )}
-                                </div>
-
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1">
-                                        Nomor Telepon
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={createForm.data.phone}
-                                        onChange={(e) => createForm.setData('phone', e.target.value)}
-                                        placeholder="0812xxxxxxxx"
-                                        className="w-full h-10 px-3.5 rounded-xl border border-slate-200 text-sm focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-600/10"
-                                    />
-                                    {createForm.errors.phone && (
-                                        <p className="mt-1 text-xs text-red-600">{createForm.errors.phone}</p>
-                                    )}
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1">
-                                        Role / Hak Akses *
-                                    </label>
-                                    <select
-                                        value={createForm.data.role}
-                                        onChange={(e) => createForm.setData('role', e.target.value)}
-                                        className="w-full h-10 px-3 rounded-xl border border-slate-200 text-sm bg-white focus:border-blue-600 focus:outline-none"
-                                    >
-                                        <option value="USER">Peserta (User)</option>
-                                        <option value="EO">Event Organizer (EO)</option>
-                                        <option value="ADMIN">Super Admin (Platform Owner)</option>
-                                    </select>
-                                    {createForm.errors.role && (
-                                        <p className="mt-1 text-xs text-red-600">{createForm.errors.role}</p>
-                                    )}
-                                </div>
-
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1">
-                                        Status Awal
-                                    </label>
-                                    <select
-                                        value={createForm.data.status}
-                                        onChange={(e) => createForm.setData('status', e.target.value)}
-                                        className="w-full h-10 px-3 rounded-xl border border-slate-200 text-sm bg-white focus:border-blue-600 focus:outline-none"
-                                    >
-                                        <option value="ACTIVE">Aktif (Bisa Login)</option>
-                                        <option value="SUSPENDED">Ditangguhkan (Suspended)</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1">
-                                    Kata Sandi *
-                                </label>
-                                <input
-                                    type="password"
-                                    value={createForm.data.password}
-                                    onChange={(e) => createForm.setData('password', e.target.value)}
-                                    placeholder="Minimal 8 karakter"
-                                    className="w-full h-10 px-3.5 rounded-xl border border-slate-200 text-sm focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-600/10"
-                                    required
-                                />
-                                {createForm.errors.password && (
-                                    <p className="mt-1 text-xs text-red-600">{createForm.errors.password}</p>
-                                )}
-                            </div>
-
-                            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-                                <button
-                                    type="button"
-                                    onClick={() => setIsCreateModalOpen(false)}
-                                    className="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-slate-600 hover:bg-slate-100 transition"
-                                >
-                                    Batal
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={createForm.processing}
-                                    className="px-5 py-2 rounded-xl text-xs sm:text-sm font-semibold text-white bg-blue-700 hover:bg-blue-800 disabled:opacity-50 transition"
-                                >
-                                    {createForm.processing ? 'Menyimpan...' : 'Simpan Pengguna'}
-                                </button>
-                            </div>
-                        </form>
+                        <div>
+                            <label htmlFor="create-phone" className="block text-xs font-medium text-slate-700 mb-1.5">
+                                Nomor Telepon
+                            </label>
+                            <input
+                                id="create-phone"
+                                type="text"
+                                value={createForm.data.phone}
+                                onChange={(e) => createForm.setData('phone', e.target.value)}
+                                placeholder="0812xxxxxxxx"
+                                className={INPUT_CLASS}
+                            />
+                            {createForm.errors.phone && (
+                                <p role="alert" className="mt-1 text-xs text-rose-600">{createForm.errors.phone}</p>
+                            )}
+                        </div>
                     </div>
-                </div>
-            )}
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label htmlFor="create-role" className="block text-xs font-medium text-slate-700 mb-1.5">
+                                Role / Hak Akses <span className="text-rose-600">*</span>
+                            </label>
+                            <select
+                                id="create-role"
+                                value={createForm.data.role}
+                                onChange={(e) => createForm.setData('role', e.target.value)}
+                                className={INPUT_CLASS}
+                            >
+                                <option value="USER">Peserta (User)</option>
+                                <option value="EO">Event Organizer (EO)</option>
+                                <option value="ADMIN">Super Admin (Platform Owner)</option>
+                            </select>
+                            {createForm.errors.role && (
+                                <p role="alert" className="mt-1 text-xs text-rose-600">{createForm.errors.role}</p>
+                            )}
+                        </div>
+
+                        <div>
+                            <label htmlFor="create-status" className="block text-xs font-medium text-slate-700 mb-1.5">
+                                Status Awal
+                            </label>
+                            <select
+                                id="create-status"
+                                value={createForm.data.status}
+                                onChange={(e) => createForm.setData('status', e.target.value)}
+                                className={INPUT_CLASS}
+                            >
+                                <option value="ACTIVE">Aktif (Bisa Login)</option>
+                                <option value="SUSPENDED">Ditangguhkan (Suspended)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label htmlFor="create-password" className="block text-xs font-medium text-slate-700 mb-1.5">
+                            Kata Sandi <span className="text-rose-600">*</span>
+                        </label>
+                        <input
+                            id="create-password"
+                            type="password"
+                            value={createForm.data.password}
+                            onChange={(e) => createForm.setData('password', e.target.value)}
+                            placeholder="Minimal 8 karakter"
+                            className={INPUT_CLASS}
+                            required
+                        />
+                        {createForm.errors.password && (
+                            <p role="alert" className="mt-1 text-xs text-rose-600">{createForm.errors.password}</p>
+                        )}
+                    </div>
+
+                    <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-200">
+                        <Button variant="outline" size="sm" onClick={() => setIsCreateModalOpen(false)}>
+                            Batal
+                        </Button>
+                        <Button type="submit" variant="primary" size="sm" loading={createForm.processing}>
+                            {createForm.processing ? 'Menyimpan...' : 'Simpan Pengguna'}
+                        </Button>
+                    </div>
+                </form>
+            </Modal>
 
             {/* Modal 2: Edit User */}
-            {editingUser && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-xs animate-fade-in">
-                    <div className="relative w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl border border-slate-200">
-                        <div className="flex items-center justify-between pb-4 border-b border-slate-100">
-                            <div>
-                                <h3 className="text-lg font-bold text-slate-900">Edit Pengguna</h3>
-                                <p className="text-xs text-slate-500">Perbarui profil, kontak, role, atau reset password.</p>
-                            </div>
-                            <button
-                                type="button"
-                                onClick={() => setEditingUser(null)}
-                                className="p-1 rounded-lg text-slate-400 hover:text-slate-600"
-                            >
-                                <X className="size-5" />
-                            </button>
+            <Modal
+                open={Boolean(editingUser)}
+                onClose={() => setEditingUser(null)}
+                title="Edit Pengguna"
+                description="Perbarui profil, kontak, role, atau atur ulang kata sandi pengguna."
+                maxWidth="max-w-lg"
+            >
+                {editingUser && (
+                    <form onSubmit={handleEditUser} className="space-y-4">
+                        <div>
+                            <label htmlFor="edit-name" className="block text-xs font-medium text-slate-700 mb-1.5">
+                                Nama Lengkap <span className="text-rose-600">*</span>
+                            </label>
+                            <input
+                                id="edit-name"
+                                type="text"
+                                value={editForm.data.name}
+                                onChange={(e) => editForm.setData('name', e.target.value)}
+                                className={INPUT_CLASS}
+                                required
+                            />
+                            {editForm.errors.name && (
+                                <p role="alert" className="mt-1 text-xs text-rose-600">{editForm.errors.name}</p>
+                            )}
                         </div>
 
-                        <form onSubmit={handleEditUser} className="space-y-4 pt-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div>
-                                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1">
-                                    Nama Lengkap *
+                                <label htmlFor="edit-email" className="block text-xs font-medium text-slate-700 mb-1.5">
+                                    Email <span className="text-rose-600">*</span>
                                 </label>
                                 <input
-                                    type="text"
-                                    value={editForm.data.name}
-                                    onChange={(e) => editForm.setData('name', e.target.value)}
-                                    className="w-full h-10 px-3.5 rounded-xl border border-slate-200 text-sm focus:border-blue-600 focus:outline-none"
+                                    id="edit-email"
+                                    type="email"
+                                    value={editForm.data.email}
+                                    onChange={(e) => editForm.setData('email', e.target.value)}
+                                    className={INPUT_CLASS}
                                     required
                                 />
-                                {editForm.errors.name && (
-                                    <p className="mt-1 text-xs text-red-600">{editForm.errors.name}</p>
+                                {editForm.errors.email && (
+                                    <p role="alert" className="mt-1 text-xs text-rose-600">{editForm.errors.email}</p>
                                 )}
-                            </div>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1">
-                                        Email *
-                                    </label>
-                                    <input
-                                        type="email"
-                                        value={editForm.data.email}
-                                        onChange={(e) => editForm.setData('email', e.target.value)}
-                                        className="w-full h-10 px-3.5 rounded-xl border border-slate-200 text-sm focus:border-blue-600 focus:outline-none"
-                                        required
-                                    />
-                                    {editForm.errors.email && (
-                                        <p className="mt-1 text-xs text-red-600">{editForm.errors.email}</p>
-                                    )}
-                                </div>
-
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1">
-                                        Nomor Telepon
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={editForm.data.phone}
-                                        onChange={(e) => editForm.setData('phone', e.target.value)}
-                                        placeholder="0812xxxxxxxx"
-                                        className="w-full h-10 px-3.5 rounded-xl border border-slate-200 text-sm focus:border-blue-600 focus:outline-none"
-                                    />
-                                    {editForm.errors.phone && (
-                                        <p className="mt-1 text-xs text-red-600">{editForm.errors.phone}</p>
-                                    )}
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1">
-                                        Role / Hak Akses *
-                                    </label>
-                                    <select
-                                        value={editForm.data.role}
-                                        onChange={(e) => editForm.setData('role', e.target.value)}
-                                        className="w-full h-10 px-3 rounded-xl border border-slate-200 text-sm bg-white focus:border-blue-600 focus:outline-none"
-                                    >
-                                        <option value="USER">Peserta (User)</option>
-                                        <option value="EO">Event Organizer (EO)</option>
-                                        <option value="ADMIN">Super Admin (Platform Owner)</option>
-                                    </select>
-                                    {editForm.errors.role && (
-                                        <p className="mt-1 text-xs text-red-600">{editForm.errors.role}</p>
-                                    )}
-                                </div>
-
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1">
-                                        Status Akun
-                                    </label>
-                                    <select
-                                        value={editForm.data.status}
-                                        onChange={(e) => editForm.setData('status', e.target.value)}
-                                        className="w-full h-10 px-3 rounded-xl border border-slate-200 text-sm bg-white focus:border-blue-600 focus:outline-none"
-                                    >
-                                        <option value="ACTIVE">Aktif</option>
-                                        <option value="SUSPENDED">Suspended</option>
-                                    </select>
-                                </div>
                             </div>
 
                             <div>
-                                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1">
-                                    Kata Sandi Baru (Opsional)
+                                <label htmlFor="edit-phone" className="block text-xs font-medium text-slate-700 mb-1.5">
+                                    Nomor Telepon
                                 </label>
                                 <input
-                                    type="password"
-                                    value={editForm.data.password}
-                                    onChange={(e) => editForm.setData('password', e.target.value)}
-                                    placeholder="Biarkan kosong jika tidak ingin mengubah password"
-                                    className="w-full h-10 px-3.5 rounded-xl border border-slate-200 text-sm focus:border-blue-600 focus:outline-none"
+                                    id="edit-phone"
+                                    type="text"
+                                    value={editForm.data.phone}
+                                    onChange={(e) => editForm.setData('phone', e.target.value)}
+                                    placeholder="0812xxxxxxxx"
+                                    className={INPUT_CLASS}
                                 />
-                                {editForm.errors.password && (
-                                    <p className="mt-1 text-xs text-red-600">{editForm.errors.password}</p>
+                                {editForm.errors.phone && (
+                                    <p role="alert" className="mt-1 text-xs text-rose-600">{editForm.errors.phone}</p>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label htmlFor="edit-role" className="block text-xs font-medium text-slate-700 mb-1.5">
+                                    Role / Hak Akses <span className="text-rose-600">*</span>
+                                </label>
+                                <select
+                                    id="edit-role"
+                                    value={editForm.data.role}
+                                    onChange={(e) => editForm.setData('role', e.target.value)}
+                                    className={INPUT_CLASS}
+                                >
+                                    <option value="USER">Peserta (User)</option>
+                                    <option value="EO">Event Organizer (EO)</option>
+                                    <option value="ADMIN">Super Admin (Platform Owner)</option>
+                                </select>
+                                {editForm.errors.role && (
+                                    <p role="alert" className="mt-1 text-xs text-rose-600">{editForm.errors.role}</p>
                                 )}
                             </div>
 
-                            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-                                <button
-                                    type="button"
-                                    onClick={() => setEditingUser(null)}
-                                    className="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-slate-600 hover:bg-slate-100 transition"
+                            <div>
+                                <label htmlFor="edit-status" className="block text-xs font-medium text-slate-700 mb-1.5">
+                                    Status Akun
+                                </label>
+                                <select
+                                    id="edit-status"
+                                    value={editForm.data.status}
+                                    onChange={(e) => editForm.setData('status', e.target.value)}
+                                    className={INPUT_CLASS}
                                 >
-                                    Batal
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={editForm.processing}
-                                    className="px-5 py-2 rounded-xl text-xs sm:text-sm font-semibold text-white bg-blue-700 hover:bg-blue-800 disabled:opacity-50 transition"
-                                >
-                                    {editForm.processing ? 'Menyimpan...' : 'Simpan Perubahan'}
-                                </button>
+                                    <option value="ACTIVE">Aktif</option>
+                                    <option value="SUSPENDED">Suspended</option>
+                                </select>
                             </div>
-                        </form>
-                    </div>
-                </div>
-            )}
+                        </div>
+
+                        <div>
+                            <label htmlFor="edit-password" className="block text-xs font-medium text-slate-700 mb-1.5">
+                                Kata Sandi Baru (Opsional)
+                            </label>
+                            <input
+                                id="edit-password"
+                                type="password"
+                                value={editForm.data.password}
+                                onChange={(e) => editForm.setData('password', e.target.value)}
+                                placeholder="Biarkan kosong jika tidak ingin mengubah password"
+                                className={INPUT_CLASS}
+                            />
+                            {editForm.errors.password && (
+                                <p role="alert" className="mt-1 text-xs text-rose-600">{editForm.errors.password}</p>
+                            )}
+                        </div>
+
+                        <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-200">
+                            <Button variant="outline" size="sm" onClick={() => setEditingUser(null)}>
+                                Batal
+                            </Button>
+                            <Button type="submit" variant="primary" size="sm" loading={editForm.processing}>
+                                {editForm.processing ? 'Menyimpan...' : 'Simpan Perubahan'}
+                            </Button>
+                        </div>
+                    </form>
+                )}
+            </Modal>
 
             {/* Modal 3: Konfirmasi Suspend / Aktifkan */}
-            {statusConfirmUser && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-xs animate-fade-in">
-                    <div className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl border border-slate-200 text-center">
-                        <span
-                            className={`mx-auto flex size-12 items-center justify-center rounded-2xl mb-3 ${
-                                statusConfirmUser.status === 'SUSPENDED'
-                                    ? 'bg-emerald-100 text-emerald-700'
-                                    : 'bg-amber-100 text-amber-700'
-                            }`}
-                        >
-                            {statusConfirmUser.status === 'SUSPENDED' ? (
-                                <UserCheck className="size-6" />
-                            ) : (
-                                <UserX className="size-6" />
-                            )}
-                        </span>
-                        <h3 className="text-lg font-bold text-slate-900">
-                            {statusConfirmUser.status === 'SUSPENDED'
-                                ? 'Aktifkan Kembali Akun?'
-                                : 'Tangguhkan (Suspend) Akun?'}
-                        </h3>
-                        <p className="text-xs text-slate-500 mt-1">
-                            {statusConfirmUser.status === 'SUSPENDED'
-                                ? `Pengguna ${statusConfirmUser.name} akan dapat masuk kembali ke platform Hajirin.`
-                                : `Pengguna ${statusConfirmUser.name} tidak akan dapat login atau melakukan transaksi selama akun ditangguhkan.`}
-                        </p>
-
-                        <div className="mt-6 flex items-center justify-center gap-2">
-                            <button
-                                type="button"
-                                onClick={() => setStatusConfirmUser(null)}
-                                className="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-slate-600 hover:bg-slate-100 transition"
-                            >
-                                Batal
-                            </button>
-                            <button
-                                type="button"
+            <Modal
+                open={Boolean(statusConfirmUser)}
+                onClose={() => setStatusConfirmUser(null)}
+                title={
+                    statusConfirmUser?.status === 'SUSPENDED'
+                        ? 'Aktifkan Kembali Akun?'
+                        : 'Tangguhkan (Suspend) Akun?'
+                }
+                maxWidth="max-w-md"
+                footer={
+                    <>
+                        <Button variant="outline" size="sm" onClick={() => setStatusConfirmUser(null)}>
+                            Batal
+                        </Button>
+                        {statusConfirmUser && (
+                            <Button
+                                variant={statusConfirmUser.status === 'SUSPENDED' ? 'primary' : 'danger'}
+                                size="sm"
                                 onClick={() => handleToggleStatus(statusConfirmUser)}
-                                className={`px-5 py-2 rounded-xl text-xs sm:text-sm font-semibold text-white transition ${
-                                    statusConfirmUser.status === 'SUSPENDED'
-                                        ? 'bg-emerald-600 hover:bg-emerald-700'
-                                        : 'bg-amber-600 hover:bg-amber-700'
-                                }`}
                             >
                                 {statusConfirmUser.status === 'SUSPENDED' ? 'Ya, Aktifkan' : 'Ya, Tangguhkan'}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+                            </Button>
+                        )}
+                    </>
+                }
+            >
+                {statusConfirmUser && (
+                    <p className="text-sm text-slate-600 leading-relaxed">
+                        {statusConfirmUser.status === 'SUSPENDED'
+                            ? `Pengguna ${statusConfirmUser.name} akan dapat masuk kembali ke platform Hajirin.`
+                            : `Pengguna ${statusConfirmUser.name} tidak akan dapat login atau melakukan transaksi selama akun ditangguhkan.`}
+                    </p>
+                )}
+            </Modal>
 
             {/* Modal 4: Konfirmasi Hapus User */}
-            {deleteConfirmUser && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-xs animate-fade-in">
-                    <div className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl border border-slate-200 text-center">
-                        <span className="mx-auto flex size-12 items-center justify-center rounded-2xl bg-red-100 text-red-700 mb-3">
-                            <Trash2 className="size-6" />
-                        </span>
-                        <h3 className="text-lg font-bold text-slate-900">Hapus Akun Pengguna?</h3>
-                        <p className="text-xs text-slate-500 mt-1">
-                            Apakah Anda yakin ingin menghapus akun <span className="font-bold text-slate-700">{deleteConfirmUser.name}</span> ({deleteConfirmUser.email})? Tindakan ini tidak dapat dibatalkan.
-                        </p>
-
-                        <div className="mt-6 flex items-center justify-center gap-2">
-                            <button
-                                type="button"
-                                onClick={() => setDeleteConfirmUser(null)}
-                                className="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-slate-600 hover:bg-slate-100 transition"
-                            >
-                                Batal
-                            </button>
-                            <button
-                                type="button"
+            <Modal
+                open={Boolean(deleteConfirmUser)}
+                onClose={() => setDeleteConfirmUser(null)}
+                title="Hapus Akun Pengguna?"
+                maxWidth="max-w-md"
+                footer={
+                    <>
+                        <Button variant="outline" size="sm" onClick={() => setDeleteConfirmUser(null)}>
+                            Batal
+                        </Button>
+                        {deleteConfirmUser && (
+                            <Button
+                                variant="danger"
+                                size="sm"
                                 onClick={() => handleDeleteUser(deleteConfirmUser)}
-                                className="px-5 py-2 rounded-xl text-xs sm:text-sm font-semibold text-white bg-red-600 hover:bg-red-700 transition"
                             >
                                 Ya, Hapus Akun
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+                            </Button>
+                        )}
+                    </>
+                }
+            >
+                {deleteConfirmUser && (
+                    <p className="text-sm text-slate-600 leading-relaxed">
+                        Apakah Anda yakin ingin menghapus akun{' '}
+                        <span className="font-semibold text-slate-900">{deleteConfirmUser.name}</span> (
+                        {deleteConfirmUser.email})? Tindakan ini tidak dapat dibatalkan.
+                    </p>
+                )}
+            </Modal>
         </AdminLayout>
     );
 }

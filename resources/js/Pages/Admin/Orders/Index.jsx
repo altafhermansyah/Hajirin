@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Head, Link, router, usePage } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 import AdminLayout from '../../../Layouts/AdminLayout';
 import {
     Ticket,
@@ -9,22 +9,32 @@ import {
     CheckCircle2,
     XCircle,
     Search,
-    ChevronDown,
-    Calendar,
     Building2,
     Eye,
-    X,
-    AlertCircle,
-    CreditCard,
-    DollarSign,
-    User,
-    Mail,
-    Phone,
-    MapPin,
-    ArrowUpRight,
     RefreshCw,
     QrCode,
+    X,
 } from 'lucide-react';
+import { Card } from '../../../Components/ui/Card';
+import { StatCard } from '../../../Components/ui/StatCard';
+import { StatusBadge } from '../../../Components/ui/StatusBadge';
+import { Pagination } from '../../../Components/ui/Pagination';
+import { FlashBanner } from '../../../Components/ui/FlashBanner';
+import { Button, buttonClass } from '../../../Components/ui/Button';
+import { Modal } from '../../../Components/ui/Dialog';
+
+const ORDER_STATUS_META = {
+    PAID: { tone: 'success', label: 'Lunas' },
+    PENDING: { tone: 'warning', label: 'Menunggu' },
+    CANCELLED: { tone: 'danger', label: 'Batal' },
+    EXPIRED: { tone: 'neutral', label: 'Kedaluwarsa' },
+};
+
+const TICKET_STATUS_META = {
+    ACTIVE: { tone: 'success', label: 'Aktif' },
+    USED: { tone: 'info', label: 'Check-In' },
+    CANCELLED: { tone: 'danger', label: 'Void' },
+};
 
 export default function OrderManagementIndex({
     orders = { data: [], links: [] },
@@ -34,13 +44,11 @@ export default function OrderManagementIndex({
 }) {
     const { flash } = usePage().props;
 
-    // Filters state
     const [search, setSearch] = useState(filters.search || '');
     const [selectedStatus, setSelectedStatus] = useState(filters.status || 'ALL');
     const [selectedEventId, setSelectedEventId] = useState(filters.event_id || 'ALL');
     const [selectedSort, setSelectedSort] = useState(filters.sort || 'latest');
 
-    // Modals
     const [detailOrder, setDetailOrder] = useState(null);
     const [markPaidConfirmOrder, setMarkPaidConfirmOrder] = useState(null);
 
@@ -81,249 +89,181 @@ export default function OrderManagementIndex({
     };
 
     return (
-        <AdminLayout title="Kelola Pesanan & Transaksi Tiket">
-            <Head title="Kelola Pesanan Tiket - Admin Hajirin" />
+        <AdminLayout title="Pesanan & Transaksi">
+            {flash?.success && <FlashBanner tone="success" message={flash.success} />}
+            {flash?.error && <FlashBanner tone="error" message={flash.error} />}
 
-            {/* Flash Messages */}
-            {flash?.success && (
-                <div className="flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900 shadow-xs animate-fade-in">
-                    <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-emerald-600" />
-                    <p className="font-semibold">{flash.success}</p>
-                </div>
-            )}
-
-            {flash?.error && (
-                <div className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-900 shadow-xs animate-fade-in">
-                    <AlertCircle className="mt-0.5 size-5 shrink-0 text-red-600" />
-                    <p className="font-semibold">{flash.error}</p>
-                </div>
-            )}
-
-            {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2">
+            {/* Page Header */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <div className="flex items-center gap-2.5">
-                        <h1 className="text-2xl font-black tracking-tight text-slate-900">
-                            Pesanan & Transaksi Tiket
-                        </h1>
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-700">
-                            Total {stats.totalOrders || 0} Pesanan
-                        </span>
-                    </div>
+                    <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-slate-900">
+                        Pesanan & Transaksi Tiket
+                    </h1>
                     <p className="text-sm text-slate-500 mt-1">
                         Monitor seluruh transaksi tiket, verifikasi pembayaran, dan kelola status pemesanan platform.
                     </p>
                 </div>
 
-                <div className="flex items-center gap-2.5">
-                    <Link
-                        href="/admin/tickets"
-                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition shadow-xs"
-                    >
-                        <Ticket className="size-4 text-slate-500" />
-                        <span>Data E-Tiket Peserta</span>
+                <div className="flex flex-wrap items-center gap-2">
+                    <Link href="/admin/tickets" className={buttonClass('outline', 'md')}>
+                        <Ticket className="size-4 text-slate-500" aria-hidden="true" />
+                        <span>Data E-Tiket</span>
                     </Link>
-                    <Link
-                        href="/admin/refunds"
-                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold transition shadow-xs"
-                    >
-                        <RefreshCw className="size-4 text-rose-600" />
+                    <Link href="/admin/refunds" className={buttonClass('outline', 'md')}>
+                        <RefreshCw className="size-4 text-slate-500" aria-hidden="true" />
                         <span>Manajemen Refund</span>
                     </Link>
                 </div>
             </div>
 
-            {/* Integrated Financial & Order Telemetry Strip */}
-            <div className="rounded-2xl border border-slate-200/90 bg-white shadow-xs overflow-hidden grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-slate-100">
-                {/* Total Revenue */}
-                <div className="p-5 flex flex-col justify-between">
-                    <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                            Omset Terbayar (PAID)
-                        </span>
-                        <span className="flex size-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700">
-                            <TrendingUp className="size-4" />
-                        </span>
-                    </div>
-                    <div className="mt-3">
-                        <p className="text-2xl font-black text-slate-900 tracking-tight font-mono">
-                            {stats.totalRevenueFormatted || 'Rp0'}
-                        </p>
-                        <p className="text-[11px] text-emerald-700 font-semibold mt-0.5 flex items-center gap-1">
-                            <CheckCircle2 className="size-3.5" />
-                            {stats.paidOrdersCount || 0} Transaksi Lunas
-                        </p>
-                    </div>
-                </div>
-
-                {/* Total Orders */}
-                <div className="p-5 flex flex-col justify-between">
-                    <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                            Semua Pesanan
-                        </span>
-                        <span className="flex size-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
-                            <ShoppingBag className="size-4" />
-                        </span>
-                    </div>
-                    <div className="mt-3">
-                        <p className="text-2xl font-black text-slate-900 tracking-tight font-mono">
-                            {stats.totalOrders || 0}
-                        </p>
-                        <p className="text-[11px] text-slate-500 mt-0.5">
-                            Akumulasi seluruh checkout
-                        </p>
-                    </div>
-                </div>
-
-                {/* Menunggu Pembayaran */}
-                <div className="p-5 flex flex-col justify-between">
-                    <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                            Menunggu Pembayaran
-                        </span>
-                        <span className="flex size-8 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
-                            <Clock className="size-4" />
-                        </span>
-                    </div>
-                    <div className="mt-3">
-                        <p className="text-2xl font-black text-slate-900 tracking-tight font-mono">
-                            {stats.pendingOrdersCount || 0}
-                        </p>
-                        <p className="text-[11px] text-amber-600 font-medium mt-0.5">
-                            Batas waktu 15 menit
-                        </p>
-                    </div>
-                </div>
-
-                {/* Dibatalkan / Kedaluwarsa */}
-                <div className="p-5 flex flex-col justify-between">
-                    <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                            Batal / Kedaluwarsa
-                        </span>
-                        <span className="flex size-8 items-center justify-center rounded-lg bg-rose-50 text-rose-600">
-                            <XCircle className="size-4" />
-                        </span>
-                    </div>
-                    <div className="mt-3">
-                        <p className="text-2xl font-black text-slate-900 tracking-tight font-mono">
-                            {stats.cancelledOrdersCount || 0}
-                        </p>
-                        <p className="text-[11px] text-rose-600 font-medium mt-0.5">
-                            Kuota tiket dikembalikan
-                        </p>
-                    </div>
-                </div>
+            {/* KPI Summary Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <StatCard
+                    label="Omset Terbayar (Paid)"
+                    icon={TrendingUp}
+                    value={stats.totalRevenueFormatted || 'Rp0'}
+                    subtext={`${stats.paidOrdersCount || 0} transaksi lunas`}
+                />
+                <StatCard
+                    label="Semua Pesanan"
+                    icon={ShoppingBag}
+                    value={stats.totalOrders || 0}
+                    subtext="Akumulasi seluruh checkout"
+                />
+                <StatCard
+                    label="Menunggu Pembayaran"
+                    icon={Clock}
+                    value={stats.pendingOrdersCount || 0}
+                    subtext="Batas waktu 15 menit"
+                />
+                <StatCard
+                    label="Batal / Kedaluwarsa"
+                    icon={XCircle}
+                    value={stats.cancelledOrdersCount || 0}
+                    subtext="Kuota tiket dikembalikan"
+                />
             </div>
 
-            {/* Filter and Search Bar */}
-            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-4">
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                    {/* Search Input */}
-                    <form onSubmit={handleSearchSubmit} className="flex-1 max-w-md relative">
-                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-slate-400 pointer-events-none" />
+            {/* Orders Table Card */}
+            <Card className="overflow-hidden">
+                {/* Filter and Search Bar */}
+                <div className="px-5 py-3.5 border-b border-slate-200 bg-slate-50/40 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+                    <form onSubmit={handleSearchSubmit} className="w-full lg:max-w-sm relative">
+                        <Search
+                            className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400 pointer-events-none"
+                            aria-hidden="true"
+                        />
                         <input
                             type="text"
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             placeholder="Cari no invoice, nama pembeli, email, event..."
-                            className="w-full h-10 pl-10 pr-4 rounded-xl border border-slate-200 bg-slate-50/70 text-sm text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10 transition"
+                            aria-label="Cari pesanan"
+                            className="w-full h-9 pl-9 pr-9 rounded-lg border border-slate-200 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-blue focus:outline-none focus:ring-2 focus:ring-brand-blue/15 transition"
                         />
+                        {search && (
+                            <button
+                                type="button"
+                                aria-label="Hapus pencarian"
+                                onClick={() => {
+                                    setSearch('');
+                                    applyFilters({ search: '' });
+                                }}
+                                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                            >
+                                <X className="size-4" aria-hidden="true" />
+                            </button>
+                        )}
                     </form>
 
-                    {/* Filter Dropdowns */}
                     <div className="flex flex-wrap items-center gap-3">
-                        {/* Status Filter */}
-                        <div className="flex items-center gap-2">
-                            <span className="text-xs font-semibold text-slate-500">Status:</span>
-                            <div className="relative">
-                                <select
-                                    value={selectedStatus}
-                                    onChange={(e) => {
-                                        setSelectedStatus(e.target.value);
-                                        applyFilters({ status: e.target.value });
-                                    }}
-                                    className="h-10 pl-3 pr-8 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:border-slate-300 focus:outline-none focus:border-blue-600 transition appearance-none cursor-pointer"
-                                >
-                                    <option value="ALL">Semua Status</option>
-                                    <option value="PAID">Lunas (PAID)</option>
-                                    <option value="PENDING">Menunggu Bayar (PENDING)</option>
-                                    <option value="CANCELLED">Dibatalkan (CANCELLED)</option>
-                                    <option value="EXPIRED">Kedaluwarsa (EXPIRED)</option>
-                                </select>
-                                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 size-3.5 text-slate-400 pointer-events-none" />
-                            </div>
+                        <div className="flex items-center gap-2 text-xs text-slate-500">
+                            <label htmlFor="order-status-filter" className="font-medium">
+                                Status:
+                            </label>
+                            <select
+                                id="order-status-filter"
+                                value={selectedStatus}
+                                onChange={(e) => {
+                                    setSelectedStatus(e.target.value);
+                                    applyFilters({ status: e.target.value });
+                                }}
+                                className="h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-medium text-slate-700 focus:border-brand-blue focus:outline-none"
+                            >
+                                <option value="ALL">Semua Status</option>
+                                <option value="PAID">Lunas (PAID)</option>
+                                <option value="PENDING">Menunggu Bayar (PENDING)</option>
+                                <option value="CANCELLED">Dibatalkan (CANCELLED)</option>
+                                <option value="EXPIRED">Kedaluwarsa (EXPIRED)</option>
+                            </select>
                         </div>
 
-                        {/* Event Filter */}
-                        <div className="flex items-center gap-2">
-                            <span className="text-xs font-semibold text-slate-500">Event:</span>
-                            <div className="relative max-w-xs">
-                                <select
-                                    value={selectedEventId}
-                                    onChange={(e) => {
-                                        setSelectedEventId(e.target.value);
-                                        applyFilters({ event_id: e.target.value });
-                                    }}
-                                    className="h-10 pl-3 pr-8 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:border-slate-300 focus:outline-none focus:border-blue-600 transition appearance-none cursor-pointer truncate"
-                                >
-                                    <option value="ALL">Semua Event</option>
-                                    {eventOptions.map((ev) => (
-                                        <option key={ev.id} value={ev.id}>
-                                            {ev.title}
-                                        </option>
-                                    ))}
-                                </select>
-                                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 size-3.5 text-slate-400 pointer-events-none" />
-                            </div>
+                        <div className="flex items-center gap-2 text-xs text-slate-500">
+                            <label htmlFor="order-event-filter" className="font-medium">
+                                Event:
+                            </label>
+                            <select
+                                id="order-event-filter"
+                                value={selectedEventId}
+                                onChange={(e) => {
+                                    setSelectedEventId(e.target.value);
+                                    applyFilters({ event_id: e.target.value });
+                                }}
+                                className="h-9 max-w-[200px] truncate rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-medium text-slate-700 focus:border-brand-blue focus:outline-none"
+                            >
+                                <option value="ALL">Semua Event</option>
+                                {eventOptions.map((ev) => (
+                                    <option key={ev.id} value={ev.id}>
+                                        {ev.title}
+                                    </option>
+                                ))}
+                            </select>
                         </div>
 
-                        {/* Sort Filter */}
-                        <div className="flex items-center gap-2">
-                            <span className="text-xs font-semibold text-slate-500">Urutan:</span>
-                            <div className="relative">
-                                <select
-                                    value={selectedSort}
-                                    onChange={(e) => {
-                                        setSelectedSort(e.target.value);
-                                        applyFilters({ sort: e.target.value });
-                                    }}
-                                    className="h-10 pl-3 pr-8 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:border-slate-300 focus:outline-none focus:border-blue-600 transition appearance-none cursor-pointer"
-                                >
-                                    <option value="latest">Terbaru</option>
-                                    <option value="oldest">Terlama</option>
-                                    <option value="highest_amount">Nominal Tertinggi</option>
-                                    <option value="lowest_amount">Nominal Terendah</option>
-                                </select>
-                                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 size-3.5 text-slate-400 pointer-events-none" />
-                            </div>
+                        <div className="flex items-center gap-2 text-xs text-slate-500">
+                            <label htmlFor="order-sort-filter" className="font-medium">
+                                Urutkan:
+                            </label>
+                            <select
+                                id="order-sort-filter"
+                                value={selectedSort}
+                                onChange={(e) => {
+                                    setSelectedSort(e.target.value);
+                                    applyFilters({ sort: e.target.value });
+                                }}
+                                className="h-9 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-medium text-slate-700 focus:border-brand-blue focus:outline-none"
+                            >
+                                <option value="latest">Terbaru</option>
+                                <option value="oldest">Terlama</option>
+                                <option value="highest_amount">Nominal Tertinggi</option>
+                                <option value="lowest_amount">Nominal Terendah</option>
+                            </select>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            {/* Orders Table */}
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+                {/* Orders Table */}
                 <div className="overflow-x-auto">
                     <table className="w-full text-left text-sm">
-                        <thead className="bg-slate-50/80 border-b border-slate-200 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                        <thead className="border-b border-slate-200 bg-slate-50/70 text-xs font-medium text-slate-500">
                             <tr>
-                                <th scope="col" className="px-6 py-4">No. Invoice & Waktu</th>
-                                <th scope="col" className="px-6 py-4">Event Terkait</th>
-                                <th scope="col" className="px-6 py-4">Pemesan</th>
-                                <th scope="col" className="px-6 py-4 text-center">Tiket</th>
-                                <th scope="col" className="px-6 py-4 text-right">Total Transaksi</th>
-                                <th scope="col" className="px-6 py-4 text-center">Status</th>
-                                <th scope="col" className="px-6 py-4 text-center">Aksi</th>
+                                <th scope="col" className="px-5 py-3">No. Invoice & Waktu</th>
+                                <th scope="col" className="px-5 py-3">Event Terkait</th>
+                                <th scope="col" className="px-5 py-3">Pemesan</th>
+                                <th scope="col" className="px-5 py-3 text-right">Tiket</th>
+                                <th scope="col" className="px-5 py-3 text-right">Total Transaksi</th>
+                                <th scope="col" className="px-5 py-3">Status</th>
+                                <th scope="col" className="px-5 py-3 text-right">Aksi</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                             {orders.data.length === 0 ? (
                                 <tr>
-                                    <td colSpan="7" className="px-6 py-16 text-center text-slate-500">
-                                        <ShoppingBag className="mx-auto size-12 text-slate-300 mb-3" />
-                                        <p className="font-bold text-slate-800 text-base">Tidak ada pesanan ditemukan</p>
+                                    <td colSpan="7" className="px-5 py-12 text-center text-slate-500">
+                                        <ShoppingBag className="mx-auto size-7 text-slate-300 mb-2" aria-hidden="true" />
+                                        <p className="text-sm font-medium text-slate-700">
+                                            Tidak ada pesanan ditemukan
+                                        </p>
                                         <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
                                             Coba sesuaikan kata kunci pencarian atau ganti filter status dan event.
                                         </p>
@@ -333,118 +273,87 @@ export default function OrderManagementIndex({
                                 orders.data.map((order) => {
                                     const isPaid = order.status === 'PAID';
                                     const isPending = order.status === 'PENDING';
-                                    const isCancelled = order.status === 'CANCELLED';
-                                    const isExpired = order.status === 'EXPIRED';
+                                    const statusMeta = ORDER_STATUS_META[order.status] || {
+                                        tone: 'neutral',
+                                        label: order.status,
+                                    };
 
                                     return (
-                                        <tr key={order.id} className="hover:bg-slate-50/80 transition-colors">
-                                            {/* Invoice & Time */}
-                                            <td className="px-6 py-4">
-                                                <div className="space-y-0.5">
-                                                    <span className="font-mono font-bold text-blue-600 text-xs">
-                                                        #{order.orderReference}
-                                                    </span>
-                                                    <p className="text-xs text-slate-500">{order.createdAtFormatted}</p>
-                                                </div>
+                                        <tr key={order.id} className="hover:bg-slate-50/60 transition-colors">
+                                            <td className="px-5 py-3.5">
+                                                <span className="font-mono font-medium text-slate-900 text-xs block">
+                                                    #{order.orderReference}
+                                                </span>
+                                                <span className="text-xs text-slate-400 tabular-nums">
+                                                    {order.createdAtFormatted}
+                                                </span>
                                             </td>
 
-                                            {/* Event & Organizer */}
-                                            <td className="px-6 py-4">
+                                            <td className="px-5 py-3.5">
                                                 <div className="max-w-xs">
-                                                    <h4 className="font-bold text-slate-900 text-xs truncate">
+                                                    <p className="font-medium text-slate-900 text-xs truncate">
                                                         {order.event.title}
-                                                    </h4>
-                                                    <p className="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5">
-                                                        <Building2 className="size-3 text-slate-400 shrink-0" />
+                                                    </p>
+                                                    <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
+                                                        <Building2 className="size-3 text-slate-400 shrink-0" aria-hidden="true" />
                                                         <span className="truncate">{order.event.organizerName}</span>
                                                     </p>
                                                 </div>
                                             </td>
 
-                                            {/* Buyer Info */}
-                                            <td className="px-6 py-4 text-xs">
-                                                <div className="space-y-0.5">
-                                                    <p className="font-bold text-slate-800">{order.buyer.name}</p>
-                                                    <p className="text-slate-500 text-[11px] truncate">{order.buyer.email}</p>
-                                                </div>
+                                            <td className="px-5 py-3.5 text-xs">
+                                                <p className="font-medium text-slate-900">{order.buyer.name}</p>
+                                                <p className="text-slate-500 truncate">{order.buyer.email}</p>
                                             </td>
 
-                                            {/* Ticket Count */}
-                                            <td className="px-6 py-4 text-center">
-                                                <div className="inline-block text-center">
-                                                    <span className="font-bold text-xs text-slate-800">
-                                                        {order.ticketSummary.totalTickets} Tiket
-                                                    </span>
-                                                    {isPaid && (
-                                                        <p className="text-[10px] text-emerald-600 font-semibold">
-                                                            {order.ticketSummary.activeTickets} Aktif
-                                                        </p>
-                                                    )}
-                                                </div>
-                                            </td>
-
-                                            {/* Total Amount */}
-                                            <td className="px-6 py-4 text-right">
-                                                <div className="inline-block text-right">
-                                                    <span className="font-extrabold text-sm text-slate-900">
-                                                        {order.totalAmountFormatted}
-                                                    </span>
-                                                    <p className="text-[10px] text-slate-400 uppercase font-mono">
-                                                        {order.payment.method}
-                                                    </p>
-                                                </div>
-                                            </td>
-
-                                            {/* Status Badge */}
-                                            <td className="px-6 py-4 text-center">
+                                            <td className="px-5 py-3.5 text-right tabular-nums">
+                                                <p className="font-medium text-xs text-slate-900">
+                                                    {order.ticketSummary.totalTickets} Tiket
+                                                </p>
                                                 {isPaid && (
-                                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                                        <CheckCircle2 className="size-3.5" />
-                                                        Lunas
-                                                    </span>
-                                                )}
-                                                {isPending && (
-                                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
-                                                        <Clock className="size-3.5" />
-                                                        Menunggu
-                                                    </span>
-                                                )}
-                                                {isCancelled && (
-                                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200">
-                                                        <XCircle className="size-3.5" />
-                                                        Batal
-                                                    </span>
-                                                )}
-                                                {isExpired && (
-                                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-600 border border-slate-200">
-                                                        <Clock className="size-3.5" />
-                                                        Kedaluwarsa
-                                                    </span>
+                                                    <p className="text-xs text-slate-500">
+                                                        {order.ticketSummary.activeTickets} aktif
+                                                    </p>
                                                 )}
                                             </td>
 
-                                            {/* Actions */}
-                                            <td className="px-6 py-4 text-center">
-                                                <div className="flex items-center justify-center gap-1.5">
-                                                    {/* Detail View */}
+                                            <td className="px-5 py-3.5 text-right tabular-nums">
+                                                <p className="font-medium text-sm text-slate-900">
+                                                    {order.totalAmountFormatted}
+                                                </p>
+                                                <p className="text-xs text-slate-400 uppercase font-mono">
+                                                    {order.payment.method}
+                                                </p>
+                                            </td>
+
+                                            <td className="px-5 py-3.5">
+                                                <StatusBadge
+                                                    tone={statusMeta.tone}
+                                                    label={statusMeta.label}
+                                                />
+                                            </td>
+
+                                            <td className="px-5 py-3.5 text-right">
+                                                <div className="inline-flex items-center gap-1.5">
                                                     <button
                                                         type="button"
                                                         onClick={() => setDetailOrder(order)}
                                                         title="Rincian Pesanan & E-Tiket"
-                                                        className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-600 transition"
+                                                        aria-label={`Lihat rincian pesanan #${order.orderReference}`}
+                                                        className={buttonClass('outline', 'icon')}
                                                     >
-                                                        <Eye className="size-4" />
+                                                        <Eye className="size-3.5" aria-hidden="true" />
                                                     </button>
 
-                                                    {/* Mark as Paid if pending */}
                                                     {isPending && (
                                                         <button
                                                             type="button"
                                                             onClick={() => setMarkPaidConfirmOrder(order)}
-                                                            title="Konfirmasi Pembayaran LUNAS"
-                                                            className="p-1.5 rounded-lg border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 transition"
+                                                            title="Konfirmasi Pembayaran Lunas"
+                                                            aria-label={`Konfirmasi pembayaran lunas #${order.orderReference}`}
+                                                            className={buttonClass('primary', 'icon')}
                                                         >
-                                                            <CheckCircle2 className="size-4" />
+                                                            <CheckCircle2 className="size-3.5" aria-hidden="true" />
                                                         </button>
                                                     )}
                                                 </div>
@@ -457,216 +366,186 @@ export default function OrderManagementIndex({
                     </table>
                 </div>
 
-                {/* Pagination */}
-                {orders.links && orders.links.length > 3 && (
-                    <div className="p-4 border-t border-slate-200 bg-slate-50/50 flex flex-col sm:flex-row items-center justify-between gap-4">
-                        <p className="text-xs text-slate-500">
-                            Menampilkan <span className="font-bold text-slate-800">{orders.data.length}</span> dari{' '}
-                            <span className="font-bold text-slate-800">{orders.total || orders.data.length}</span> Pesanan
-                        </p>
-                        <div className="flex items-center gap-1">
-                            {orders.links.map((link, idx) => (
-                                <Link
-                                    key={idx}
-                                    href={link.url || '#'}
-                                    disabled={!link.url}
-                                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
-                                        link.active
-                                            ? 'bg-blue-600 text-white shadow-xs'
-                                            : !link.url
-                                            ? 'text-slate-300 cursor-not-allowed'
-                                            : 'text-slate-600 hover:bg-slate-200/60'
-                                    }`}
-                                    dangerouslySetInnerHTML={{ __html: link.label }}
+                <Pagination
+                    links={orders.links}
+                    from={orders.from}
+                    to={orders.to}
+                    total={orders.total}
+                    itemLabel="pesanan"
+                />
+            </Card>
+
+            {/* Modal Detail Pesanan */}
+            <Modal
+                open={Boolean(detailOrder)}
+                onClose={() => setDetailOrder(null)}
+                title={detailOrder ? `Invoice #${detailOrder.orderReference}` : 'Rincian Pesanan'}
+                description="Rincian transaksi pemesanan tiket dan daftar e-tiket terbit."
+                maxWidth="max-w-xl"
+                footer={
+                    <Button variant="outline" size="sm" onClick={() => setDetailOrder(null)}>
+                        Tutup
+                    </Button>
+                }
+            >
+                {detailOrder && (
+                    <div className="space-y-4">
+                        <div className="p-4 rounded-lg border border-slate-200 bg-slate-50 space-y-2.5">
+                            <div className="flex items-start justify-between gap-3">
+                                <div className="min-w-0">
+                                    <p className="text-xs text-slate-500">Event</p>
+                                    <h4 className="font-semibold text-slate-900 text-sm mt-0.5">
+                                        {detailOrder.event.title}
+                                    </h4>
+                                    <p className="text-xs text-slate-600 mt-0.5">
+                                        EO: {detailOrder.event.organizerName}
+                                    </p>
+                                </div>
+                                <StatusBadge
+                                    tone={ORDER_STATUS_META[detailOrder.status]?.tone || 'neutral'}
+                                    label={ORDER_STATUS_META[detailOrder.status]?.label || detailOrder.status}
                                 />
-                            ))}
+                            </div>
+                            <div className="pt-2.5 border-t border-slate-200 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-600">
+                                <div>
+                                    <span className="text-slate-500">Tanggal Event: </span>
+                                    <strong className="text-slate-800">{detailOrder.event.eventDateFormatted}</strong>
+                                </div>
+                                <div>
+                                    <span className="text-slate-500">Lokasi: </span>
+                                    <strong className="text-slate-800">{detailOrder.event.venueName}</strong>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                            <div className="p-3 rounded-lg border border-slate-200">
+                                <span className="text-slate-500 block mb-0.5">Nama Pemesan</span>
+                                <span className="font-medium text-slate-900">{detailOrder.buyer.name}</span>
+                            </div>
+                            <div className="p-3 rounded-lg border border-slate-200">
+                                <span className="text-slate-500 block mb-0.5">Email Pemesan</span>
+                                <span className="font-medium text-slate-900 break-all">
+                                    {detailOrder.buyer.email}
+                                </span>
+                            </div>
+                            <div className="p-3 rounded-lg border border-slate-200">
+                                <span className="text-slate-500 block mb-0.5">No. WhatsApp / Telepon</span>
+                                <span className="font-medium text-slate-900 font-mono">
+                                    {detailOrder.buyer.phone}
+                                </span>
+                            </div>
+                            <div className="p-3 rounded-lg border border-slate-200">
+                                <span className="text-slate-500 block mb-0.5">Waktu Transaksi</span>
+                                <span className="font-medium text-slate-900 tabular-nums">
+                                    {detailOrder.createdAtFormatted}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div>
+                            <p className="text-xs font-medium text-slate-700 mb-2">
+                                Rincian Pembelian Tiket
+                            </p>
+                            <div className="divide-y divide-slate-100 border border-slate-200 rounded-lg overflow-hidden text-xs">
+                                {detailOrder.items.map((item, idx) => (
+                                    <div key={idx} className="p-3 bg-white flex items-center justify-between gap-2">
+                                        <div>
+                                            <p className="font-medium text-slate-900">{item.ticketTypeName}</p>
+                                            <p className="text-slate-500 tabular-nums">
+                                                {item.unitPriceFormatted} x {item.quantity} tiket
+                                            </p>
+                                        </div>
+                                        <span className="font-semibold text-slate-900 tabular-nums">
+                                            {item.unitPrice > 0
+                                                ? 'Rp' + (item.unitPrice * item.quantity).toLocaleString('id-ID')
+                                                : 'Gratis'}
+                                        </span>
+                                    </div>
+                                ))}
+                                <div className="p-3 bg-slate-50 flex items-center justify-between text-sm font-semibold text-slate-900">
+                                    <span>Total Tagihan</span>
+                                    <span className="tabular-nums">{detailOrder.totalAmountFormatted}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div className="flex items-center justify-between mb-2">
+                                <p className="text-xs font-medium text-slate-700">Kode E-Tiket Terbit</p>
+                                <span className="text-xs text-slate-500 tabular-nums">
+                                    {detailOrder.tickets.length} Tiket
+                                </span>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                                {detailOrder.tickets.map((tkt) => {
+                                    const tktStatus = TICKET_STATUS_META[tkt.status] || {
+                                        tone: 'neutral',
+                                        label: tkt.status,
+                                    };
+                                    return (
+                                        <div
+                                            key={tkt.id}
+                                            className="p-2.5 rounded-lg border border-slate-200 bg-white flex items-center justify-between gap-2"
+                                        >
+                                            <div className="flex items-center gap-2 min-w-0">
+                                                <QrCode className="size-4 text-slate-400 shrink-0" aria-hidden="true" />
+                                                <span className="font-mono font-medium text-slate-800 truncate">
+                                                    {tkt.ticketCode}
+                                                </span>
+                                            </div>
+                                            <StatusBadge tone={tktStatus.tone} label={tktStatus.label} />
+                                        </div>
+                                    );
+                                })}
+                            </div>
                         </div>
                     </div>
                 )}
-            </div>
-
-            {/* Modal Detail Pesanan */}
-            {detailOrder && (
-                <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
-                    <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-xl overflow-hidden animate-scale-in max-h-[90vh] flex flex-col">
-                        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/80">
-                            <div>
-                                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
-                                    Invoice Rincian Pemesanan
-                                </span>
-                                <h3 className="font-mono font-black text-slate-900 text-base">
-                                    #{detailOrder.orderReference}
-                                </h3>
-                            </div>
-                            <button
-                                type="button"
-                                onClick={() => setDetailOrder(null)}
-                                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition"
-                            >
-                                <X className="size-5" />
-                            </button>
-                        </div>
-
-                        <div className="p-6 space-y-5 overflow-y-auto flex-1">
-                            {/* Event & Status Header */}
-                            <div className="p-4 rounded-xl border border-slate-200 bg-slate-50 space-y-2">
-                                <div className="flex items-start justify-between gap-2">
-                                    <div>
-                                        <span className="text-[11px] font-bold text-slate-400 uppercase">Event:</span>
-                                        <h4 className="font-extrabold text-slate-900 text-base">{detailOrder.event.title}</h4>
-                                        <p className="text-xs text-slate-600">EO: {detailOrder.event.organizerName}</p>
-                                    </div>
-                                    <span
-                                        className={`px-2.5 py-1 rounded-full text-xs font-bold border ${
-                                            detailOrder.status === 'PAID'
-                                                ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
-                                                : detailOrder.status === 'PENDING'
-                                                ? 'bg-amber-100 text-amber-800 border-amber-200'
-                                                : 'bg-rose-100 text-rose-800 border-rose-200'
-                                        }`}
-                                    >
-                                        {detailOrder.status}
-                                    </span>
-                                </div>
-                                <div className="pt-2 border-t border-slate-200/80 grid grid-cols-2 gap-2 text-xs text-slate-500">
-                                    <div>
-                                        <span>Tanggal Event: </span>
-                                        <strong className="text-slate-700">{detailOrder.event.eventDateFormatted}</strong>
-                                    </div>
-                                    <div>
-                                        <span>Lokasi: </span>
-                                        <strong className="text-slate-700">{detailOrder.event.venueName}</strong>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Data Pemesan */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                                <div className="p-3 rounded-xl border border-slate-200">
-                                    <span className="text-slate-400 font-semibold block mb-1">Nama Pemesan:</span>
-                                    <span className="font-bold text-slate-800">{detailOrder.buyer.name}</span>
-                                </div>
-                                <div className="p-3 rounded-xl border border-slate-200">
-                                    <span className="text-slate-400 font-semibold block mb-1">Email Pemesan:</span>
-                                    <span className="font-bold text-slate-800 break-all">{detailOrder.buyer.email}</span>
-                                </div>
-                                <div className="p-3 rounded-xl border border-slate-200">
-                                    <span className="text-slate-400 font-semibold block mb-1">No. WhatsApp / Telepon:</span>
-                                    <span className="font-bold text-slate-800">{detailOrder.buyer.phone}</span>
-                                </div>
-                                <div className="p-3 rounded-xl border border-slate-200">
-                                    <span className="text-slate-400 font-semibold block mb-1">Waktu Transaksi:</span>
-                                    <span className="font-bold text-slate-800">{detailOrder.createdAtFormatted}</span>
-                                </div>
-                            </div>
-
-                            {/* Item Pembelian */}
-                            <div>
-                                <h5 className="text-xs font-bold text-slate-700 mb-2">Rincian Pembelian Tiket:</h5>
-                                <div className="divide-y divide-slate-100 border border-slate-200 rounded-xl overflow-hidden text-xs">
-                                    {detailOrder.items.map((item, idx) => (
-                                        <div key={idx} className="p-3 bg-white flex items-center justify-between">
-                                            <div>
-                                                <p className="font-bold text-slate-800">{item.ticketTypeName}</p>
-                                                <p className="text-[11px] text-slate-500">{item.unitPriceFormatted} × {item.quantity} tiket</p>
-                                            </div>
-                                            <span className="font-extrabold text-slate-900">
-                                                {item.unitPrice > 0 ? 'Rp' + (item.unitPrice * item.quantity).toLocaleString('id-ID') : 'Gratis'}
-                                            </span>
-                                        </div>
-                                    ))}
-                                    <div className="p-3 bg-slate-50 flex items-center justify-between font-bold text-sm">
-                                        <span>Total Tagihan:</span>
-                                        <span className="text-blue-700 text-base font-black">{detailOrder.totalAmountFormatted}</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Daftar E-Tiket Terbit */}
-                            <div>
-                                <div className="flex items-center justify-between mb-2">
-                                    <h5 className="text-xs font-bold text-slate-700">Kode E-Tiket Terbit:</h5>
-                                    <span className="text-xs text-slate-500">{detailOrder.tickets.length} Tiket</span>
-                                </div>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                                    {detailOrder.tickets.map((tkt) => (
-                                        <div
-                                            key={tkt.id}
-                                            className="p-2.5 rounded-xl border border-slate-200 bg-white flex items-center justify-between"
-                                        >
-                                            <div className="flex items-center gap-2">
-                                                <QrCode className="size-4 text-slate-400" />
-                                                <span className="font-mono font-bold text-slate-800 text-[11px]">{tkt.ticketCode}</span>
-                                            </div>
-                                            <span
-                                                className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
-                                                    tkt.status === 'ACTIVE'
-                                                        ? 'bg-emerald-100 text-emerald-700'
-                                                        : tkt.status === 'USED'
-                                                        ? 'bg-blue-100 text-blue-700'
-                                                        : 'bg-rose-100 text-rose-700'
-                                                }`}
-                                            >
-                                                {tkt.status}
-                                            </span>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50/50">
-                            <button
-                                type="button"
-                                onClick={() => setDetailOrder(null)}
-                                className="px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold transition"
-                            >
-                                Tutup
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            </Modal>
 
             {/* Modal Konfirmasi Mark as Paid */}
-            {markPaidConfirmOrder && (
-                <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
-                    <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-md p-6 space-y-4 animate-scale-in">
-                        <div className="flex items-center gap-3">
-                            <div className="size-11 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
-                                <CheckCircle2 className="size-6" />
-                            </div>
-                            <div>
-                                <h3 className="font-extrabold text-slate-900 text-base">Konfirmasi Pembayaran Lunas?</h3>
-                                <p className="text-xs text-slate-500">
-                                    Invoice: <strong className="font-mono text-slate-800">#{markPaidConfirmOrder.orderReference}</strong>
-                                </p>
-                            </div>
-                        </div>
-
-                        <p className="text-xs text-slate-600 leading-relaxed">
-                            Tindakan ini akan mengesahkan pembayaran senilai <strong>{markPaidConfirmOrder.totalAmountFormatted}</strong> secara manual, menerbitkan status LUNAS (PAID), dan mengaktifkan e-tiket pemesan.
-                        </p>
-
-                        <div className="flex items-center justify-end gap-2 pt-2">
-                            <button
-                                type="button"
-                                onClick={() => setMarkPaidConfirmOrder(null)}
-                                className="px-4 py-2 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 text-xs font-bold transition"
-                            >
-                                Batal
-                            </button>
-                            <button
-                                type="button"
+            <Modal
+                open={Boolean(markPaidConfirmOrder)}
+                onClose={() => setMarkPaidConfirmOrder(null)}
+                title="Konfirmasi Pembayaran Lunas?"
+                description={
+                    markPaidConfirmOrder
+                        ? `Invoice #${markPaidConfirmOrder.orderReference}`
+                        : null
+                }
+                maxWidth="max-w-md"
+                footer={
+                    <>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setMarkPaidConfirmOrder(null)}
+                        >
+                            Batal
+                        </Button>
+                        {markPaidConfirmOrder && (
+                            <Button
+                                variant="primary"
+                                size="sm"
                                 onClick={() => handleMarkAsPaid(markPaidConfirmOrder)}
-                                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition shadow-xs"
                             >
                                 Ya, Konfirmasi Lunas
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+                            </Button>
+                        )}
+                    </>
+                }
+            >
+                {markPaidConfirmOrder && (
+                    <p className="text-sm text-slate-600 leading-relaxed">
+                        Tindakan ini akan mengesahkan pembayaran senilai{' '}
+                        <strong className="text-slate-900">
+                            {markPaidConfirmOrder.totalAmountFormatted}
+                        </strong>{' '}
+                        secara manual, mengubah status menjadi LUNAS (PAID), dan mengaktifkan e-tiket pemesan.
+                    </p>
+                )}
+            </Modal>
         </AdminLayout>
     );
 }

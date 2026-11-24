@@ -1,76 +1,65 @@
 import React from 'react';
-import { Head, Link } from '@inertiajs/react';
+import { Link } from '@inertiajs/react';
 import AdminLayout from '../../../Layouts/AdminLayout';
-import {
-    QrCode,
-    Users,
-    ShieldAlert,
-    ExternalLink,
-    ArrowLeft,
-    CheckCircle2,
-    Calendar,
-    Ticket,
-} from 'lucide-react';
+import { QrCode, Users, ArrowLeft, Calendar, Ticket } from 'lucide-react';
+import { Card } from '../../../Components/ui/Card';
+import { NeutralTag } from '../../../Components/ui/StatusBadge';
+import { buttonClass } from '../../../Components/ui/Button';
 
 export default function AdminCheckInIndex() {
     return (
         <AdminLayout title="Presensi & Check-in Tiket">
-            <Head title="Presensi & Check-in - Admin Hajirin" />
-
-            <div className="space-y-6 max-w-5xl mx-auto">
+            <div className="space-y-6 max-w-5xl">
                 {/* Header */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
-                        <div className="flex items-center gap-3">
-                            <h1 className="text-xl font-black text-slate-900 tracking-tight">
+                        <div className="flex flex-wrap items-center gap-2.5">
+                            <h1 className="text-xl sm:text-2xl font-semibold text-slate-900 tracking-tight">
                                 Presensi & Check-in Tiket
                             </h1>
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800">
-                                Dikelola oleh EO & Staff
-                            </span>
+                            <NeutralTag>Dikelola oleh EO & Staff</NeutralTag>
                         </div>
-                        <p className="text-xs text-slate-500 mt-1">
-                            Pemberitahuan alur operasional presensi e-tiket di gerbang masuk (gate check-in).
+                        <p className="text-sm text-slate-500 mt-1">
+                            Alur operasional presensi e-tiket di gerbang masuk (gate check-in).
                         </p>
                     </div>
 
-                    <Link
-                        href="/admin/dashboard"
-                        className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition shadow-xs"
-                    >
-                        <ArrowLeft className="size-4" />
+                    <Link href="/admin/dashboard" className={buttonClass('outline', 'md')}>
+                        <ArrowLeft className="size-4 text-slate-500" aria-hidden="true" />
                         <span>Kembali ke Dashboard</span>
                     </Link>
                 </div>
 
-                {/* Empty State Banner & Explanation */}
-                <div className="rounded-2xl border border-slate-200 bg-white p-8 sm:p-12 text-center shadow-xs">
-                    <div className="mx-auto size-20 rounded-3xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 mb-6 shadow-inner">
-                        <QrCode className="size-10" />
+                {/* Explanation Card */}
+                <Card className="p-8 sm:p-10 text-center">
+                    <div className="mx-auto size-16 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-center text-slate-600 mb-5">
+                        <QrCode className="size-8" strokeWidth={1.6} aria-hidden="true" />
                     </div>
 
-                    <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight mb-2">
+                    <h2 className="text-lg font-semibold text-slate-900 tracking-tight mb-2">
                         Modul Check-in Dikelola Khusus oleh EO & Event Staff
                     </h2>
 
                     <p className="max-w-2xl mx-auto text-sm text-slate-600 leading-relaxed mb-8">
-                        Sesuai arsitektur pembagian tugas platform Hajirin, operasional pemindaian QR code tiket di pintu masuk dan pencatatan presensi kehadiran peserta ditugaskan langsung kepada <strong>Penyelenggara Acara (EO)</strong> serta <strong>Event Staff</strong> lapangan melalui portal operasional EO.
+                        Sesuai pembagian peran di platform Hajirin, operasional pemindaian QR code tiket di pintu masuk dan pencatatan kehadiran peserta dikelola langsung oleh{' '}
+                        <strong className="font-semibold text-slate-900">Penyelenggara Acara (EO)</strong> serta{' '}
+                        <strong className="font-semibold text-slate-900">Event Staff</strong> lapangan melalui portal operasional EO.
                     </p>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-3xl mx-auto text-left mb-8">
-                        <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/70">
-                            <div className="flex items-center gap-2.5 text-blue-700 font-bold text-xs mb-1">
-                                <Users className="size-4" />
+                        <div className="p-4 rounded-lg border border-slate-200 bg-slate-50/60">
+                            <div className="flex items-center gap-2 text-slate-900 font-semibold text-xs mb-1.5">
+                                <Users className="size-4 text-slate-400" aria-hidden="true" />
                                 <span>Petugas Pintu Masuk</span>
                             </div>
                             <p className="text-xs text-slate-500 leading-relaxed">
-                                Penyelenggara acara menugaskan event staff khusus dengan hak akses scanner scanner di lokasi.
+                                Penyelenggara acara menugaskan event staff khusus dengan hak akses pemindai QR di lokasi.
                             </p>
                         </div>
 
-                        <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/70">
-                            <div className="flex items-center gap-2.5 text-emerald-700 font-bold text-xs mb-1">
-                                <Ticket className="size-4" />
+                        <div className="p-4 rounded-lg border border-slate-200 bg-slate-50/60">
+                            <div className="flex items-center gap-2 text-slate-900 font-semibold text-xs mb-1.5">
+                                <Ticket className="size-4 text-slate-400" aria-hidden="true" />
                                 <span>Validasi Tiket Real-time</span>
                             </div>
                             <p className="text-xs text-slate-500 leading-relaxed">
@@ -78,9 +67,9 @@ export default function AdminCheckInIndex() {
                             </p>
                         </div>
 
-                        <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/70">
-                            <div className="flex items-center gap-2.5 text-amber-700 font-bold text-xs mb-1">
-                                <Calendar className="size-4" />
+                        <div className="p-4 rounded-lg border border-slate-200 bg-slate-50/60">
+                            <div className="flex items-center gap-2 text-slate-900 font-semibold text-xs mb-1.5">
+                                <Calendar className="size-4 text-slate-400" aria-hidden="true" />
                                 <span>Laporan Kehadiran</span>
                             </div>
                             <p className="text-xs text-slate-500 leading-relaxed">
@@ -89,23 +78,17 @@ export default function AdminCheckInIndex() {
                         </div>
                     </div>
 
-                    <div className="flex flex-wrap items-center justify-center gap-3">
-                        <Link
-                            href="/admin/events"
-                            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition shadow-xs"
-                        >
-                            <Calendar className="size-4" />
+                    <div className="flex flex-wrap items-center justify-center gap-2.5">
+                        <Link href="/admin/events" className={buttonClass('primary', 'md')}>
+                            <Calendar className="size-4" aria-hidden="true" />
                             <span>Pantau Daftar Event</span>
                         </Link>
-                        <Link
-                            href="/admin/tickets"
-                            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition shadow-xs"
-                        >
-                            <Ticket className="size-4" />
+                        <Link href="/admin/tickets" className={buttonClass('outline', 'md')}>
+                            <Ticket className="size-4 text-slate-500" aria-hidden="true" />
                             <span>Lihat Direktori E-Tiket Platform</span>
                         </Link>
                     </div>
-                </div>
+                </Card>
             </div>
         </AdminLayout>
     );
