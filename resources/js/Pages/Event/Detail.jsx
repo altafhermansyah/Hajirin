@@ -1,30 +1,58 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { useState, useEffect } from 'react';
 import {
-    CalendarDays, MapPin, Share2, Bookmark, Check,
-    CircleUserRound, Info, Ticket, ChevronRight, Search,
-    Clock, ShieldCheck, Globe, ExternalLink, CheckCircle2,
-    Sparkles, Minus, Plus, Building2, AlertCircle,
-    Copy, Award, Coffee, FileText, CheckCircle, LogOut
+    CalendarDays,
+    MapPin,
+    Share2,
+    Bookmark,
+    Info,
+    Ticket,
+    ChevronRight,
+    Clock,
+    ShieldCheck,
+    Globe,
+    ExternalLink,
+    CheckCircle2,
+    Users,
+    Minus,
+    Plus,
+    Copy,
+    Award,
+    Coffee,
+    FileText,
+    CheckCircle,
 } from 'lucide-react';
 import AuthModal from '../../Components/Auth/AuthModal';
 import Navbar from '../../Components/Navbar';
+import { Card } from '../../Components/ui/Card';
+import { Avatar } from '../../Components/ui/Avatar';
+import { StatusBadge, NeutralTag } from '../../Components/ui/StatusBadge';
+import { UnderlineTabs } from '../../Components/ui/UnderlineTabs';
+import { Button, buttonClass } from '../../Components/ui/Button';
 
-export default function EventDetail({ auth, eventSlug, eventData, relatedEvents = [], isBookmarked: initialBookmarked }) {
-    // State untuk pemilihan banyak jenis tiket (multi-ticket items): { [ticketId]: quantity }
+export default function EventDetail({
+    auth,
+    eventSlug,
+    eventData,
+    relatedEvents = [],
+    isBookmarked: initialBookmarked,
+}) {
     const [selectedTickets, setSelectedTickets] = useState({});
     const [isBookmarked, setIsBookmarked] = useState(initialBookmarked || false);
     const [toastMessage, setToastMessage] = useState('');
     const [showShareMenu, setShowShareMenu] = useState(false);
     const [activeTab, setActiveTab] = useState('deskripsi');
+    const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+    const [authView, setAuthView] = useState('login');
 
     useEffect(() => {
         setIsBookmarked(initialBookmarked || false);
     }, [initialBookmarked]);
 
-    // Auth modal state
-    const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-    const [authView, setAuthView] = useState('login');
+    const showToast = (message) => {
+        setToastMessage(message);
+        setTimeout(() => setToastMessage(''), 3500);
+    };
 
     const handleToggleBookmark = () => {
         if (!auth?.user) {
@@ -43,7 +71,11 @@ export default function EventDetail({ auth, eventSlug, eventData, relatedEvents 
             {
                 preserveScroll: true,
                 onSuccess: () => {
-                    showToast(next ? 'Event berhasil disimpan ke profil kamu!' : 'Event dihapus dari simpanan.');
+                    showToast(
+                        next
+                            ? 'Event berhasil disimpan ke profil kamu.'
+                            : 'Event dihapus dari simpanan.'
+                    );
                 },
                 onError: () => {
                     setIsBookmarked(!next);
@@ -55,35 +87,46 @@ export default function EventDetail({ auth, eventSlug, eventData, relatedEvents 
 
     if (!eventData) {
         return (
-            <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4 text-center font-sans">
-                <div className="w-16 h-16 rounded-full bg-red-100 text-red-600 flex items-center justify-center mb-4">
-                    <AlertCircle className="size-8" />
-                </div>
-                <h1 className="text-2xl font-bold text-navy mb-2">Event Tidak Ditemukan</h1>
-                <p className="text-slate text-sm max-w-md mb-6">
-                    Event yang kamu cari mungkin sudah berakhir, dihapus, atau tautan yang kamu akses tidak valid.
-                </p>
-                <Link
-                    href="/"
-                    className="inline-flex items-center gap-2 rounded-xl bg-brand-blue px-6 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-800 transition"
+            <div className="min-h-screen bg-white text-slate-900 font-sans flex flex-col">
+                <Navbar
+                    auth={auth}
+                    onOpenAuthModal={(view) => {
+                        setAuthView(view);
+                        setIsAuthModalOpen(true);
+                    }}
+                />
+                <main
+                    id="main-content"
+                    tabIndex={-1}
+                    className="flex-1 flex items-center justify-center px-6 py-16"
                 >
-                    Kembali ke Beranda
-                </Link>
+                    <div className="w-full max-w-md">
+                        <p className="text-4xl font-semibold tracking-tight text-slate-900 tabular-nums">
+                            404
+                        </p>
+                        <h1 className="mt-3 text-xl font-semibold text-slate-900">
+                            Event Tidak Ditemukan
+                        </h1>
+                        <p className="mt-2 text-sm text-slate-600 leading-relaxed">
+                            Event yang kamu cari mungkin sudah berakhir, dihapus, atau tautan yang diakses tidak valid.
+                        </p>
+                        <div className="mt-6">
+                            <Link href="/" className={buttonClass('primary', 'md')}>
+                                Kembali ke Beranda
+                            </Link>
+                        </div>
+                    </div>
+                </main>
             </div>
         );
     }
 
     const event = eventData;
 
-    const showToast = (message) => {
-        setToastMessage(message);
-        setTimeout(() => setToastMessage(''), 3500);
-    };
-
     const handleCopyLink = () => {
         if (navigator?.clipboard) {
             navigator.clipboard.writeText(window.location.href);
-            showToast('Tautan event berhasil disalin ke clipboard!');
+            showToast('Tautan event berhasil disalin ke clipboard.');
         } else {
             showToast('Tautan: ' + window.location.href);
         }
@@ -91,7 +134,9 @@ export default function EventDetail({ auth, eventSlug, eventData, relatedEvents 
     };
 
     const handleShareWhatsapp = () => {
-        const text = encodeURIComponent(`Yuk ikut acara seru ini: ${event.title}\nCek detail tiketnya di: ${window.location.href}`);
+        const text = encodeURIComponent(
+            `Yuk ikut acara ini: ${event.title}\nCek detail tiketnya di: ${window.location.href}`
+        );
         window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
         setShowShareMenu(false);
     };
@@ -111,22 +156,18 @@ export default function EventDetail({ auth, eventSlug, eventData, relatedEvents 
         });
     };
 
-    const handleQuickToggleTicket = (ticket) => {
-        if (ticket.status === 'Habis') return;
-        const currentQty = selectedTickets[ticket.id] || 0;
-        if (currentQty === 0) {
-            handleSetTicketQuantity(ticket, 1);
-        } else {
-            handleSetTicketQuantity(ticket, 0);
-        }
-    };
-
-    const selectedList = (event?.tickets || []).filter(t => (selectedTickets[t.id] || 0) > 0);
-    const totalSelectedTicketsCount = selectedList.reduce((acc, t) => acc + (selectedTickets[t.id] || 0), 0);
-    const totalSubtotal = selectedList.reduce((acc, t) => acc + ((t.rawPrice || 0) * (selectedTickets[t.id] || 0)), 0);
+    const selectedList = (event?.tickets || []).filter((t) => (selectedTickets[t.id] || 0) > 0);
+    const totalSelectedTicketsCount = selectedList.reduce(
+        (acc, t) => acc + (selectedTickets[t.id] || 0),
+        0
+    );
+    const totalSubtotal = selectedList.reduce(
+        (acc, t) => acc + (t.rawPrice || 0) * (selectedTickets[t.id] || 0),
+        0
+    );
 
     const firstSelected = selectedList[0] || null;
-    const checkoutItems = selectedList.map(t => ({
+    const checkoutItems = selectedList.map((t) => ({
         ticket_id: t.id,
         ticket_type_id: t.id,
         price_id: t.priceId || '',
@@ -134,11 +175,8 @@ export default function EventDetail({ auth, eventSlug, eventData, relatedEvents 
         qty: selectedTickets[t.id],
     }));
 
-    const formatCurrency = (amount) => {
-        return amount > 0
-            ? 'Rp' + Number(amount).toLocaleString('id-ID')
-            : 'Gratis';
-    };
+    const formatCurrency = (amount) =>
+        amount > 0 ? 'Rp' + Number(amount).toLocaleString('id-ID') : 'Gratis';
 
     const scrollToSection = (id, tabName) => {
         setActiveTab(tabName);
@@ -158,252 +196,317 @@ export default function EventDetail({ auth, eventSlug, eventData, relatedEvents 
             e.preventDefault();
             setAuthView('login');
             setIsAuthModalOpen(true);
-            showToast('Silakan masuk atau daftar terlebih dahulu untuk melanjutkan pemesanan tiket.');
+            showToast(
+                'Silakan masuk atau daftar terlebih dahulu untuk melanjutkan pemesanan tiket.'
+            );
         }
     };
 
-    const checkoutUrl = totalSelectedTicketsCount > 0
-        ? `/checkout?event=${encodeURIComponent(eventSlug)}&ticket_id=${encodeURIComponent(firstSelected?.id || '')}&price_id=${encodeURIComponent(firstSelected?.priceId || '')}&qty=${selectedTickets[firstSelected?.id] || 1}&items=${encodeURIComponent(JSON.stringify(checkoutItems))}`
-        : '#pilih-tiket';
+    const checkoutUrl =
+        totalSelectedTicketsCount > 0
+            ? `/checkout?event=${encodeURIComponent(eventSlug)}&ticket_id=${encodeURIComponent(firstSelected?.id || '')}&price_id=${encodeURIComponent(firstSelected?.priceId || '')}&qty=${selectedTickets[firstSelected?.id] || 1}&items=${encodeURIComponent(JSON.stringify(checkoutItems))}`
+            : '#pilih-tiket';
+
+    const sectionTabItems = [
+        ['deskripsi', 'Deskripsi'],
+        ['tiket', 'Pilihan Tiket'],
+        ['lokasi', 'Lokasi & Waktu'],
+        ['syarat', 'Syarat & Ketentuan'],
+    ];
+
+    const sectionAnchors = {
+        deskripsi: 'deskripsi',
+        tiket: 'pilih-tiket',
+        lokasi: 'lokasi',
+        syarat: 'syarat',
+    };
 
     return (
         <>
             <Head title={`${event.title} - Hajirin`} />
 
-            {/* Floating Toast Notification */}
             {toastMessage && (
-                <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-xl bg-navy text-white px-5 py-3 shadow-2xl animate-fade-in border border-slate-700">
-                    <CheckCircle className="size-5 text-emerald-400 shrink-0" />
-                    <span className="text-sm font-medium">{toastMessage}</span>
+                <div
+                    role="status"
+                    aria-live="polite"
+                    className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 rounded-lg bg-navy text-white px-4 py-3 shadow-lg border border-slate-700"
+                >
+                    <CheckCircle className="size-4 text-emerald-400 shrink-0" aria-hidden="true" />
+                    <span className="text-xs font-medium">{toastMessage}</span>
                 </div>
             )}
 
-            <div className="bg-[#f8fafc] text-navy font-sans min-h-screen">
-                <Navbar auth={auth} onOpenAuthModal={(view) => { setAuthView(view); setIsAuthModalOpen(true); }} />
+            <div className="bg-slate-50 text-slate-900 font-sans min-h-screen flex flex-col">
+                <Navbar
+                    auth={auth}
+                    onOpenAuthModal={(view) => {
+                        setAuthView(view);
+                        setIsAuthModalOpen(true);
+                    }}
+                />
 
-                <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+                <main
+                    id="main-content"
+                    tabIndex={-1}
+                    className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 pb-24 lg:pb-12"
+                >
                     {/* Breadcrumbs */}
-                    <nav className="text-xs text-slate mb-6 flex items-center space-x-2 overflow-x-auto whitespace-nowrap">
-                        <Link href="/" className="hover:text-brand-blue transition">Beranda</Link>
-                        <ChevronRight className="size-3.5 shrink-0 text-gray-400" />
-                        <Link href="/kategori" className="hover:text-brand-blue transition">Kategori</Link>
-                        <ChevronRight className="size-3.5 shrink-0 text-gray-400" />
-                        <Link href={`/kategori/${event.category_slug || event.category.toLowerCase()}`} className="hover:text-brand-blue transition">
+                    <nav
+                        aria-label="Breadcrumb"
+                        className="text-xs text-slate-500 mb-5 flex items-center gap-2 overflow-x-auto whitespace-nowrap"
+                    >
+                        <Link href="/" className="hover:text-brand-blue transition">
+                            Beranda
+                        </Link>
+                        <ChevronRight className="size-3.5 shrink-0 text-slate-400" aria-hidden="true" />
+                        <Link href="/kategori" className="hover:text-brand-blue transition">
+                            Kategori
+                        </Link>
+                        <ChevronRight className="size-3.5 shrink-0 text-slate-400" aria-hidden="true" />
+                        <Link
+                            href={`/kategori/${event.category_slug || event.category.toLowerCase()}`}
+                            className="hover:text-brand-blue transition"
+                        >
                             {event.category}
                         </Link>
-                        <ChevronRight className="size-3.5 shrink-0 text-gray-400" />
-                        <span className="font-semibold text-navy truncate max-w-[240px] sm:max-w-none">{event.title}</span>
+                        <ChevronRight className="size-3.5 shrink-0 text-slate-400" aria-hidden="true" />
+                        <span className="font-medium text-slate-900 truncate max-w-[240px] sm:max-w-none">
+                            {event.title}
+                        </span>
                     </nav>
 
                     {/* Main Layout: 2 Columns */}
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-                        {/* Left Column (8 cols): Media, Content, Tickets */}
-                        <div className="lg:col-span-8 space-y-8">
-                            {/* Banner & Badges */}
-                            <div className="relative rounded-2xl overflow-hidden bg-gray-900 shadow-md group">
-                                <div className="aspect-[16/9] w-full overflow-hidden bg-gray-200">
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
+                        {/* Left Column (8 cols) */}
+                        <div className="lg:col-span-8 space-y-6">
+                            {/* Banner & Actions */}
+                            <div className="relative rounded-xl overflow-hidden bg-slate-900 border border-slate-200 group">
+                                <div className="aspect-[16/9] w-full overflow-hidden bg-slate-100">
                                     <img
                                         src={event.image}
                                         alt={event.title}
                                         className="w-full h-full object-cover transition duration-500 group-hover:scale-[1.02]"
                                     />
                                 </div>
-                                <div className="absolute top-4 left-4 flex flex-wrap gap-2">
-                                    <span className="rounded-lg bg-white/95 px-3 py-1.5 text-xs font-bold tracking-wide uppercase text-navy shadow-sm backdrop-blur">
+                                <div className="absolute top-3.5 left-3.5 flex flex-wrap gap-2">
+                                    <span className="rounded-md bg-white/95 px-2.5 py-1 text-xs font-medium text-slate-900 backdrop-blur-xs">
                                         {event.category}
                                     </span>
-                                    <span className={`flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-bold tracking-wide shadow-sm backdrop-blur ${
-                                        event.event_type === 'ONLINE'
-                                            ? 'bg-purple-600/90 text-white'
-                                            : 'bg-emerald-600/90 text-white'
-                                    }`}>
+                                    <span className="inline-flex items-center gap-1 rounded-md bg-navy/80 px-2.5 py-1 text-xs font-medium text-white backdrop-blur-xs">
                                         {event.event_type === 'ONLINE' ? (
                                             <>
-                                                <Globe className="size-3.5" /> Acara Online
+                                                <Globe className="size-3.5" aria-hidden="true" />
+                                                Acara Online
                                             </>
                                         ) : (
                                             <>
-                                                <MapPin className="size-3.5" /> Acara Offline
+                                                <MapPin className="size-3.5" aria-hidden="true" />
+                                                Acara Offline
                                             </>
                                         )}
                                     </span>
                                 </div>
 
-                                <div className="absolute top-4 right-4 flex items-center gap-2">
+                                <div className="absolute top-3.5 right-3.5 flex items-center gap-2">
                                     <div className="relative">
                                         <button
+                                            type="button"
                                             onClick={() => setShowShareMenu(!showShareMenu)}
-                                            className="flex size-9 items-center justify-center rounded-full bg-white/95 text-navy shadow-md hover:bg-white transition backdrop-blur"
+                                            aria-label="Bagikan Event"
+                                            className="flex size-9 items-center justify-center rounded-lg border border-slate-200/80 bg-white/95 text-slate-700 hover:bg-white transition backdrop-blur-xs cursor-pointer"
                                             title="Bagikan Event"
                                         >
-                                            <Share2 className="size-4" />
+                                            <Share2 className="size-4" aria-hidden="true" />
                                         </button>
                                         {showShareMenu && (
-                                            <div className="absolute right-0 top-11 z-30 w-48 rounded-xl border border-gray-100 bg-white p-2 shadow-xl animate-scale-up">
+                                            <div className="absolute right-0 top-11 z-30 w-44 rounded-lg border border-slate-200 bg-white p-1.5 shadow-lg">
                                                 <button
+                                                    type="button"
                                                     onClick={handleCopyLink}
-                                                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-slate hover:bg-blue-50 hover:text-brand-blue"
+                                                    className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100 cursor-pointer"
                                                 >
-                                                    <Copy className="size-3.5" /> Salin Tautan
+                                                    <Copy className="size-3.5 text-slate-400" aria-hidden="true" />
+                                                    Salin Tautan
                                                 </button>
                                                 <button
+                                                    type="button"
                                                     onClick={handleShareWhatsapp}
-                                                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-slate hover:bg-emerald-50 hover:text-emerald-700"
+                                                    className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100 cursor-pointer"
                                                 >
-                                                    <Share2 className="size-3.5" /> Kirim WhatsApp
+                                                    <Share2 className="size-3.5 text-slate-400" aria-hidden="true" />
+                                                    Kirim WhatsApp
                                                 </button>
                                             </div>
                                         )}
                                     </div>
                                     <button
+                                        type="button"
                                         onClick={handleToggleBookmark}
-                                        className={`flex size-9 items-center justify-center rounded-full shadow-md transition backdrop-blur ${
+                                        aria-label={
+                                            isBookmarked ? 'Hapus dari Simpanan' : 'Simpan Event'
+                                        }
+                                        aria-pressed={isBookmarked}
+                                        className={`flex size-9 items-center justify-center rounded-lg border transition backdrop-blur-xs cursor-pointer ${
                                             isBookmarked
-                                                ? 'bg-amber-500 text-white shadow-amber-500/20'
-                                                : 'bg-white/95 text-navy hover:bg-white'
+                                                ? 'border-brand-blue bg-brand-blue text-white'
+                                                : 'border-slate-200/80 bg-white/95 text-slate-700 hover:bg-white'
                                         }`}
-                                        title={isBookmarked ? 'Hapus dari Simpanan' : 'Simpan Event'}
+                                        title={
+                                            isBookmarked ? 'Hapus dari Simpanan' : 'Simpan Event'
+                                        }
                                     >
-                                        <Bookmark className="size-4" fill={isBookmarked ? 'currentColor' : 'none'} />
+                                        <Bookmark
+                                            className="size-4"
+                                            fill={isBookmarked ? 'currentColor' : 'none'}
+                                            aria-hidden="true"
+                                        />
                                     </button>
                                 </div>
                             </div>
 
                             {/* Event Title & Organizer Info */}
-                            <div className="rounded-2xl border border-gray-200/80 bg-white p-6 sm:p-8 shadow-sm">
-                                <h1 className="text-2xl sm:text-3xl font-bold leading-tight text-navy mb-4">
+                            <Card className="p-6 sm:p-7">
+                                <h1 className="text-xl sm:text-2xl font-semibold leading-snug tracking-tight text-slate-900 mb-5">
                                     {event.title}
                                 </h1>
 
-                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-gray-100">
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-5 border-t border-slate-100">
                                     <div className="flex items-start gap-3">
-                                        <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-brand-blue">
-                                            <CalendarDays className="size-5" />
+                                        <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-600">
+                                            <CalendarDays className="size-4" aria-hidden="true" />
                                         </div>
                                         <div>
-                                            <p className="text-xs font-medium text-slate">Tanggal & Hari</p>
-                                            <p className="text-sm font-bold text-navy mt-0.5">{event.date}</p>
+                                            <p className="text-xs text-slate-500">Tanggal & Hari</p>
+                                            <p className="text-sm font-medium text-slate-900 mt-0.5 tabular-nums">
+                                                {event.date}
+                                            </p>
                                         </div>
                                     </div>
 
                                     <div className="flex items-start gap-3">
-                                        <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-brand-blue">
-                                            <Clock className="size-5" />
+                                        <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-600">
+                                            <Clock className="size-4" aria-hidden="true" />
                                         </div>
                                         <div>
-                                            <p className="text-xs font-medium text-slate">Waktu Pelaksanaan</p>
-                                            <p className="text-sm font-bold text-navy mt-0.5">{event.time}</p>
+                                            <p className="text-xs text-slate-500">Waktu Pelaksanaan</p>
+                                            <p className="text-sm font-medium text-slate-900 mt-0.5 tabular-nums">
+                                                {event.time}
+                                            </p>
                                         </div>
                                     </div>
 
                                     <div className="flex items-start gap-3">
-                                        <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-brand-blue">
-                                            <MapPin className="size-5" />
+                                        <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-600">
+                                            <MapPin className="size-4" aria-hidden="true" />
                                         </div>
-                                        <div>
-                                            <p className="text-xs font-medium text-slate">Lokasi Event</p>
-                                            <p className="text-sm font-bold text-navy mt-0.5 line-clamp-1">{event.location}</p>
+                                        <div className="min-w-0">
+                                            <p className="text-xs text-slate-500">Lokasi Event</p>
+                                            <p className="text-sm font-medium text-slate-900 mt-0.5 line-clamp-1">
+                                                {event.location}
+                                            </p>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-xl bg-slate-50 p-4 border border-slate-100">
+                                <div className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-lg bg-slate-50 p-4 border border-slate-200/80">
                                     <div className="flex items-center gap-3">
-                                        <span className="flex size-11 items-center justify-center rounded-full bg-blue-600 text-sm font-bold uppercase text-white shadow-sm">
-                                            {event.organizer ? event.organizer.charAt(0) : 'E'}
-                                        </span>
+                                        <Avatar name={event.organizer || 'EO'} size="md" />
                                         <div>
-                                            <div className="flex items-center gap-1.5">
-                                                <p className="text-sm font-bold text-navy">{event.organizer}</p>
-                                                <span className="flex items-center text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                                                    <CheckCircle2 className="size-3 mr-1" /> Terverifikasi
-                                                </span>
-                                            </div>
-                                            <p className="text-xs text-slate mt-0.5">Penyelenggara Resmi di Hajirin</p>
+                                            <p className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
+                                                <span>{event.organizer}</span>
+                                                <CheckCircle2
+                                                    className="size-3.5 text-brand-blue shrink-0"
+                                                    aria-label="Penyelenggara terverifikasi"
+                                                />
+                                            </p>
+                                            <p className="text-xs text-slate-500 mt-0.5">
+                                                Penyelenggara Resmi di Hajirin
+                                            </p>
                                         </div>
                                     </div>
 
                                     <div className="text-right">
-                                        <p className="text-xs text-slate">Harga Tiket</p>
-                                        <p className="text-lg font-extrabold text-brand-blue">{event.price}</p>
+                                        <p className="text-xs text-slate-500">Harga Tiket</p>
+                                        <p className="text-lg font-semibold text-slate-900 tabular-nums">
+                                            {event.price}
+                                        </p>
                                     </div>
                                 </div>
-                            </div>
+                            </Card>
 
-                            {/* Quick Navigation Tabs */}
-                            <div className="flex border-b border-gray-200 bg-white rounded-xl px-2 py-1 shadow-sm overflow-x-auto">
-                                {[
-                                    { id: 'deskripsi', label: 'Deskripsi', anchor: 'deskripsi' },
-                                    { id: 'tiket', label: 'Pilihan Tiket', anchor: 'pilih-tiket' },
-                                    { id: 'lokasi', label: 'Lokasi & Waktu', anchor: 'lokasi' },
-                                    { id: 'syarat', label: 'Syarat & Ketentuan', anchor: 'syarat' },
-                                ].map((tab) => (
-                                    <button
-                                        key={tab.id}
-                                        onClick={() => scrollToSection(tab.anchor, tab.id)}
-                                        className={`px-4 py-2.5 text-xs sm:text-sm font-semibold whitespace-nowrap rounded-lg transition ${
-                                            activeTab === tab.id
-                                                ? 'bg-blue-50 text-brand-blue'
-                                                : 'text-slate hover:text-navy hover:bg-gray-50'
-                                        }`}
-                                    >
-                                        {tab.label}
-                                    </button>
-                                ))}
-                            </div>
+                            {/* Section Tabs */}
+                            <Card className="overflow-hidden">
+                                <UnderlineTabs
+                                    items={sectionTabItems}
+                                    activeKey={activeTab}
+                                    onChange={(key) => scrollToSection(sectionAnchors[key], key)}
+                                    className="border-b-0"
+                                />
+                            </Card>
 
-                            {/* Section: Description */}
-                            <section id="deskripsi" className="rounded-2xl border border-gray-200/80 bg-white p-6 sm:p-8 shadow-sm scroll-mt-24">
-                                <h2 className="text-xl font-bold mb-4 flex items-center text-navy">
-                                    <Info className="mr-2.5 size-5 text-brand-blue" />
-                                    Deskripsi Acara
+                            {/* Description */}
+                            <Card as="section" id="deskripsi" className="p-6 sm:p-7 scroll-mt-24">
+                                <h2 className="text-base font-semibold mb-4 flex items-center gap-2 text-slate-900">
+                                    <Info className="size-4 text-slate-400" aria-hidden="true" />
+                                    <span>Deskripsi Acara</span>
                                 </h2>
-                                <div className="text-slate text-sm sm:text-base leading-relaxed whitespace-pre-line">
+                                <div className="text-slate-600 text-sm leading-relaxed whitespace-pre-line">
                                     {event.description}
                                 </div>
 
-                                {/* Event Facilities / Perks */}
-                                <div className="mt-8 pt-6 border-t border-gray-100">
-                                    <h3 className="text-sm font-bold text-navy uppercase tracking-wider mb-3">Fasilitas yang Didapat</h3>
+                                <div className="mt-6 pt-5 border-t border-slate-100">
+                                    <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">
+                                        Fasilitas yang Didapat
+                                    </h3>
                                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                        <div className="flex items-center gap-2.5 rounded-xl bg-gray-50 p-3 border border-gray-100">
-                                            <Award className="size-4 text-brand-blue shrink-0" />
-                                            <span className="text-xs font-semibold text-slate">E-Sertifikat</span>
+                                        <div className="flex items-center gap-2.5 rounded-lg bg-slate-50 p-3 border border-slate-200/70">
+                                            <Award className="size-4 text-slate-500 shrink-0" aria-hidden="true" />
+                                            <span className="text-xs font-medium text-slate-700">
+                                                E-Sertifikat
+                                            </span>
                                         </div>
-                                        <div className="flex items-center gap-2.5 rounded-xl bg-gray-50 p-3 border border-gray-100">
-                                            <Coffee className="size-4 text-brand-blue shrink-0" />
-                                            <span className="text-xs font-semibold text-slate">Snack / Coffee</span>
+                                        <div className="flex items-center gap-2.5 rounded-lg bg-slate-50 p-3 border border-slate-200/70">
+                                            <Coffee className="size-4 text-slate-500 shrink-0" aria-hidden="true" />
+                                            <span className="text-xs font-medium text-slate-700">
+                                                Snack / Coffee
+                                            </span>
                                         </div>
-                                        <div className="flex items-center gap-2.5 rounded-xl bg-gray-50 p-3 border border-gray-100">
-                                            <FileText className="size-4 text-brand-blue shrink-0" />
-                                            <span className="text-xs font-semibold text-slate">Materi Pembicara</span>
+                                        <div className="flex items-center gap-2.5 rounded-lg bg-slate-50 p-3 border border-slate-200/70">
+                                            <FileText className="size-4 text-slate-500 shrink-0" aria-hidden="true" />
+                                            <span className="text-xs font-medium text-slate-700">
+                                                Materi Pembicara
+                                            </span>
                                         </div>
-                                        <div className="flex items-center gap-2.5 rounded-xl bg-gray-50 p-3 border border-gray-100">
-                                            <Sparkles className="size-4 text-brand-blue shrink-0" />
-                                            <span className="text-xs font-semibold text-slate">Akses Networking</span>
+                                        <div className="flex items-center gap-2.5 rounded-lg bg-slate-50 p-3 border border-slate-200/70">
+                                            <Users className="size-4 text-slate-500 shrink-0" aria-hidden="true" />
+                                            <span className="text-xs font-medium text-slate-700">
+                                                Akses Networking
+                                            </span>
                                         </div>
                                     </div>
                                 </div>
-                            </section>
+                            </Card>
 
-                            {/* Section: Ticket Selection */}
-                            <section id="pilih-tiket" className="rounded-2xl border border-gray-200/80 bg-white p-6 sm:p-8 shadow-sm scroll-mt-24">
-                                <div className="flex items-center justify-between mb-6">
+                            {/* Ticket Selection */}
+                            <Card as="section" id="pilih-tiket" className="p-6 sm:p-7 scroll-mt-24">
+                                <div className="flex items-center justify-between gap-3 mb-5">
                                     <div>
-                                        <h2 className="text-xl font-bold flex items-center text-navy">
-                                            <Ticket className="mr-2.5 size-5 text-brand-blue" />
-                                            Pilih Tiket
+                                        <h2 className="text-base font-semibold flex items-center gap-2 text-slate-900">
+                                            <Ticket className="size-4 text-slate-400" aria-hidden="true" />
+                                            <span>Pilih Tiket</span>
                                         </h2>
-                                        <p className="text-xs text-slate mt-1">Pilih jenis dan jumlah tiket yang kamu inginkan (bisa memilih jenis tiket yang berbeda).</p>
+                                        <p className="text-xs text-slate-500 mt-1">
+                                            Pilih jenis dan jumlah tiket yang diinginkan (bisa memilih lebih dari satu jenis).
+                                        </p>
                                     </div>
                                     {totalSelectedTicketsCount > 0 && (
-                                        <span className="hidden sm:inline-flex text-xs font-semibold text-brand-blue bg-blue-50 px-3 py-1 rounded-full border border-blue-200">
-                                            {totalSelectedTicketsCount} Tiket Terpilih ({selectedList.length} Jenis)
-                                        </span>
+                                        <NeutralTag className="hidden sm:inline-flex tabular-nums">
+                                            {totalSelectedTicketsCount} Tiket ({selectedList.length} Jenis)
+                                        </NeutralTag>
                                     )}
                                 </div>
 
-                                <div className="space-y-4">
+                                <div className="space-y-3.5">
                                     {event.tickets && event.tickets.length > 0 ? (
                                         event.tickets.map((ticket) => {
                                             const isHabis = ticket.status === 'Habis';
@@ -414,100 +517,115 @@ export default function EventDetail({ auth, eventSlug, eventData, relatedEvents 
                                             return (
                                                 <div
                                                     key={ticket.id}
-                                                    onClick={() => !isHabis && currentQty === 0 && handleSetTicketQuantity(ticket, 1)}
-                                                    className={`relative border rounded-2xl p-5 sm:p-6 transition-all duration-200 ${
+                                                    onClick={() =>
+                                                        !isHabis &&
+                                                        currentQty === 0 &&
+                                                        handleSetTicketQuantity(ticket, 1)
+                                                    }
+                                                    className={`relative border rounded-xl p-5 transition ${
                                                         isHabis
-                                                            ? 'bg-gray-50/80 border-gray-200 opacity-60 cursor-not-allowed'
+                                                            ? 'bg-slate-50 border-slate-200 opacity-60 cursor-not-allowed'
                                                             : isSelected
-                                                            ? 'bg-blue-50/40 border-brand-blue ring-2 ring-brand-blue/30 shadow-md'
-                                                            : 'bg-white border-gray-200 hover:border-brand-blue/60 hover:shadow-sm cursor-pointer'
+                                                              ? 'bg-blue-50/30 border-brand-blue ring-1 ring-brand-blue/30'
+                                                              : 'bg-white border-slate-200 hover:border-slate-300 cursor-pointer'
                                                     }`}
                                                 >
                                                     <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-                                                        <div className="flex-1">
-                                                            <div className="flex flex-wrap items-center gap-2 mb-2">
-                                                                <h3 className={`font-bold text-lg ${isSelected ? 'text-brand-blue' : 'text-navy'}`}>
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className="flex flex-wrap items-center gap-2.5 mb-1.5">
+                                                                <h3 className="font-semibold text-base text-slate-900">
                                                                     {ticket.name}
                                                                 </h3>
-                                                                {isHabis ? (
-                                                                    <span className="bg-red-50 text-red-600 border border-red-200 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">
-                                                                        Habis Terjual
-                                                                    </span>
-                                                                ) : (
-                                                                    <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase flex items-center gap-1">
-                                                                        <Check className="size-3" /> Tersedia
-                                                                    </span>
-                                                                )}
-                                                                {ticket.quota > 0 && ticket.quota <= 25 && !isHabis && (
-                                                                    <span className="bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                                                                        Sisa {ticket.quota} Kuota!
-                                                                    </span>
-                                                                )}
+                                                                <StatusBadge
+                                                                    tone={isHabis ? 'danger' : 'success'}
+                                                                    label={isHabis ? 'Habis Terjual' : 'Tersedia'}
+                                                                />
+                                                                {ticket.quota > 0 &&
+                                                                    ticket.quota <= 25 &&
+                                                                    !isHabis && (
+                                                                        <NeutralTag className="tabular-nums">
+                                                                            Sisa {ticket.quota} kuota
+                                                                        </NeutralTag>
+                                                                    )}
                                                             </div>
-                                                            <p className="text-xs sm:text-sm text-slate leading-relaxed">{ticket.desc}</p>
+                                                            <p className="text-xs sm:text-sm text-slate-500 leading-relaxed">
+                                                                {ticket.desc}
+                                                            </p>
                                                         </div>
 
-                                                        <div className="flex sm:flex-col items-center sm:items-end justify-between border-t sm:border-t-0 border-gray-100 pt-3 sm:pt-0">
+                                                        <div className="flex sm:flex-col items-center sm:items-end justify-between border-t sm:border-t-0 border-slate-100 pt-3 sm:pt-0 gap-2 shrink-0">
                                                             <div className="text-left sm:text-right">
-                                                                <p className="text-xs text-slate">Harga</p>
-                                                                <p className="text-xl font-extrabold text-brand-blue">{ticket.price}</p>
+                                                                <p className="text-xs text-slate-500">Harga</p>
+                                                                <p className="text-lg font-semibold text-slate-900 tabular-nums">
+                                                                    {ticket.price}
+                                                                </p>
                                                             </div>
 
-                                                            <div className="mt-2">
-                                                                {isSelected ? (
-                                                                    <div className="flex items-center gap-2 bg-white rounded-xl border border-brand-blue/40 p-1 shadow-2xs">
-                                                                        <button
-                                                                            type="button"
-                                                                            onClick={(e) => {
-                                                                                e.stopPropagation();
-                                                                                handleSetTicketQuantity(ticket, currentQty - 1);
-                                                                            }}
-                                                                            className="flex size-7 items-center justify-center rounded-lg bg-gray-100 hover:bg-gray-200 text-navy transition"
-                                                                        >
-                                                                            <Minus className="size-3.5" />
-                                                                        </button>
-                                                                        <span className="w-6 text-center text-sm font-bold text-navy">
-                                                                            {currentQty}
-                                                                        </span>
-                                                                        <button
-                                                                            type="button"
-                                                                            onClick={(e) => {
-                                                                                e.stopPropagation();
-                                                                                handleSetTicketQuantity(ticket, currentQty + 1);
-                                                                            }}
-                                                                            disabled={currentQty >= maxQuota}
-                                                                            className="flex size-7 items-center justify-center rounded-lg bg-brand-blue text-white hover:bg-blue-800 disabled:opacity-40 transition"
-                                                                        >
-                                                                            <Plus className="size-3.5" />
-                                                                        </button>
-                                                                    </div>
-                                                                ) : (
+                                                            {isSelected ? (
+                                                                <div className="flex items-center gap-1.5 bg-white rounded-lg border border-slate-200 p-1">
                                                                     <button
                                                                         type="button"
-                                                                        disabled={isHabis}
+                                                                        aria-label={`Kurangi jumlah ${ticket.name}`}
                                                                         onClick={(e) => {
                                                                             e.stopPropagation();
-                                                                            if (!isHabis) handleSetTicketQuantity(ticket, 1);
+                                                                            handleSetTicketQuantity(
+                                                                                ticket,
+                                                                                currentQty - 1
+                                                                            );
                                                                         }}
-                                                                        className={`px-5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition ${
-                                                                            isHabis
-                                                                                ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                                                                                : 'bg-white border border-brand-blue text-brand-blue hover:bg-blue-50'
-                                                                        }`}
+                                                                        className="flex size-7 items-center justify-center rounded-md bg-slate-100 hover:bg-slate-200 text-slate-800 transition cursor-pointer"
                                                                     >
-                                                                        {isHabis ? 'Habis' : '+ Pilih Tiket'}
+                                                                        <Minus className="size-3.5" aria-hidden="true" />
                                                                     </button>
-                                                                )}
-                                                            </div>
+                                                                    <span className="w-6 text-center text-sm font-semibold text-slate-900 tabular-nums">
+                                                                        {currentQty}
+                                                                    </span>
+                                                                    <button
+                                                                        type="button"
+                                                                        aria-label={`Tambah jumlah ${ticket.name}`}
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            handleSetTicketQuantity(
+                                                                                ticket,
+                                                                                currentQty + 1
+                                                                            );
+                                                                        }}
+                                                                        disabled={currentQty >= maxQuota}
+                                                                        className="flex size-7 items-center justify-center rounded-md bg-brand-blue text-white hover:bg-blue-800 disabled:opacity-40 transition cursor-pointer"
+                                                                    >
+                                                                        <Plus className="size-3.5" aria-hidden="true" />
+                                                                    </button>
+                                                                </div>
+                                                            ) : (
+                                                                <Button
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    disabled={isHabis}
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        if (!isHabis) {
+                                                                            handleSetTicketQuantity(
+                                                                                ticket,
+                                                                                1
+                                                                            );
+                                                                        }
+                                                                    }}
+                                                                >
+                                                                    {isHabis ? 'Habis' : '+ Pilih Tiket'}
+                                                                </Button>
+                                                            )}
                                                         </div>
                                                     </div>
 
-                                                    {/* Subtotal info per item if selected */}
                                                     {isSelected && (
-                                                        <div className="mt-3 pt-3 border-t border-blue-100/80 flex items-center justify-between text-xs">
-                                                            <span className="text-slate font-medium">Subtotal untuk jenis tiket ini:</span>
-                                                            <span className="font-bold text-brand-blue">
-                                                                {formatCurrency((ticket.rawPrice || 0) * currentQty)}
+                                                        <div className="mt-3 pt-3 border-t border-slate-200/70 flex items-center justify-between text-xs">
+                                                            <span className="text-slate-500">
+                                                                Subtotal untuk jenis tiket ini
+                                                            </span>
+                                                            <span className="font-semibold text-slate-900 tabular-nums">
+                                                                {formatCurrency(
+                                                                    (ticket.rawPrice || 0) * currentQty
+                                                                )}
                                                             </span>
                                                         </div>
                                                     )}
@@ -515,170 +633,201 @@ export default function EventDetail({ auth, eventSlug, eventData, relatedEvents 
                                             );
                                         })
                                     ) : (
-                                        <div className="text-center py-8 text-slate text-sm">
+                                        <div className="text-center py-8 text-slate-500 text-sm">
                                             Informasi tiket untuk event ini belum dipublikasikan oleh penyelenggara.
                                         </div>
                                     )}
                                 </div>
-                            </section>
+                            </Card>
 
-                            {/* Section: Location & Venue */}
-                            <section id="lokasi" className="rounded-2xl border border-gray-200/80 bg-white p-6 sm:p-8 shadow-sm scroll-mt-24">
-                                <h2 className="text-xl font-bold mb-4 flex items-center text-navy">
-                                    <MapPin className="mr-2.5 size-5 text-brand-blue" />
-                                    Lokasi & Waktu Acara
+                            {/* Location & Venue */}
+                            <Card as="section" id="lokasi" className="p-6 sm:p-7 scroll-mt-24">
+                                <h2 className="text-base font-semibold mb-4 flex items-center gap-2 text-slate-900">
+                                    <MapPin className="size-4 text-slate-400" aria-hidden="true" />
+                                    <span>Lokasi & Waktu Acara</span>
                                 </h2>
 
-                                <div className="space-y-4">
-                                    <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
-                                        <p className="text-xs font-semibold uppercase tracking-wider text-slate mb-1">Gedung / Tempat</p>
-                                        <p className="text-base font-bold text-navy">{event.location}</p>
-                                        <p className="text-xs sm:text-sm text-slate mt-1">{event.fullAddress}</p>
+                                <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                                    <p className="text-xs font-medium text-slate-500 mb-1">
+                                        Gedung / Tempat
+                                    </p>
+                                    <p className="text-sm font-semibold text-slate-900">
+                                        {event.location}
+                                    </p>
+                                    <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+                                        {event.fullAddress}
+                                    </p>
 
-                                        {event.event_type === 'OFFLINE' ? (
-                                            <div className="mt-4">
-                                                <a
-                                                    href={getGoogleMapsUrl()}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="inline-flex items-center gap-1.5 rounded-lg bg-white border border-gray-300 px-3.5 py-2 text-xs font-semibold text-navy shadow-sm hover:bg-gray-50 transition"
-                                                >
-                                                    <ExternalLink className="size-3.5 text-brand-blue" />
-                                                    Buka di Google Maps
-                                                </a>
-                                            </div>
-                                        ) : (
-                                            <div className="mt-3 flex items-center gap-2 text-xs text-purple-700 bg-purple-50 p-3 rounded-lg border border-purple-100">
-                                                <Globe className="size-4 shrink-0" />
-                                                <span>Tautan streaming / webinar akan diberikan di e-tiket setelah konfirmasi pemesanan.</span>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            </section>
-
-                            {/* Section: Terms and Conditions */}
-                            <section id="syarat" className="rounded-2xl border border-gray-200/80 bg-white p-6 sm:p-8 shadow-sm scroll-mt-24">
-                                <h2 className="text-xl font-bold mb-4 flex items-center text-navy">
-                                    <ShieldCheck className="mr-2.5 size-5 text-brand-blue" />
-                                    Syarat & Ketentuan
-                                </h2>
-                                <ul className="space-y-2.5 text-xs sm:text-sm text-slate">
-                                    {event.terms && event.terms.map((term, index) => (
-                                        <li key={index} className="flex items-start gap-2.5">
-                                            <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-blue-50 text-[11px] font-bold text-brand-blue mt-0.5">
-                                                {index + 1}
+                                    {event.event_type === 'OFFLINE' ? (
+                                        <div className="mt-4">
+                                            <a
+                                                href={getGoogleMapsUrl()}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className={buttonClass('outline', 'sm')}
+                                            >
+                                                <ExternalLink className="size-3.5 text-slate-500" aria-hidden="true" />
+                                                <span>Buka di Google Maps</span>
+                                            </a>
+                                        </div>
+                                    ) : (
+                                        <div className="mt-3 flex items-center gap-2 text-xs text-slate-700 bg-white p-3 rounded-lg border border-slate-200">
+                                            <Globe className="size-4 text-brand-blue shrink-0" aria-hidden="true" />
+                                            <span>
+                                                Tautan streaming / webinar akan diberikan pada e-tiket setelah konfirmasi pemesanan.
                                             </span>
-                                            <span className="leading-relaxed">{term}</span>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </section>
+                                        </div>
+                                    )}
+                                </div>
+                            </Card>
+
+                            {/* Terms & Conditions */}
+                            <Card as="section" id="syarat" className="p-6 sm:p-7 scroll-mt-24">
+                                <h2 className="text-base font-semibold mb-4 flex items-center gap-2 text-slate-900">
+                                    <ShieldCheck className="size-4 text-slate-400" aria-hidden="true" />
+                                    <span>Syarat & Ketentuan</span>
+                                </h2>
+                                <ol className="space-y-2.5 text-xs sm:text-sm text-slate-600">
+                                    {event.terms &&
+                                        event.terms.map((term, index) => (
+                                            <li key={index} className="flex items-start gap-2.5">
+                                                <span className="flex size-5 shrink-0 items-center justify-center rounded-md bg-slate-100 text-xs font-medium text-slate-600 mt-0.5 tabular-nums">
+                                                    {index + 1}
+                                                </span>
+                                                <span className="leading-relaxed">{term}</span>
+                                            </li>
+                                        ))}
+                                </ol>
+                            </Card>
                         </div>
 
-                        {/* Right Column (4 cols): Sticky Checkout Card on Desktop */}
-                        <div className="lg:col-span-4 sticky top-24 space-y-4">
-                            <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-xl shadow-gray-200/50">
-                                <p className="text-xs font-semibold text-slate uppercase tracking-wider mb-2">Ringkasan Pemesanan</p>
-                                <h3 className="text-base font-bold text-navy line-clamp-2 leading-snug mb-4">
+                        {/* Right Column (4 cols): Sticky Checkout Summary */}
+                        <div className="lg:col-span-4 lg:sticky lg:top-24">
+                            <Card className="p-6">
+                                <p className="text-xs font-medium text-slate-500 mb-1">
+                                    Ringkasan Pemesanan
+                                </p>
+                                <h3 className="text-base font-semibold text-slate-900 line-clamp-2 leading-snug mb-4">
                                     {event.title}
                                 </h3>
 
-                                <div className="space-y-2.5 pb-4 border-b border-gray-100 text-xs text-slate">
+                                <div className="space-y-2 pb-4 border-b border-slate-100 text-xs text-slate-600">
                                     <div className="flex items-center gap-2">
-                                        <CalendarDays className="size-4 text-brand-blue shrink-0" />
-                                        <span className="truncate">{event.date}</span>
+                                        <CalendarDays className="size-4 text-slate-400 shrink-0" aria-hidden="true" />
+                                        <span className="truncate tabular-nums">{event.date}</span>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <Clock className="size-4 text-brand-blue shrink-0" />
-                                        <span>{event.time}</span>
+                                        <Clock className="size-4 text-slate-400 shrink-0" aria-hidden="true" />
+                                        <span className="tabular-nums">{event.time}</span>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <MapPin className="size-4 text-brand-blue shrink-0" />
+                                        <MapPin className="size-4 text-slate-400 shrink-0" aria-hidden="true" />
                                         <span className="truncate">{event.location}</span>
                                     </div>
                                 </div>
 
-                                {/* Selected ticket summary */}
-                                <div className="py-4 border-b border-gray-100 space-y-2">
+                                <div className="py-4 border-b border-slate-100 space-y-2">
                                     {selectedList.length > 0 ? (
                                         selectedList.map((t) => (
-                                            <div key={t.id} className="rounded-xl bg-blue-50/60 p-3 border border-blue-100 flex items-center justify-between">
+                                            <div
+                                                key={t.id}
+                                                className="rounded-lg bg-slate-50 p-3 border border-slate-200/80 flex items-center justify-between gap-2"
+                                            >
                                                 <div>
-                                                    <p className="text-xs font-bold text-navy">{t.name}</p>
-                                                    <p className="text-[11px] text-slate">{t.price} x {selectedTickets[t.id]}</p>
+                                                    <p className="text-xs font-medium text-slate-900">
+                                                        {t.name}
+                                                    </p>
+                                                    <p className="text-xs text-slate-500 tabular-nums">
+                                                        {t.price} x {selectedTickets[t.id]}
+                                                    </p>
                                                 </div>
-                                                <span className="text-xs font-bold text-brand-blue">
-                                                    {formatCurrency((t.rawPrice || 0) * selectedTickets[t.id])}
+                                                <span className="text-xs font-semibold text-slate-900 tabular-nums">
+                                                    {formatCurrency(
+                                                        (t.rawPrice || 0) * selectedTickets[t.id]
+                                                    )}
                                                 </span>
                                             </div>
                                         ))
                                     ) : (
-                                        <div className="text-center py-2 text-xs text-slate">
+                                        <p className="text-center py-2 text-xs text-slate-500">
                                             Belum ada tiket yang dipilih.
-                                        </div>
+                                        </p>
                                     )}
                                 </div>
 
-                                {/* Price Calculation */}
-                                <div className="py-4 space-y-1.5">
-                                    <div className="flex items-center justify-between text-xs text-slate">
-                                        <span>Subtotal Tiket ({totalSelectedTicketsCount} Tiket)</span>
-                                        <span className="font-semibold text-navy">
-                                            {totalSelectedTicketsCount > 0 ? formatCurrency(totalSubtotal) : '-'}
+                                <div className="py-4 space-y-2">
+                                    <div className="flex items-center justify-between text-xs text-slate-500">
+                                        <span>Subtotal ({totalSelectedTicketsCount} Tiket)</span>
+                                        <span className="font-medium text-slate-900 tabular-nums">
+                                            {totalSelectedTicketsCount > 0
+                                                ? formatCurrency(totalSubtotal)
+                                                : '-'}
                                         </span>
                                     </div>
-                                    <div className="flex items-center justify-between text-xs text-slate">
+                                    <div className="flex items-center justify-between text-xs text-slate-500">
                                         <span>Biaya Layanan</span>
-                                        <span className="font-semibold text-emerald-600">Gratis</span>
+                                        <span className="font-medium text-slate-900">Gratis</span>
                                     </div>
-                                    <div className="pt-2 flex items-baseline justify-between border-t border-gray-100">
-                                        <span className="text-sm font-bold text-navy">Total Bayar</span>
-                                        <span className="text-2xl font-extrabold text-brand-blue">
-                                            {totalSelectedTicketsCount > 0 ? formatCurrency(totalSubtotal) : event.price}
+                                    <div className="pt-2.5 flex items-baseline justify-between border-t border-slate-100">
+                                        <span className="text-sm font-semibold text-slate-900">
+                                            Total Bayar
+                                        </span>
+                                        <span className="text-xl font-semibold text-slate-900 tabular-nums">
+                                            {totalSelectedTicketsCount > 0
+                                                ? formatCurrency(totalSubtotal)
+                                                : event.price}
                                         </span>
                                     </div>
                                 </div>
 
-                                {/* Action Button */}
                                 {totalSelectedTicketsCount > 0 ? (
                                     <Link
                                         href={checkoutUrl}
                                         onClick={handleProceedCheckout}
-                                        className="w-full flex items-center justify-center gap-2 rounded-xl bg-brand-blue py-3.5 text-sm font-bold text-white shadow-md hover:bg-blue-800 transition duration-150"
+                                        className={buttonClass('primary', 'lg', 'w-full')}
                                     >
-                                        <span>Lanjut ke Pembayaran ({totalSelectedTicketsCount} Tiket)</span>
+                                        <span>
+                                            Lanjut ke Pembayaran ({totalSelectedTicketsCount} Tiket)
+                                        </span>
                                     </Link>
                                 ) : (
-                                    <button
-                                        type="button"
+                                    <Button
+                                        variant="primary"
+                                        size="lg"
+                                        className="w-full"
                                         onClick={() => scrollToSection('pilih-tiket', 'tiket')}
-                                        className="w-full flex items-center justify-center gap-2 rounded-xl bg-brand-blue py-3.5 text-sm font-bold text-white shadow-md hover:bg-blue-800 transition duration-150"
                                     >
-                                        <Ticket className="size-4" />
+                                        <Ticket className="size-4" aria-hidden="true" />
                                         <span>Pilih Tiket Dulu</span>
-                                    </button>
+                                    </Button>
                                 )}
 
-                                <div className="mt-4 flex items-center justify-center gap-2 text-[11px] text-slate">
-                                    <ShieldCheck className="size-3.5 text-emerald-600" />
-                                    <span>Pemesanan aman & dilindungi jaminan tiket asli</span>
+                                <div className="mt-4 flex items-center justify-center gap-1.5 text-xs text-slate-500">
+                                    <ShieldCheck
+                                        className="size-3.5 text-slate-400 shrink-0"
+                                        aria-hidden="true"
+                                    />
+                                    <span>Pemesanan aman &amp; jaminan e-tiket resmi</span>
                                 </div>
-                            </div>
+                            </Card>
                         </div>
                     </div>
 
-                    {/* Related / Other Events Recommendation */}
+                    {/* Related Events */}
                     {relatedEvents && relatedEvents.length > 0 && (
-                        <section className="mt-16 pt-10 border-t border-gray-200">
-                            <div className="flex items-center justify-between mb-6">
+                        <section className="mt-14 pt-8 border-t border-slate-200">
+                            <div className="flex items-center justify-between mb-5">
                                 <div>
-                                    <h2 className="text-xl sm:text-2xl font-bold text-navy">Event Menarik Lainnya</h2>
-                                    <p className="text-xs sm:text-sm text-slate mt-1">Jelajahi berbagai agenda pilihan lainnya di Hajirin</p>
+                                    <h2 className="text-lg sm:text-xl font-semibold text-slate-900 tracking-tight">
+                                        Event Menarik Lainnya
+                                    </h2>
+                                    <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+                                        Jelajahi agenda pilihan lainnya di Hajirin
+                                    </p>
                                 </div>
                                 <Link
                                     href="/kategori"
-                                    className="inline-flex items-center gap-1 text-xs sm:text-sm font-semibold text-brand-blue hover:underline"
+                                    className="text-xs sm:text-sm font-medium text-brand-blue hover:underline"
                                 >
                                     Lihat Semua
                                 </Link>
@@ -689,33 +838,40 @@ export default function EventDetail({ auth, eventSlug, eventData, relatedEvents 
                                     <Link
                                         key={item.id}
                                         href={`/event/${item.slug}`}
-                                        className="group flex flex-col rounded-2xl border border-gray-200 bg-white overflow-hidden shadow-sm hover:shadow-md transition"
+                                        className="group flex flex-col rounded-xl border border-slate-200 bg-white overflow-hidden hover:border-slate-300 transition"
                                     >
-                                        <div className="relative h-40 overflow-hidden bg-gray-100">
+                                        <div className="relative h-40 overflow-hidden bg-slate-100">
                                             <img
                                                 src={item.image || '/images/events/tech_hero.jpg'}
                                                 alt={item.title}
                                                 className="size-full object-cover transition duration-500 group-hover:scale-105"
                                             />
-                                            <span className="absolute left-3 top-3 rounded-lg bg-white/90 px-2 py-1 text-[10px] font-bold text-navy shadow-sm uppercase backdrop-blur">
+                                            <span className="absolute left-3 top-3 rounded-md bg-white/95 px-2 py-0.5 text-xs font-medium text-slate-800 backdrop-blur-xs">
                                                 {item.category}
                                             </span>
                                         </div>
                                         <div className="p-4 flex flex-col flex-1">
-                                            <p className="text-[11px] font-semibold text-slate mb-1">{item.date}</p>
-                                            <h3 className="font-bold text-sm text-navy line-clamp-2 group-hover:text-brand-blue transition mb-2">
+                                            <p className="text-xs font-medium text-brand-blue mb-1 tabular-nums">
+                                                {item.date}
+                                            </p>
+                                            <h3 className="font-semibold text-sm text-slate-900 line-clamp-2 group-hover:text-brand-blue transition mb-2">
                                                 {item.title}
                                             </h3>
-                                            <p className="flex items-center text-xs text-slate mb-4 mt-auto">
-                                                <MapPin className="mr-1 size-3 text-gray-400 shrink-0" />
+                                            <p className="flex items-center gap-1.5 text-xs text-slate-500 mb-4 mt-auto">
+                                                <MapPin
+                                                    className="size-3.5 text-slate-400 shrink-0"
+                                                    aria-hidden="true"
+                                                />
                                                 <span className="truncate">{item.place}</span>
                                             </p>
-                                            <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                                            <div className="flex items-center justify-between pt-3 border-t border-slate-100">
                                                 <div>
-                                                    <p className="text-[10px] text-slate">Mulai Dari</p>
-                                                    <p className="text-sm font-bold text-brand-blue">{item.price}</p>
+                                                    <p className="text-xs text-slate-500">Mulai dari</p>
+                                                    <p className="text-sm font-semibold text-slate-900 tabular-nums">
+                                                        {item.price}
+                                                    </p>
                                                 </div>
-                                                <span className="text-xs font-semibold text-brand-blue group-hover:underline">
+                                                <span className="text-xs font-medium text-brand-blue group-hover:underline">
                                                     Detail
                                                 </span>
                                             </div>
@@ -727,14 +883,18 @@ export default function EventDetail({ auth, eventSlug, eventData, relatedEvents 
                     )}
                 </main>
 
-                {/* Mobile Sticky Bottom Bar (Visible on mobile only) */}
-                <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200 px-4 py-3 shadow-2xl flex items-center justify-between">
+                {/* Mobile Sticky Bottom Bar */}
+                <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200 px-4 py-3 flex items-center justify-between gap-3">
                     <div>
-                        <p className="text-[11px] text-slate">
-                            {totalSelectedTicketsCount > 0 ? `${totalSelectedTicketsCount} Tiket Dipilih` : 'Harga Mulai'}
+                        <p className="text-xs text-slate-500">
+                            {totalSelectedTicketsCount > 0
+                                ? `${totalSelectedTicketsCount} Tiket Dipilih`
+                                : 'Harga Mulai'}
                         </p>
-                        <p className="text-lg font-bold text-brand-blue">
-                            {totalSelectedTicketsCount > 0 ? formatCurrency(totalSubtotal) : event.price}
+                        <p className="text-base font-semibold text-slate-900 tabular-nums">
+                            {totalSelectedTicketsCount > 0
+                                ? formatCurrency(totalSubtotal)
+                                : event.price}
                         </p>
                     </div>
 
@@ -742,35 +902,33 @@ export default function EventDetail({ auth, eventSlug, eventData, relatedEvents 
                         <Link
                             href={checkoutUrl}
                             onClick={handleProceedCheckout}
-                            className="rounded-xl bg-brand-blue px-6 py-2.5 text-xs font-bold text-white shadow-md hover:bg-blue-800 transition"
+                            className={buttonClass('primary', 'md')}
                         >
                             Lanjut Bayar
                         </Link>
                     ) : (
-                        <button
-                            type="button"
+                        <Button
+                            variant="primary"
+                            size="md"
                             onClick={() => scrollToSection('pilih-tiket', 'tiket')}
-                            className="rounded-xl bg-brand-blue px-6 py-2.5 text-xs font-bold text-white shadow-md hover:bg-blue-800 transition"
                         >
                             Pilih Tiket
-                        </button>
+                        </Button>
                     )}
                 </div>
 
-                {/* Footer */}
-                <footer className="mt-20 border-t border-gray-200 bg-white py-10 px-4 sm:px-8 text-center text-xs text-slate">
-                    <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+                <footer className="border-t border-slate-200 bg-white py-6 px-4 sm:px-8 text-xs text-slate-400">
+                    <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
                         <div className="flex items-center gap-2">
-                            <img src="/hajirin_icon.svg" alt="Hajirin" className="h-6 w-auto" />
-                            <span className="font-bold text-navy">HAJIRIN</span>
-                            <span>— Platform Event & Tiket Terpercaya</span>
+                            <img src="/hajirin_icon.svg" alt="Hajirin" className="h-5 w-auto" />
+                            <span className="font-semibold text-navy">HAJIRIN</span>
+                            <span>- Platform Event &amp; Tiket Terpercaya</span>
                         </div>
                         <p>© 2026 Hajirin Indonesia. Seluruh hak cipta dilindungi.</p>
                     </div>
                 </footer>
             </div>
 
-            {/* Auth Modal for Login / Register */}
             <AuthModal
                 isOpen={isAuthModalOpen}
                 onClose={() => setIsAuthModalOpen(false)}
