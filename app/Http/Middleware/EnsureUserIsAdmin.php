@@ -21,7 +21,7 @@ class EnsureUserIsAdmin
             return redirect('/');
         }
 
-        if ($user->role !== 'ADMIN') {
+        if (! $user->isAdmin()) {
             abort(403, 'Akses ditolak. Halaman ini hanya dapat diakses oleh Administrator platform Hajirin.');
         }
 

@@ -17,6 +17,8 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        $this->call(RoleSeeder::class);
+
         User::unguarded(function (): void {
             // Admin Account
             $admin = User::updateOrCreate(

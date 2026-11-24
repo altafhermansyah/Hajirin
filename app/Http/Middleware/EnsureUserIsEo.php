@@ -21,7 +21,7 @@ class EnsureUserIsEo
             return redirect('/');
         }
 
-        if ($user->role !== 'EO') {
+        if (! $user->isEo()) {
             abort(403, 'Akses ditolak. Halaman ini hanya dapat diakses oleh Event Organizer resmi di platform Hajirin.');
         }
 

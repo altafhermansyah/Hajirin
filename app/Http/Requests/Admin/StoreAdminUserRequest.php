@@ -26,7 +26,7 @@ class StoreAdminUserRequest extends FormRequest
             'name' => ['required', 'string', 'max:100'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'phone' => ['nullable', 'string', 'max:25'],
-            'role' => ['required', 'string', 'in:ADMIN,EO,USER'],
+            'role' => ['required', 'string', 'exists:roles,code'],
             'status' => ['nullable', 'string', 'in:ACTIVE,SUSPENDED'],
             'password' => ['required', 'string', 'min:8'],
         ];
@@ -46,7 +46,7 @@ class StoreAdminUserRequest extends FormRequest
             'email.email' => 'Format email tidak valid.',
             'email.unique' => 'Email ini telah digunakan oleh akun lain.',
             'role.required' => 'Pilih hak akses / role pengguna.',
-            'role.in' => 'Role yang dipilih tidak valid.',
+            'role.exists' => 'Role yang dipilih tidak valid.',
             'password.required' => 'Kata sandi wajib diisi.',
             'password.min' => 'Kata sandi minimal 8 karakter.',
         ];

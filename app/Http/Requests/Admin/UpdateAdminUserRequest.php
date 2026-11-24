@@ -35,7 +35,7 @@ class UpdateAdminUserRequest extends FormRequest
                 Rule::unique('users', 'email')->ignore($userId),
             ],
             'phone' => ['nullable', 'string', 'max:25'],
-            'role' => ['required', 'string', 'in:ADMIN,EO,USER'],
+            'role' => ['required', 'string', 'exists:roles,code'],
             'status' => ['nullable', 'string', 'in:ACTIVE,SUSPENDED'],
             'password' => ['nullable', 'string', 'min:8'],
         ];
@@ -55,7 +55,7 @@ class UpdateAdminUserRequest extends FormRequest
             'email.email' => 'Format email tidak valid.',
             'email.unique' => 'Email ini telah digunakan oleh akun lain.',
             'role.required' => 'Pilih hak akses / role pengguna.',
-            'role.in' => 'Role yang dipilih tidak valid.',
+            'role.exists' => 'Role yang dipilih tidak valid.',
             'password.min' => 'Kata sandi minimal 8 karakter jika ingin diubah.',
         ];
     }

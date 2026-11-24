@@ -6,6 +6,7 @@ namespace App\Models;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
@@ -51,6 +52,42 @@ class User extends Authenticatable
         ];
     }
 
+    /**
+     * Sinkronkan relasi tabel roles (role_id) dengan kolom role saat menyimpan user.
+     */
+    protected static function booted(): void
+    {
+        static::saving(function (User $user): void {
+            if ($user->isDirty('role_id') && ! $user->isDirty('role') && $user->role_id !== null) {
+                $roleCode = Role::query()->whereKey($user->role_id)->value('code');
+
+                if ($roleCode !== null) {
+                    $user->role = $roleCode;
+                    $user->unsetRelation('roleRecord');
+                }
+
+                return;
+            }
+
+            $roleCode = strtoupper((string) ($user->role ?: Role::USER));
+            $user->role = $roleCode;
+
+            if ($user->role_id === null || $user->isDirty('role')) {
+                $roleId = Role::idForCode($roleCode);
+
+                if ($roleId !== null) {
+                    $user->role_id = $roleId;
+                    $user->unsetRelation('roleRecord');
+                }
+            }
+        });
+    }
+
+    public function roleRecord(): BelongsTo
+    {
+        return $this->belongsTo(Role::class, 'role_id');
+    }
+
     public function orders(): HasMany
     {
         return $this->hasMany(Order::class);
@@ -64,6 +101,11 @@ class User extends Authenticatable
     public function eoApplications(): HasMany
     {
         return $this->hasMany(EoApplication::class);
+    }
+
+    public function eventStaffAssignments(): HasMany
+    {
+        return $this->hasMany(EventStaff::class);
     }
 
     public function tickets(): HasManyThrough
@@ -81,19 +123,28 @@ class User extends Authenticatable
         return $this->belongsToMany(Event::class, 'bookmarks', 'user_id', 'event_id')->withTimestamps();
     }
 
+    public function hasRole(string $code): bool
+    {
+        $resolvedCode = $this->role_id !== null
+            ? $this->roleRecord?->code
+            : $this->role;
+
+        return strtoupper((string) $resolvedCode) === strtoupper($code);
+    }
+
     public function isAdmin(): bool
     {
-        return $this->role === 'ADMIN';
+        return $this->hasRole(Role::ADMIN);
     }
 
     public function isEo(): bool
     {
-        return $this->role === 'EO';
+        return $this->hasRole(Role::EO);
     }
 
     public function isUser(): bool
     {
-        return $this->role === 'USER';
+        return $this->hasRole(Role::USER);
     }
 
     public function isActive(): bool
