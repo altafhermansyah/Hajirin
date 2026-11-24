@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AdminCategoryController;
 use App\Http\Controllers\Admin\AdminCheckInController;
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminEventController;
@@ -7,20 +8,26 @@ use App\Http\Controllers\Admin\AdminOrderController;
 use App\Http\Controllers\Admin\AdminOrganizerController;
 use App\Http\Controllers\Admin\AdminRefundController;
 use App\Http\Controllers\Admin\AdminReportController;
+use App\Http\Controllers\Admin\AdminSearchController;
 use App\Http\Controllers\Admin\AdminTicketController;
 use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\BookmarkController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\Eo\EoAttendeeController;
+use App\Http\Controllers\Eo\EoBroadcastController;
 use App\Http\Controllers\Eo\EoCheckInController;
 use App\Http\Controllers\Eo\EoDashboardController;
 use App\Http\Controllers\Eo\EoEventController;
 use App\Http\Controllers\Eo\EoProfileController;
+use App\Http\Controllers\Eo\EoStaffController;
 use App\Http\Controllers\EoApplicationController;
 use App\Http\Controllers\EventController;
+use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\StaffCheckInController;
 use App\Http\Controllers\UserDashboardController;
 use App\Http\Controllers\UserOrderController;
 use App\Http\Controllers\UserProfileController;
@@ -57,8 +64,25 @@ Route::middleware('auth')->group(function () {
     // Route Halaman Detail E-Tiket & Scan QR
     Route::get('/my-tickets/{orderReference}', [UserTicketController::class, 'show'])->name('my-tickets.show');
 
-    // Route Halaman Detail Pesanan / Transaksi Invoice
+    // Route Halaman Detail Pesanan / Transaksi Invoice & Pengajuan Refund
     Route::get('/orders/{orderReference}', [UserOrderController::class, 'show'])->name('orders.show');
+    Route::post('/orders/{orderReference}/refund', [UserOrderController::class, 'requestRefund'])
+        ->middleware('throttle:5,1')
+        ->name('orders.refund.store');
+
+    // Route Notifikasi Pengguna
+    Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])
+        ->name('notifications.read-all');
+    Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead'])
+        ->name('notifications.read');
+
+    // Route Portal Check-in Khusus Staff Event
+    Route::prefix('staff')->name('staff.')->group(function () {
+        Route::get('/check-in', [StaffCheckInController::class, 'index'])->name('check-in.index');
+        Route::post('/check-in', [StaffCheckInController::class, 'store'])
+            ->middleware('throttle:60,1')
+            ->name('check-in.store');
+    });
 });
 
 // Route Home (Mengirimkan data categories dan events dari database)
@@ -131,6 +155,10 @@ Route::get('/event/{slug}', [EventController::class, 'show'])->name('event.show'
 // Route Event Terdekat
 Route::get('/event-terdekat', [EventController::class, 'nearby'])->name('events.nearby');
 
+// Route Halaman Legal Publik (Ketentuan Layanan & Kebijakan Privasi)
+Route::get('/syarat-ketentuan', fn () => Inertia::render('Legal/Terms'))->name('legal.terms');
+Route::get('/kebijakan-privasi', fn () => Inertia::render('Legal/Privacy'))->name('legal.privacy');
+
 // Route Event Organizer (EO) Dashboard & Manajemen Event/Tiket
 Route::middleware(['auth', 'eo'])->prefix('eo')->name('eo.')->group(function () {
     Route::get('/', fn () => redirect()->route('eo.dashboard'));
@@ -146,11 +174,18 @@ Route::middleware(['auth', 'eo'])->prefix('eo')->name('eo.')->group(function () 
 
     Route::get('/attendees', [EoAttendeeController::class, 'index'])->name('attendees.index');
     Route::get('/attendees/export', [EoAttendeeController::class, 'export'])->name('attendees.export');
+    Route::post('/broadcasts', [EoBroadcastController::class, 'store'])
+        ->middleware('throttle:10,1')
+        ->name('broadcasts.store');
 
     Route::get('/check-in', [EoCheckInController::class, 'index'])->name('check-in.index');
     Route::post('/check-in', [EoCheckInController::class, 'store'])
         ->middleware('throttle:60,1')
         ->name('check-in.store');
+
+    Route::get('/staff', [EoStaffController::class, 'index'])->name('staff.index');
+    Route::post('/staff', [EoStaffController::class, 'store'])->name('staff.store');
+    Route::delete('/staff/{id}', [EoStaffController::class, 'destroy'])->name('staff.destroy');
 
     Route::get('/profile', [EoProfileController::class, 'show'])->name('profile.show');
     Route::put('/profile', [EoProfileController::class, 'update'])->name('profile.update');
@@ -182,6 +217,10 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::patch('/organizers/{id}/toggle-status', [AdminOrganizerController::class, 'toggleStatus'])->name('organizers.toggle-status');
     Route::post('/organizers/{id}/revoke', [AdminOrganizerController::class, 'revoke'])->name('organizers.revoke');
 
+    // Kelola Kategori Event (Data Master Kategori - Resource Controller)
+    Route::resource('categories', AdminCategoryController::class)
+        ->only(['index', 'store', 'update', 'destroy']);
+
     // Kelola Pengguna (User Management)
     Route::get('/users', [AdminUserController::class, 'index'])->name('users.index');
     Route::post('/users', [AdminUserController::class, 'store'])->name('users.store');
@@ -209,15 +248,29 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         ->name('scanner.store');
     Route::get('/check-in', fn () => redirect()->route('admin.scanner.index'))->name('check-in');
 
+    // Pencarian Cepat Global Topbar Admin
+    Route::get('/search', AdminSearchController::class)->name('search');
+
     // Laporan & Keuangan Platform (Financial Reporting & Settlements)
     Route::get('/reports', [AdminReportController::class, 'index'])->name('reports.index');
     Route::get('/reports/export-pdf', [AdminReportController::class, 'exportPdf'])->name('reports.export-pdf');
 });
 
-// Route Autentikasi (Guest)
-Route::middleware(['guest', 'throttle:5,1'])->group(function () {
-    Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('login');
-    Route::post('/register', [RegisteredUserController::class, 'store'])->name('register');
+// Route Autentikasi & Reset Kata Sandi (Guest)
+Route::middleware('guest')->group(function () {
+    Route::get('/forgot-password', [PasswordResetController::class, 'createForgot'])
+        ->name('password.request');
+    Route::get('/reset-password/{token}', [PasswordResetController::class, 'createReset'])
+        ->name('password.reset');
+
+    Route::middleware('throttle:5,1')->group(function () {
+        Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('login');
+        Route::post('/register', [RegisteredUserController::class, 'store'])->name('register');
+        Route::post('/forgot-password', [PasswordResetController::class, 'sendResetLink'])
+            ->name('password.email');
+        Route::post('/reset-password', [PasswordResetController::class, 'resetPassword'])
+            ->name('password.store');
+    });
 });
 
 // Route Keluar Akun (Logout)

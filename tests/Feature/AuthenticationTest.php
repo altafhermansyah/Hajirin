@@ -52,7 +52,20 @@ class AuthenticationTest extends TestCase
         ]);
 
         $this->assertGuest();
+        $response->assertSessionHasErrors('password');
+        $response->assertSessionDoesntHaveErrors('email');
+    }
+
+    public function test_users_can_not_authenticate_with_unregistered_email(): void
+    {
+        $response = $this->post('/login', [
+            'email' => 'belumterdaftar@example.com',
+            'password' => 'password123',
+        ]);
+
+        $this->assertGuest();
         $response->assertSessionHasErrors('email');
+        $response->assertSessionDoesntHaveErrors('password');
     }
 
     public function test_new_users_can_register(): void

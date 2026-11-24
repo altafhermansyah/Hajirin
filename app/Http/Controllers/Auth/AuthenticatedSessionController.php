@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 
 class AuthenticatedSessionController extends Controller
@@ -16,31 +18,39 @@ class AuthenticatedSessionController extends Controller
      */
     public function store(LoginRequest $request): RedirectResponse
     {
-        $credentials = $request->only('email', 'password');
+        $validated = $request->validated();
 
-        if (! Auth::attempt($credentials, false)) {
+        // shortcut: explicit email vs password login errors per project UX choice; switch to generic auth error before public production to prevent email enumeration
+        $user = User::query()
+            ->whereRaw('LOWER(email) = ?', [mb_strtolower($validated['email'])])
+            ->first();
+
+        if (! $user) {
             throw ValidationException::withMessages([
-                'email' => ['Email atau kata sandi yang Anda masukkan salah.'],
+                'email' => ['Alamat email ini belum terdaftar di Hajirin. Periksa kembali email Anda atau daftar akun baru.'],
             ]);
         }
 
-        $request->session()->regenerate();
+        if (! Hash::check($validated['password'], $user->password)) {
+            throw ValidationException::withMessages([
+                'password' => ['Kata sandi yang Anda masukkan salah. Silakan coba lagi atau gunakan Lupa kata sandi.'],
+            ]);
+        }
 
-        if (Auth::user()->isSuspended()) {
-            Auth::guard('web')->logout();
-            $request->session()->invalidate();
-            $request->session()->regenerateToken();
-
+        if ($user->isSuspended()) {
             throw ValidationException::withMessages([
                 'email' => ['Akun Anda sedang ditangguhkan (suspended) oleh Administrator platform.'],
             ]);
         }
 
-        if (Auth::user()->role === 'ADMIN') {
+        Auth::login($user, (bool) ($validated['remember'] ?? false));
+        $request->session()->regenerate();
+
+        if ($user->isAdmin()) {
             return redirect()->intended('/admin/dashboard');
         }
 
-        if (Auth::user()->role === 'EO') {
+        if ($user->isEo()) {
             return redirect()->intended('/eo/dashboard');
         }
 
