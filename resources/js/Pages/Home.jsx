@@ -61,7 +61,7 @@ const CATEGORY_ICON_MAP = {
 };
 
 function resolveImageSrc(image) {
-    if (!image) return '/images/events/tech_hero.jpg';
+    if (!image) return '/images/events/tech_hero.webp';
     if (image.startsWith('/') || image.startsWith('http://') || image.startsWith('https://')) {
         return image;
     }

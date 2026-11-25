@@ -161,7 +161,7 @@ class EventController extends Controller
             'organizer_email' => $event->organizer_email,
             'price' => $minPrice,
             'raw_min_price' => $minPriceVal,
-            'image' => $event->banner_path ?: '/images/events/tech_hero.jpg',
+            'image' => $event->banner_path ?: '/images/events/tech_hero.webp',
             'description' => $event->description,
             'terms' => $terms,
             'tickets' => $ticketsData,
@@ -244,7 +244,7 @@ class EventController extends Controller
                     'address' => $event->address,
                     'organizer' => $event->organizer_name,
                     'price' => $numericPrice > 0 ? 'Rp'.number_format($numericPrice, 0, ',', '.') : 'Gratis',
-                    'image' => $event->banner_path ?: '/images/events/tech_hero.jpg',
+                    'image' => $event->banner_path ?: '/images/events/tech_hero.webp',
                 ];
             });
 

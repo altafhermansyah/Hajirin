@@ -152,7 +152,7 @@ class UserOrderController extends Controller
             'location' => $order->venue_name ?: ($order->event_type === 'ONLINE' ? 'Online Event' : 'Lokasi Diumumkan'),
             'address' => $order->event_address ?: '',
             'eventType' => $order->event_type,
-            'banner' => $order->event_banner ?: '/images/events/tech_hero.jpg',
+            'banner' => $order->event_banner ?: '/images/events/tech_hero.webp',
             'organizer' => $order->organizer_name,
         ];
 

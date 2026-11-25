@@ -243,7 +243,7 @@ class EoStaffAndStaffCheckInTest extends TestCase
             'address' => 'Jl. Sudirman No. 1, Jakarta',
             'starts_at' => now()->addDays(5),
             'ends_at' => now()->addDays(5)->addHours(4),
-            'banner_path' => '/images/events/tech_hero.jpg',
+            'banner_path' => '/images/events/tech_hero.webp',
         ]);
         $event->forceFill(['status' => $status])->save();
 

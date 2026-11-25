@@ -155,7 +155,7 @@ class AdminEventController extends Controller
                 'startsAtFormatted' => $startsAt->locale('id')->translatedFormat('d M Y, H:i').' WIB',
                 'monthBadge' => $startsAt->locale('id')->translatedFormat('M'),
                 'dayBadge' => $startsAt->translatedFormat('d'),
-                'banner' => $evt->banner_path ?: '/images/events/tech_hero.jpg',
+                'banner' => $evt->banner_path ?: '/images/events/tech_hero.webp',
                 'status' => $evt->status,
                 'rejectionReason' => $evt->rejection_reason,
                 'cancellationReason' => $evt->cancellation_reason,

@@ -844,7 +844,7 @@ export default function EventDetail({
                                     >
                                         <div className="relative h-40 overflow-hidden bg-slate-100">
                                             <img
-                                                src={item.image || '/images/events/tech_hero.jpg'}
+                                                src={item.image || '/images/events/tech_hero.webp'}
                                                 alt={item.title}
                                                 loading="lazy"
                                                 decoding="async"

@@ -170,7 +170,7 @@ class EoEventAndTicketManagementTest extends TestCase
             'online_url' => 'https://zoom.us/j/999888777',
             'starts_at' => '2026-12-15 13:00:00',
             'ends_at' => '2026-12-15 16:00:00',
-            'banner_path' => '/images/events/design_hero.jpg',
+            'banner_path' => '/images/events/design_hero.webp',
         ]);
         $event->forceFill(['status' => 'DRAFT'])->save();
 

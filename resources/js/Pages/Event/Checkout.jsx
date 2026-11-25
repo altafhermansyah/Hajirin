@@ -496,7 +496,7 @@ export default function Checkout({
 
                                 <div className="flex gap-3 mb-4">
                                     <img
-                                        src={event?.image || '/images/events/tech_hero.jpg'}
+                                        src={event?.image || '/images/events/tech_hero.webp'}
                                         alt=""
                                         loading="lazy"
                                         decoding="async"

@@ -128,7 +128,7 @@ class CheckoutController extends Controller
                 'time' => $startDate->format('H:i').' - '.$endDate->format('H:i').' WIB',
                 'location' => $event->venue_name ?: ($event->event_type === 'ONLINE' ? 'Online Event' : 'Lokasi Diumumkan'),
                 'address' => $event->address ?: '',
-                'image' => $event->banner_path ?: '/images/events/tech_hero.jpg',
+                'image' => $event->banner_path ?: '/images/events/tech_hero.webp',
                 'event_type' => $event->event_type,
             ],
             // Backward compatibility untuk tes dan single selection

@@ -189,4 +189,33 @@ class PerformanceAndOptimizationTest extends TestCase
             ->put('/profile', ['name' => 'Nama Ke Sebelas'])
             ->assertStatus(429);
     }
+
+    public function test_inertia_ssr_is_disabled_and_admin_dashboard_caps_unbounded_lists(): void
+    {
+        $this->assertFalse(config('inertia.ssr.enabled'));
+
+        $admin = User::factory()->create(['role' => 'ADMIN']);
+        $users = User::factory()->count(24)->create(['role' => 'USER']);
+
+        foreach ($users as $index => $applicant) {
+            EoApplication::create([
+                'user_id' => $applicant->id,
+                'organization_name' => "Komunitas Uji {$index}",
+                'contact_phone' => '081234567890',
+                'document_path' => "eo-documents/doc-{$index}.pdf",
+                'reason' => 'Menyelenggarakan kegiatan komunitas secara berkala di seluruh Indonesia.',
+                'status' => 'PENDING',
+            ]);
+        }
+
+        $this->actingAs($admin)
+            ->get('/admin/dashboard')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Admin/Dashboard')
+                ->has('recentUsers', 20)
+                ->has('eoApplications', 20)
+                ->where('stats.pendingEoApplications', 24)
+            );
+    }
 }

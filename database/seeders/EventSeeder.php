@@ -82,14 +82,14 @@ class EventSeeder extends Seeder
                 'category_id' => $categories['seminar'] ?? 1,
                 'title' => 'Indonesia Tech Conference 2026: The Future of AI & Engineering',
                 'slug' => 'indonesia-tech-conference-2026',
-                'description' => "Indonesia Tech Conference 2026 adalah konferensi teknologi tahunan terbesar yang menyatukan lebih dari 500 praktisi software engineering, arsitek cloud, peneliti AI, dan pemimpin industri teknologi terkemuka.\n\nHighlight Acara:\n• Keynote speech eksklusif mengenai penerapan Large Language Model di ekosistem enterprise.\n• Panel diskusi interaktif bersama para tech lead startup unicorn.\n• Hands-on workshop arsitektur scalable cloud & DevOps.\n• Sesi networking berjejaring bersama komunitas talenta digital dan investor.",
+                'description' => "Indonesia Tech Conference 2026 adalah konferensi teknologi tahunan terbesar yang menyatukan lebih dari 500 praktisi software engineering, arsitek cloud, peneliti AI, dan pemimpin industri teknologi terkemuka.\n\nHighlight Acara:\nâ€¢ Keynote speech eksklusif mengenai penerapan Large Language Model di ekosistem enterprise.\nâ€¢ Panel diskusi interaktif bersama para tech lead startup unicorn.\nâ€¢ Hands-on workshop arsitektur scalable cloud & DevOps.\nâ€¢ Sesi networking berjejaring bersama komunitas talenta digital dan investor.",
                 'event_type' => 'OFFLINE',
                 'venue_name' => 'ICE BSD Hall 1, Tangerang',
                 'address' => 'Jl. BSD Grand Boulevard No.1, Pagedangan, Tangerang, Banten 15339',
                 'online_url' => null,
                 'starts_at' => '2026-10-24 09:00:00+07',
                 'ends_at' => '2026-10-24 17:00:00+07',
-                'banner_path' => '/images/events/tech_hero.jpg',
+                'banner_path' => '/images/events/tech_hero.webp',
                 'status' => 'PUBLISHED',
                 'tickets' => [
                     [
@@ -117,14 +117,14 @@ class EventSeeder extends Seeder
                 'category_id' => $categories['workshop'] ?? 1,
                 'title' => 'Creative Design & Typography Workshop 2026',
                 'slug' => 'creative-design-typography-workshop-2026',
-                'description' => "Eksplorasi estetika tipografi modern dan visual identity branding bersama para desainer grafis ternama di Indonesia.\n\nYang dipelajari:\n• Konstruksi huruf dan grid system tipografi profesional.\n• Eksperimen tipografi kinetik untuk UI/UX & media digital.\n• Mentoring portfolio langsung dari creative director agency global.",
+                'description' => "Eksplorasi estetika tipografi modern dan visual identity branding bersama para desainer grafis ternama di Indonesia.\n\nYang dipelajari:\nâ€¢ Konstruksi huruf dan grid system tipografi profesional.\nâ€¢ Eksperimen tipografi kinetik untuk UI/UX & media digital.\nâ€¢ Mentoring portfolio langsung dari creative director agency global.",
                 'event_type' => 'OFFLINE',
                 'venue_name' => 'Margo City Convention Hall, Bandung',
                 'address' => 'Jl. Margonda No. 358, Sukajadi, Bandung, Jawa Barat',
                 'online_url' => null,
                 'starts_at' => '2026-10-25 10:00:00+07',
                 'ends_at' => '2026-10-25 16:30:00+07',
-                'banner_path' => '/images/events/design_hero.jpg',
+                'banner_path' => '/images/events/design_hero.webp',
                 'status' => 'PUBLISHED',
                 'tickets' => [
                     [
@@ -146,14 +146,14 @@ class EventSeeder extends Seeder
                 'category_id' => $categories['olahraga'] ?? 1,
                 'title' => 'Jakarta Sunrise Marathon 2026: Run for Green Planet',
                 'slug' => 'jakarta-sunrise-marathon-2026',
-                'description' => "Rasakan sensasi berlari menyambut fajar di jalanan protokol ibu kota Jakarta tanpa polusi. Setiap kilometer yang ditempuh akan didonasikan untuk penanaman pohon mangrove di pesisir utara pulau Jawa.\n\nKategori Lari:\n• 5K Fun Run\n• 10K Challenge\n• 21K Half Marathon",
+                'description' => "Rasakan sensasi berlari menyambut fajar di jalanan protokol ibu kota Jakarta tanpa polusi. Setiap kilometer yang ditempuh akan didonasikan untuk penanaman pohon mangrove di pesisir utara pulau Jawa.\n\nKategori Lari:\nâ€¢ 5K Fun Run\nâ€¢ 10K Challenge\nâ€¢ 21K Half Marathon",
                 'event_type' => 'OFFLINE',
                 'venue_name' => 'Plaza FX Sudirman, Jakarta',
                 'address' => 'Jl. Jenderal Sudirman Pintu Satu Senayan, Gelora, Jakarta Pusat',
                 'online_url' => null,
                 'starts_at' => '2026-11-01 05:30:00+07',
                 'ends_at' => '2026-11-01 10:00:00+07',
-                'banner_path' => '/images/events/marathon_hero.jpg',
+                'banner_path' => '/images/events/marathon_hero.webp',
                 'status' => 'PUBLISHED',
                 'tickets' => [
                     [
@@ -182,7 +182,7 @@ class EventSeeder extends Seeder
                 'online_url' => null,
                 'starts_at' => '2026-11-30 16:00:00+07',
                 'ends_at' => '2026-11-30 23:00:00+07',
-                'banner_path' => '/images/events/soundscapes.jpg',
+                'banner_path' => '/images/events/soundscapes.webp',
                 'status' => 'PUBLISHED',
                 'tickets' => [
                     [
@@ -211,7 +211,7 @@ class EventSeeder extends Seeder
                 'online_url' => null,
                 'starts_at' => '2026-10-18 13:00:00+07',
                 'ends_at' => '2026-10-18 23:00:00+07',
-                'banner_path' => '/images/events/hero_festival.jpg',
+                'banner_path' => '/images/events/hero_festival.webp',
                 'status' => 'PUBLISHED',
                 'tickets' => [
                     [
@@ -240,7 +240,7 @@ class EventSeeder extends Seeder
                 'online_url' => null,
                 'starts_at' => '2026-11-14 09:00:00+07',
                 'ends_at' => '2026-11-15 17:00:00+07',
-                'banner_path' => '/images/events/startup.jpg',
+                'banner_path' => '/images/events/startup.webp',
                 'status' => 'PUBLISHED',
                 'tickets' => [
                     [
@@ -263,7 +263,7 @@ class EventSeeder extends Seeder
                 'online_url' => null,
                 'starts_at' => '2026-11-21 18:30:00+07',
                 'ends_at' => '2026-11-21 22:30:00+07',
-                'banner_path' => '/images/events/nusantara-indie.jpg',
+                'banner_path' => '/images/events/nusantara-indie.webp',
                 'status' => 'PUBLISHED',
                 'tickets' => [
                     [
@@ -286,7 +286,7 @@ class EventSeeder extends Seeder
                 'online_url' => null,
                 'starts_at' => '2026-11-28 09:30:00+07',
                 'ends_at' => '2026-11-28 16:00:00+07',
-                'banner_path' => '/images/events/ai-product.jpg',
+                'banner_path' => '/images/events/ai-product.webp',
                 'status' => 'PUBLISHED',
                 'tickets' => [
                     [
@@ -309,7 +309,7 @@ class EventSeeder extends Seeder
                 'online_url' => null,
                 'starts_at' => '2026-12-05 10:00:00+07',
                 'ends_at' => '2026-12-05 20:00:00+07',
-                'banner_path' => '/images/events/bandung-creative.jpg',
+                'banner_path' => '/images/events/bandung-creative.webp',
                 'status' => 'PUBLISHED',
                 'tickets' => [
                     [
@@ -332,7 +332,7 @@ class EventSeeder extends Seeder
                 'online_url' => null,
                 'starts_at' => '2026-10-21 14:00:00+07',
                 'ends_at' => '2026-10-21 18:00:00+07',
-                'banner_path' => '/images/events/startup.jpg',
+                'banner_path' => '/images/events/startup.webp',
                 'status' => 'PUBLISHED',
                 'tickets' => [
                     [
@@ -355,7 +355,7 @@ class EventSeeder extends Seeder
                 'online_url' => null,
                 'starts_at' => '2026-10-24 10:00:00+07',
                 'ends_at' => '2026-10-24 18:00:00+07',
-                'banner_path' => '/images/events/nusantara-indie.jpg',
+                'banner_path' => '/images/events/nusantara-indie.webp',
                 'status' => 'PUBLISHED',
                 'tickets' => [
                     [
@@ -378,7 +378,7 @@ class EventSeeder extends Seeder
                 'online_url' => null,
                 'starts_at' => '2026-10-24 15:00:00+07',
                 'ends_at' => '2026-10-24 21:00:00+07',
-                'banner_path' => '/images/events/bandung-creative.jpg',
+                'banner_path' => '/images/events/bandung-creative.webp',
                 'status' => 'PUBLISHED',
                 'tickets' => [
                     [
@@ -401,7 +401,7 @@ class EventSeeder extends Seeder
                 'online_url' => null,
                 'starts_at' => '2026-10-25 09:00:00+07',
                 'ends_at' => '2026-10-25 15:00:00+07',
-                'banner_path' => '/images/events/design_hero.jpg',
+                'banner_path' => '/images/events/design_hero.webp',
                 'status' => 'PUBLISHED',
                 'tickets' => [
                     [
@@ -424,7 +424,7 @@ class EventSeeder extends Seeder
                 'online_url' => null,
                 'starts_at' => '2026-10-28 16:00:00+07',
                 'ends_at' => '2026-10-28 20:00:00+07',
-                'banner_path' => '/images/events/tech_hero.jpg',
+                'banner_path' => '/images/events/tech_hero.webp',
                 'status' => 'PUBLISHED',
                 'tickets' => [
                     [
@@ -447,7 +447,7 @@ class EventSeeder extends Seeder
                 'online_url' => null,
                 'starts_at' => '2026-11-01 08:00:00+07',
                 'ends_at' => '2026-11-01 10:30:00+07',
-                'banner_path' => '/images/events/marathon_hero.jpg',
+                'banner_path' => '/images/events/marathon_hero.webp',
                 'status' => 'PUBLISHED',
                 'tickets' => [
                     [
@@ -470,7 +470,7 @@ class EventSeeder extends Seeder
                 'online_url' => null,
                 'starts_at' => '2026-11-05 19:00:00+07',
                 'ends_at' => '2026-11-05 22:00:00+07',
-                'banner_path' => '/images/events/soundscapes.jpg',
+                'banner_path' => '/images/events/soundscapes.webp',
                 'status' => 'PUBLISHED',
                 'tickets' => [
                     [
@@ -493,7 +493,7 @@ class EventSeeder extends Seeder
                 'online_url' => null,
                 'starts_at' => '2026-11-10 10:00:00+07',
                 'ends_at' => '2026-11-10 20:00:00+07',
-                'banner_path' => '/images/events/hero_festival.jpg',
+                'banner_path' => '/images/events/hero_festival.webp',
                 'status' => 'PUBLISHED',
                 'tickets' => [
                     [

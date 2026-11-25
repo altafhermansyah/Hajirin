@@ -121,7 +121,7 @@ class UserTicketController extends Controller
             'city' => $order->event_city ?: '',
             'address' => $order->event_address ?: '',
             'eventType' => $order->event_type,
-            'banner' => $order->event_banner ?: '/images/events/tech_hero.jpg',
+            'banner' => $order->event_banner ?: '/images/events/tech_hero.webp',
             'organizer' => $order->organizer_name,
             'organizerEmail' => $order->organizer_email,
         ];
