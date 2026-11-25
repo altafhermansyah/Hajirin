@@ -285,6 +285,8 @@ export default function EventDetail({
                                     <img
                                         src={event.image}
                                         alt={event.title}
+                                        fetchPriority="high"
+                                        decoding="async"
                                         className="w-full h-full object-cover transition duration-500 group-hover:scale-[1.02]"
                                     />
                                 </div>
@@ -844,6 +846,8 @@ export default function EventDetail({
                                             <img
                                                 src={item.image || '/images/events/tech_hero.jpg'}
                                                 alt={item.title}
+                                                loading="lazy"
+                                                decoding="async"
                                                 className="size-full object-cover transition duration-500 group-hover:scale-105"
                                             />
                                             <span className="absolute left-3 top-3 rounded-md bg-white/95 px-2 py-0.5 text-xs font-medium text-slate-800 backdrop-blur-xs">
@@ -920,7 +924,13 @@ export default function EventDetail({
                 <footer className="border-t border-slate-200 bg-white py-6 px-4 sm:px-8 text-xs text-slate-400">
                     <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
                         <div className="flex items-center gap-2">
-                            <img src="/hajirin_icon.svg" alt="Hajirin" className="h-5 w-auto" />
+                            <img
+                                src="/hajirin_icon.svg"
+                                alt="Hajirin"
+                                loading="lazy"
+                                decoding="async"
+                                className="h-5 w-auto"
+                            />
                             <span className="font-semibold text-navy">HAJIRIN</span>
                             <span>- Platform Event &amp; Tiket Terpercaya</span>
                         </div>

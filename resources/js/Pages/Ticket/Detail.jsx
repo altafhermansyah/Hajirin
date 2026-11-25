@@ -84,6 +84,8 @@ export default function TicketDetail({ auth, order = {}, event = {}, tickets = [
                             <img
                                 src={event.banner}
                                 alt={event.title}
+                                fetchPriority="high"
+                                decoding="async"
                                 className="absolute inset-0 size-full object-cover"
                             />
                         )}

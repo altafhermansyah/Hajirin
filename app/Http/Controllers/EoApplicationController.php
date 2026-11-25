@@ -75,7 +75,7 @@ class EoApplicationController extends Controller
             ]);
         }
 
-        $documentPath = $request->file('document')->store('eo-documents', 'local');
+        $documentPath = $this->storeOptimizedImage($request->file('document'), 'eo-documents', 'local', 1600, 82);
 
         DB::transaction(function () use ($user, $validated, $documentPath): void {
             EoApplication::create([

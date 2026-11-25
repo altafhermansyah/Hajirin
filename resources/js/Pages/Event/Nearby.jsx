@@ -228,6 +228,8 @@ export default function Nearby({
                                                 <img
                                                     src={evt.image}
                                                     alt={evt.title}
+                                                    loading="lazy"
+                                                    decoding="async"
                                                     className="size-full object-cover transition duration-500 group-hover:scale-105"
                                                 />
                                                 <span className="absolute left-3 top-3 rounded-md bg-white/95 px-2 py-0.5 text-xs font-medium text-slate-800 backdrop-blur-xs">

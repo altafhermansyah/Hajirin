@@ -250,6 +250,8 @@ export default function CategoryIndex({
                                             <img
                                                 src={event.image}
                                                 alt={event.title}
+                                                loading="lazy"
+                                                decoding="async"
                                                 className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
                                             />
                                             <span className="absolute top-3 left-3 bg-white/95 px-2 py-0.5 rounded-md text-xs font-medium text-slate-800 backdrop-blur-xs">

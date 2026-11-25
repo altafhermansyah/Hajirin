@@ -498,6 +498,8 @@ export default function Checkout({
                                     <img
                                         src={event?.image || '/images/events/tech_hero.jpg'}
                                         alt=""
+                                        loading="lazy"
+                                        decoding="async"
                                         className="size-14 rounded-lg object-cover shrink-0 bg-slate-100 border border-slate-200"
                                     />
                                     <div className="min-w-0">

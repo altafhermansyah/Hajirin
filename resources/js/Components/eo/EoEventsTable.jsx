@@ -228,6 +228,8 @@ export default function EoEventsTable({
                                                     <img
                                                         src={event.banner}
                                                         alt=""
+                                                        loading="lazy"
+                                                        decoding="async"
                                                         className="size-11 rounded-md object-cover border border-gray-200 bg-gray-100 shrink-0"
                                                     />
                                                     <div className="min-w-0 max-w-xs">

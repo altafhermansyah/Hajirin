@@ -26,7 +26,7 @@ class StoreEoApplicationRequest extends FormRequest
             'organization_name' => ['required', 'string', 'max:150'],
             'contact_phone' => ['required', 'string', 'max:25'],
             'portfolio_url' => ['nullable', 'url', 'max:255'],
-            'document' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
+            'document' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png,webp', 'max:5120'],
             'reason' => ['required', 'string', 'min:20', 'max:2000'],
         ];
     }
@@ -47,7 +47,7 @@ class StoreEoApplicationRequest extends FormRequest
             'portfolio_url.max' => 'Tautan portofolio maksimal 255 karakter.',
             'document.required' => 'Berkas gabungan verifikasi identitas & legalitas wajib diunggah.',
             'document.file' => 'Berkas yang diunggah tidak valid.',
-            'document.mimes' => 'Berkas verifikasi harus berformat PDF, JPG, JPEG, atau PNG.',
+            'document.mimes' => 'Berkas verifikasi harus berformat PDF, JPG, JPEG, PNG, atau WEBP.',
             'document.max' => 'Ukuran berkas verifikasi maksimal 5 MB.',
             'reason.required' => 'Deskripsi dan rencana penyelenggaraan event wajib diisi.',
             'reason.min' => 'Deskripsi dan rencana event minimal 20 karakter agar dapat ditinjau Admin.',

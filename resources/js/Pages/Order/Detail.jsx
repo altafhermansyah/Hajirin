@@ -236,6 +236,8 @@ export default function OrderDetail({
                                         <img
                                             src={event.banner}
                                             alt={event.title}
+                                            loading="lazy"
+                                            decoding="async"
                                             className="size-full object-cover"
                                         />
                                     </div>

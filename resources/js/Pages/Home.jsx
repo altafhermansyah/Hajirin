@@ -35,258 +35,6 @@ import AuthModal from '../Components/Auth/AuthModal';
 import Navbar from '../Components/Navbar';
 import { Button, buttonClass } from '../Components/ui/Button';
 
-const heroEvents = [
-    {
-        id: 'hero-1',
-        image: '/images/events/hero_festival.jpg',
-        category: 'Festival Musik',
-        title: 'Festival Musik Nusantara 2026: Merayakan Harmoni Musisi Indie & Elektronik',
-        date: '24 - 25 September 2026',
-        starts_at: '2026-09-24T18:00:00',
-        place: 'Stadion Gelora Bung Karno, Jakarta',
-        description:
-            'Dimeriahkan oleh lebih dari 50 musisi lokal di 3 panggung epik. Rasakan pengalaman festival musik yang belum pernah ada sebelumnya.',
-        price: 'Rp75.000',
-        status: 'Tiket Tersedia',
-        slug: 'festival-musik-nusantara-2026',
-    },
-    {
-        id: 'hero-2',
-        image: '/images/events/tech_hero.jpg',
-        category: 'Konferensi Teknologi',
-        title: 'Indonesia Tech Conference 2026: The Future of AI & Engineering',
-        date: '24 - 25 Oktober 2026',
-        starts_at: '2026-10-24T09:00:00',
-        place: 'ICE BSD Hall 1, Tangerang',
-        description:
-            'Menghadirkan lebih dari 500 praktisi teknologi, arsitek cloud, peneliti AI, dan pakar industri untuk membentuk masa depan ekosistem perangkat lunak global.',
-        price: 'Rp150.000',
-        status: 'Tiket Tersedia',
-        slug: 'indonesia-tech-conference-2026',
-    },
-    {
-        id: 'hero-3',
-        image: '/images/events/marathon_hero.jpg',
-        category: 'Olahraga',
-        title: 'Jakarta Sunrise Marathon 2026: Run for Green Planet',
-        date: '01 November 2026',
-        starts_at: '2026-11-01T05:30:00',
-        place: 'Plaza FX Sudirman, Jakarta',
-        description:
-            'Berlari bersama ribuan penggiat kebugaran menyusuri fajar kota Jakarta. Setiap kilometer donasi untuk reboisasi hutan nusantara.',
-        price: 'Rp125.000',
-        status: 'Tiket Tersedia',
-        slug: 'jakarta-sunrise-marathon-2026',
-    },
-    {
-        id: 'hero-4',
-        image: '/images/events/startup.jpg',
-        category: 'Bisnis & Startup',
-        title: 'Startup Growth Festival 2026: Scale Up Beyond Boundaries',
-        date: '14 - 15 November 2026',
-        starts_at: '2026-11-14T09:00:00',
-        place: 'JCC Senayan, Jakarta',
-        description:
-            'Akselerasi bisnismu ke level berikutnya bersama para venture capital, unicorn founders, dan praktisi growth marketing terbaik di Asia Tenggara.',
-        price: 'Rp75.000',
-        status: 'Populer',
-        slug: 'startup-growth-festival-2026',
-    },
-];
-
-const featuredEvents = [
-    {
-        id: 'f-1',
-        image: 'tech_hero.jpg',
-        category: 'Konferensi Teknologi',
-        date: 'Sab, 24 Okt 2026 · 09:00 WIB',
-        starts_at: '2026-10-24T09:00:00',
-        title: 'Indonesia Tech Conference 2026: The Future of AI & Engineering',
-        place: 'ICE BSD Hall 1, Tangerang',
-        organizer: 'Tech Innovation Indonesia',
-        price: 'Rp150.000',
-        slug: 'indonesia-tech-conference-2026',
-    },
-    {
-        id: 'f-2',
-        image: 'design_hero.jpg',
-        category: 'Workshop',
-        date: 'Sab, 25 Okt 2026 · 10:00 WIB',
-        starts_at: '2026-10-25T10:00:00',
-        title: 'Creative Design & Typography Workshop 2026',
-        place: 'Margo City, Bandung',
-        organizer: 'Kreator Nusantara',
-        price: 'Rp50.000',
-        slug: 'creative-design-typography-workshop-2026',
-    },
-    {
-        id: 'f-3',
-        image: 'marathon_hero.jpg',
-        category: 'Olahraga',
-        date: 'Min, 01 Nov 2026 · 05:30 WIB',
-        starts_at: '2026-11-01T05:30:00',
-        title: 'Jakarta Sunrise Marathon 2026: Run for Green Planet',
-        place: 'Plaza FX Sudirman, Jakarta',
-        organizer: 'IndoRunners Network',
-        price: 'Rp125.000',
-        slug: 'jakarta-sunrise-marathon-2026',
-    },
-    {
-        id: 'f-4',
-        image: 'soundscapes.jpg',
-        category: 'Festival Musik',
-        date: 'Sab, 30 Nov 2026 · 15:00 WIB',
-        starts_at: '2026-11-30T15:00:00',
-        title: 'Soundscapes Indie & Electronic Music Night',
-        place: 'Campus Center Timur, Jakarta',
-        organizer: 'Nusantara Live',
-        price: 'Rp85.000',
-        slug: 'soundscapes-indie-electronic-music-night',
-    },
-];
-
-const popularEvents = [
-    {
-        id: 'p-1',
-        image: 'startup.jpg',
-        label: 'Populer',
-        date: '14 - 15 Nov 2026',
-        starts_at: '2026-11-14T09:00:00',
-        title: 'Startup Growth Festival 2026: Scale Up Beyond...',
-        place: 'JCC Senayan, Jakarta',
-        price: 'Rp75.000',
-        availability: 'Tersedia',
-        slug: 'startup-growth-festival-2026',
-    },
-    {
-        id: 'p-2',
-        image: 'nusantara-indie.jpg',
-        label: 'Hampir Habis',
-        date: '21 Nov 2026',
-        starts_at: '2026-11-21T18:30:00',
-        title: 'Nusantara Indie Soundwave: Special Showcase Vol. 4',
-        place: 'Bari Bintaro, Jakarta',
-        price: 'Rp90.000',
-        availability: 'Cepat Habis',
-        slug: 'nusantara-indie-soundwave-vol-4',
-    },
-    {
-        id: 'p-3',
-        image: 'ai-product.jpg',
-        label: 'Baru',
-        date: '28 Nov 2026',
-        starts_at: '2026-11-28T09:30:00',
-        title: 'AI Product Management: From LLM to Production',
-        place: 'Cilandak Town Square, Jakarta',
-        price: 'Rp99.000',
-        availability: 'Tersedia',
-        slug: 'ai-product-management-from-llm-to-production',
-    },
-    {
-        id: 'p-4',
-        image: 'bandung-creative.jpg',
-        label: 'Populer',
-        date: '05 Des 2026',
-        starts_at: '2026-12-05T10:00:00',
-        title: 'Bandung Creative & Typography Showcase 2026',
-        place: 'Margo City, Bandung',
-        price: 'Rp50.000',
-        availability: 'Tersedia',
-        slug: 'bandung-creative-typography-showcase-2026',
-    },
-];
-
-const nearbyEvents = [
-    {
-        id: 'n-1',
-        date: '21 Okt 2026',
-        time: '14:00 WIB',
-        starts_at: '2026-10-21T14:00:00',
-        title: 'FinTech Indonesia Leadership Summit 2026',
-        place: 'Senayan, Jakarta',
-        organizer: 'OJK / Asosiasi FinTech Indo',
-        price: 'Rp200.000',
-        slug: 'fintech-indonesia-leadership-summit-2026',
-    },
-    {
-        id: 'n-2',
-        date: '24 Okt 2026',
-        time: '10:00 WIB',
-        starts_at: '2026-10-24T10:00:00',
-        title: 'Jakarta Art & Culture Installation Weekend',
-        place: 'Museum Nasional, Jakarta',
-        organizer: 'Dinas Pariwisata DKI Jakarta',
-        price: 'Rp45.000',
-        slug: 'jakarta-art-culture-installation-weekend',
-    },
-    {
-        id: 'n-3',
-        date: '24 Okt 2026',
-        time: '15:00 WIB',
-        starts_at: '2026-10-24T15:00:00',
-        title: 'Indie Coffee & Culinary Expo',
-        place: 'GBK Area, Jakarta Selatan',
-        organizer: 'Kopi Nusantara Asosiasi',
-        price: 'Rp35.000',
-        slug: 'indie-coffee-culinary-expo',
-    },
-    {
-        id: 'n-4',
-        date: '25 Okt 2026',
-        time: '09:00 WIB',
-        starts_at: '2026-10-25T09:00:00',
-        title: 'Product Design Thinking Interactive Jam',
-        place: 'Menara BTPN, Mega Kuningan',
-        organizer: 'GoJek UX / UI Design Hub Indo',
-        price: 'Rp65.000',
-        slug: 'product-design-thinking-interactive-jam',
-    },
-    {
-        id: 'n-5',
-        date: '28 Okt 2026',
-        time: '16:00 WIB',
-        starts_at: '2026-10-28T16:00:00',
-        title: 'Jakarta Tech Meetup 2026',
-        place: 'Kuningan City, Jakarta',
-        organizer: 'Tech Community JKT',
-        price: 'Gratis',
-        slug: 'jakarta-tech-meetup-2026',
-    },
-    {
-        id: 'n-6',
-        date: '01 Nov 2026',
-        time: '08:00 WIB',
-        starts_at: '2026-11-01T08:00:00',
-        title: 'Sunday Morning Yoga Session',
-        place: 'Taman Menteng, Jakarta',
-        organizer: 'Yoga Fit Jakarta',
-        price: 'Rp50.000',
-        slug: 'sunday-morning-yoga-session',
-    },
-    {
-        id: 'n-7',
-        date: '05 Nov 2026',
-        time: '19:00 WIB',
-        starts_at: '2026-11-05T19:00:00',
-        title: 'Stand Up Comedy Night: Local Heroes',
-        place: 'Kemang, Jakarta',
-        organizer: 'Comedy Club ID',
-        price: 'Rp100.000',
-        slug: 'stand-up-comedy-night-local-heroes',
-    },
-    {
-        id: 'n-8',
-        date: '10 Nov 2026',
-        time: '10:00 WIB',
-        starts_at: '2026-11-10T10:00:00',
-        title: 'Bazar UMKM Kreatif Nusantara',
-        place: 'JIExpo Kemayoran, Jakarta',
-        organizer: 'Kemenparekraf',
-        price: 'Gratis',
-        slug: 'bazar-umkm-kreatif-nusantara',
-    },
-];
-
 const CATEGORY_ICON_MAP = {
     headphones: Headphones,
     users: Users,
@@ -312,7 +60,24 @@ const CATEGORY_ICON_MAP = {
     lainnya: Menu,
 };
 
-export default function Home({ auth, categories = [], events = [], bookmarkedEventIds = [] }) {
+function resolveImageSrc(image) {
+    if (!image) return '/images/events/tech_hero.jpg';
+    if (image.startsWith('/') || image.startsWith('http://') || image.startsWith('https://')) {
+        return image;
+    }
+    return `/images/events/${image}`;
+}
+
+export default function Home({
+    auth,
+    categories = [],
+    events = [],
+    heroEvents = [],
+    featuredEvents = [],
+    popularEvents = [],
+    availableCities = [],
+    bookmarkedEventIds = [],
+}) {
     const [activeSlide, setActiveSlide] = useState(0);
     const [isCarouselPaused, setIsCarouselPaused] = useState(false);
     const [authView, setAuthView] = useState('login');
@@ -404,48 +169,6 @@ export default function Home({ auth, categories = [], events = [], bookmarkedEve
         );
     }
 
-    const allSearchableEvents = useMemo(() => {
-        const list = events && events.length > 0 ? [...events] : [];
-        featuredEvents.forEach((f) => {
-            if (!list.some((x) => x.slug === f.slug)) {
-                list.push(f);
-            }
-        });
-        popularEvents.forEach((p) => {
-            if (!list.some((x) => x.slug === p.slug)) {
-                list.push({
-                    id: p.id,
-                    slug: p.slug,
-                    image: p.image,
-                    category: p.label || 'Populer',
-                    date: p.date,
-                    starts_at: p.starts_at,
-                    title: p.title,
-                    place: p.place,
-                    organizer: 'Penyelenggara Hajirin',
-                    price: p.price,
-                });
-            }
-        });
-        nearbyEvents.forEach((n) => {
-            if (!list.some((x) => x.slug === n.slug)) {
-                list.push({
-                    id: n.id,
-                    slug: n.slug,
-                    image: 'tech_hero.jpg',
-                    category: 'Event Terdekat',
-                    date: n.date,
-                    starts_at: n.starts_at,
-                    title: n.title,
-                    place: n.place,
-                    organizer: n.organizer,
-                    price: n.price,
-                });
-            }
-        });
-        return list;
-    }, [events]);
-
     const isSearching =
         searchQuery.trim().length > 0 ||
         selectedLocation !== 'Semua Kota' ||
@@ -455,14 +178,13 @@ export default function Home({ auth, categories = [], events = [], bookmarkedEve
         if (!isSearching) return [];
         const q = searchQuery.trim().toLowerCase();
 
-        return allSearchableEvents.filter((item) => {
+        return events.filter((item) => {
             const matchText = !q || (item.title && item.title.toLowerCase().includes(q));
 
             const matchLocation =
                 selectedLocation === 'Semua Kota' ||
-                (item.place && item.place.toLowerCase().includes(selectedLocation.toLowerCase())) ||
-                (item.location &&
-                    item.location.toLowerCase().includes(selectedLocation.toLowerCase()));
+                (item.city && item.city.toLowerCase().includes(selectedLocation.toLowerCase())) ||
+                (item.place && item.place.toLowerCase().includes(selectedLocation.toLowerCase()));
 
             let matchTime = true;
             if (selectedTime !== 'Semua Waktu') {
@@ -521,7 +243,7 @@ export default function Home({ auth, categories = [], events = [], bookmarkedEve
 
             return matchText && matchLocation && matchTime;
         });
-    }, [searchQuery, selectedLocation, selectedTime, isSearching, allSearchableEvents]);
+    }, [searchQuery, selectedLocation, selectedTime, isSearching, events]);
 
     function handleSearchSubmit(e) {
         if (e) e.preventDefault();
@@ -541,12 +263,12 @@ export default function Home({ auth, categories = [], events = [], bookmarkedEve
     }
 
     useEffect(() => {
-        if (isCarouselPaused) return undefined;
+        if (isCarouselPaused || heroEvents.length <= 1) return undefined;
         const timer = window.setInterval(() => {
             setActiveSlide((currentSlide) => (currentSlide + 1) % heroEvents.length);
         }, 5000);
         return () => window.clearInterval(timer);
-    }, [isCarouselPaused]);
+    }, [isCarouselPaused, heroEvents.length]);
 
     function openAuthModal(view) {
         setAuthView(view);
@@ -570,6 +292,7 @@ export default function Home({ auth, categories = [], events = [], bookmarkedEve
     }
 
     function changeSlide(offset) {
+        if (heroEvents.length <= 1) return;
         setActiveSlide(
             (currentSlide) => (currentSlide + offset + heroEvents.length) % heroEvents.length
         );
@@ -604,140 +327,171 @@ export default function Home({ auth, categories = [], events = [], bookmarkedEve
             <main id="main-content" tabIndex={-1}>
                 {/* Hero Carousel */}
                 <section className="px-4 py-6 sm:px-8 lg:px-10">
-                    <div
-                        className="group relative h-[520px] overflow-hidden rounded-xl bg-navy sm:h-[460px]"
-                        onMouseEnter={() => setIsCarouselPaused(true)}
-                        onMouseLeave={() => setIsCarouselPaused(false)}
-                    >
-                        {heroEvents.map((event, index) => (
-                            <article
-                                key={event.title}
-                                className={`absolute inset-0 transition-opacity duration-700 ${
-                                    index === activeSlide
-                                        ? 'z-10 opacity-100'
-                                        : 'pointer-events-none z-0 opacity-0'
-                                }`}
-                            >
-                                <img
-                                    src={event.image}
-                                    alt=""
-                                    className="absolute inset-0 h-full w-full object-cover"
-                                />
-                                <div className="absolute inset-0 bg-gradient-to-t from-navy via-navy/75 to-transparent" />
-                                <div className="absolute inset-x-0 bottom-0 p-6 text-white sm:p-10">
-                                    <div className="max-w-3xl">
-                                        <div className="mb-3 flex flex-wrap items-center gap-2">
-                                            <span className="rounded-md border border-white/25 bg-white/15 px-2.5 py-0.5 text-xs font-medium backdrop-blur-xs">
-                                                {event.category}
-                                            </span>
-                                            <span className="rounded-md border border-white/20 bg-navy/60 px-2.5 py-0.5 text-xs font-medium text-slate-200 backdrop-blur-xs">
-                                                {event.status}
-                                            </span>
-                                        </div>
-                                        <h1 className="mb-3 text-2xl sm:text-4xl font-semibold tracking-tight leading-tight">
-                                            {event.title}
-                                        </h1>
-                                        <div className="mb-3 flex flex-col gap-1.5 text-sm text-slate-200 sm:flex-row sm:gap-6">
-                                            <span className="inline-flex items-center gap-1.5">
-                                                <CalendarDays className="size-4 text-slate-300" aria-hidden="true" />
-                                                {event.date}
-                                            </span>
-                                            <span className="inline-flex items-center gap-1.5">
-                                                <MapPin className="size-4 text-slate-300" aria-hidden="true" />
-                                                {event.place}
-                                            </span>
-                                        </div>
-                                        <p className="mb-6 max-w-2xl text-sm text-slate-300 leading-relaxed line-clamp-2">
-                                            {event.description}
-                                        </p>
-                                        <div className="flex flex-wrap items-center gap-4 sm:gap-5">
-                                            <div>
-                                                <p className="text-xs text-slate-300">Harga Tiket Mulai</p>
-                                                <p className="text-xl font-semibold tabular-nums">
-                                                    {event.price}
-                                                </p>
+                    {heroEvents.length > 0 ? (
+                        <div
+                            className="group relative h-[520px] overflow-hidden rounded-xl bg-navy sm:h-[460px]"
+                            onMouseEnter={() => setIsCarouselPaused(true)}
+                            onMouseLeave={() => setIsCarouselPaused(false)}
+                        >
+                            {heroEvents.map((event, index) => (
+                                <article
+                                    key={event.id || event.slug}
+                                    className={`absolute inset-0 transition-opacity duration-700 ${
+                                        index === activeSlide
+                                            ? 'z-10 opacity-100'
+                                            : 'pointer-events-none z-0 opacity-0'
+                                    }`}
+                                >
+                                    <img
+                                        src={resolveImageSrc(event.image)}
+                                        alt=""
+                                        decoding="async"
+                                        fetchPriority={index === 0 ? 'high' : 'low'}
+                                        loading={index === 0 ? undefined : 'lazy'}
+                                        className="absolute inset-0 h-full w-full object-cover"
+                                    />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-navy via-navy/75 to-transparent" />
+                                    <div className="absolute inset-x-0 bottom-0 p-6 text-white sm:p-10">
+                                        <div className="max-w-3xl">
+                                            <div className="mb-3 flex flex-wrap items-center gap-2">
+                                                <span className="rounded-md border border-white/25 bg-white/15 px-2.5 py-0.5 text-xs font-medium backdrop-blur-xs">
+                                                    {event.category}
+                                                </span>
+                                                <span className="rounded-md border border-white/20 bg-navy/60 px-2.5 py-0.5 text-xs font-medium text-slate-200 backdrop-blur-xs">
+                                                    {event.status}
+                                                </span>
                                             </div>
+                                            <h1 className="mb-3 text-2xl sm:text-4xl font-semibold tracking-tight leading-tight">
+                                                {event.title}
+                                            </h1>
+                                            <div className="mb-3 flex flex-col gap-1.5 text-sm text-slate-200 sm:flex-row sm:gap-6">
+                                                <span className="inline-flex items-center gap-1.5">
+                                                    <CalendarDays className="size-4 text-slate-300" aria-hidden="true" />
+                                                    {event.date}
+                                                </span>
+                                                <span className="inline-flex items-center gap-1.5">
+                                                    <MapPin className="size-4 text-slate-300" aria-hidden="true" />
+                                                    {event.place}
+                                                </span>
+                                            </div>
+                                            {event.description && (
+                                                <p className="mb-6 max-w-2xl text-sm text-slate-300 leading-relaxed line-clamp-2">
+                                                    {event.description}
+                                                </p>
+                                            )}
+                                            <div className="flex flex-wrap items-center gap-4 sm:gap-5">
+                                                <div>
+                                                    <p className="text-xs text-slate-300">Harga Tiket Mulai</p>
+                                                    <p className="text-xl font-semibold tabular-nums">
+                                                        {event.price}
+                                                    </p>
+                                                </div>
 
-                                            <Link
-                                                href={`/event/${event.slug}`}
-                                                className={buttonClass('primary', 'lg')}
-                                            >
-                                                Lihat Event
-                                            </Link>
+                                                <Link
+                                                    href={`/event/${event.slug}`}
+                                                    className={buttonClass('primary', 'lg')}
+                                                >
+                                                    Lihat Event
+                                                </Link>
 
-                                            <button
-                                                type="button"
-                                                onClick={(e) =>
-                                                    handleToggleBookmark(
-                                                        event.id,
-                                                        event.slug,
-                                                        event.title,
-                                                        e
-                                                    )
-                                                }
-                                                aria-label={
-                                                    bookmarkedSet.has(event.id) ||
-                                                    bookmarkedSet.has(event.slug)
-                                                        ? `Hapus simpanan ${event.title}`
-                                                        : `Simpan ${event.title}`
-                                                }
-                                                className={`flex size-11 items-center justify-center rounded-lg border transition cursor-pointer ${
-                                                    bookmarkedSet.has(event.id) ||
-                                                    bookmarkedSet.has(event.slug)
-                                                        ? 'border-brand-blue bg-brand-blue text-white'
-                                                        : 'border-white/30 text-white hover:bg-white/10'
-                                                }`}
-                                            >
-                                                <Bookmark
-                                                    className="size-5"
-                                                    fill={
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) =>
+                                                        handleToggleBookmark(
+                                                            event.id,
+                                                            event.slug,
+                                                            event.title,
+                                                            e
+                                                        )
+                                                    }
+                                                    aria-label={
                                                         bookmarkedSet.has(event.id) ||
                                                         bookmarkedSet.has(event.slug)
-                                                            ? 'currentColor'
-                                                            : 'none'
+                                                            ? `Hapus simpanan ${event.title}`
+                                                            : `Simpan ${event.title}`
                                                     }
-                                                />
-                                            </button>
+                                                    className={`flex size-11 items-center justify-center rounded-lg border transition cursor-pointer ${
+                                                        bookmarkedSet.has(event.id) ||
+                                                        bookmarkedSet.has(event.slug)
+                                                            ? 'border-brand-blue bg-brand-blue text-white'
+                                                            : 'border-white/30 text-white hover:bg-white/10'
+                                                    }`}
+                                                >
+                                                    <Bookmark
+                                                        className="size-5"
+                                                        fill={
+                                                            bookmarkedSet.has(event.id) ||
+                                                            bookmarkedSet.has(event.slug)
+                                                                ? 'currentColor'
+                                                                : 'none'
+                                                        }
+                                                    />
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            </article>
-                        ))}
-
-                        <div className="absolute bottom-6 left-6 z-30 flex items-center gap-2 sm:left-10">
-                            {heroEvents.map((event, index) => (
-                                <button
-                                    key={event.title}
-                                    type="button"
-                                    aria-label={`Tampilkan ${event.title}`}
-                                    onClick={() => setActiveSlide(index)}
-                                    className={`h-1.5 rounded-full transition-all cursor-pointer ${
-                                        index === activeSlide
-                                            ? 'w-7 bg-white'
-                                            : 'w-2 bg-white/40 hover:bg-white/70'
-                                    }`}
-                                />
+                                </article>
                             ))}
+
+                            {heroEvents.length > 1 && (
+                                <>
+                                    <div className="absolute bottom-6 left-6 z-30 flex items-center gap-2 sm:left-10">
+                                        {heroEvents.map((event, index) => (
+                                            <button
+                                                key={event.id || event.slug}
+                                                type="button"
+                                                aria-label={`Tampilkan ${event.title}`}
+                                                onClick={() => setActiveSlide(index)}
+                                                className={`h-1.5 rounded-full transition-all cursor-pointer ${
+                                                    index === activeSlide
+                                                        ? 'w-7 bg-white'
+                                                        : 'w-2 bg-white/40 hover:bg-white/70'
+                                                }`}
+                                            />
+                                        ))}
+                                    </div>
+                                    <div className="absolute bottom-6 right-6 z-30 flex items-center gap-2 sm:bottom-8 sm:right-10">
+                                        <button
+                                            type="button"
+                                            aria-label="Slide sebelumnya"
+                                            onClick={() => changeSlide(-1)}
+                                            className="flex size-9 items-center justify-center rounded-lg border border-white/25 bg-navy/50 text-white backdrop-blur-sm hover:bg-white/20 transition cursor-pointer"
+                                        >
+                                            <ChevronLeft className="size-4" aria-hidden="true" />
+                                        </button>
+                                        <button
+                                            type="button"
+                                            aria-label="Slide selanjutnya"
+                                            onClick={() => changeSlide(1)}
+                                            className="flex size-9 items-center justify-center rounded-lg border border-white/25 bg-navy/50 text-white backdrop-blur-sm hover:bg-white/20 transition cursor-pointer"
+                                        >
+                                            <ChevronRight className="size-4" aria-hidden="true" />
+                                        </button>
+                                    </div>
+                                </>
+                            )}
                         </div>
-                        <div className="absolute bottom-6 right-6 z-30 flex items-center gap-2 sm:bottom-8 sm:right-10">
-                            <button
-                                type="button"
-                                aria-label="Slide sebelumnya"
-                                onClick={() => changeSlide(-1)}
-                                className="flex size-9 items-center justify-center rounded-lg border border-white/25 bg-navy/50 text-white backdrop-blur-sm hover:bg-white/20 transition cursor-pointer"
-                            >
-                                <ChevronLeft className="size-4" aria-hidden="true" />
-                            </button>
-                            <button
-                                type="button"
-                                aria-label="Slide selanjutnya"
-                                onClick={() => changeSlide(1)}
-                                className="flex size-9 items-center justify-center rounded-lg border border-white/25 bg-navy/50 text-white backdrop-blur-sm hover:bg-white/20 transition cursor-pointer"
-                            >
-                                <ChevronRight className="size-4" aria-hidden="true" />
-                            </button>
+                    ) : (
+                        <div className="flex flex-col items-start justify-end rounded-xl bg-navy p-8 text-white sm:min-h-[300px] sm:p-10">
+                            <p className="mb-2 text-xs font-medium uppercase tracking-wider text-slate-400">
+                                Platform Event &amp; Ticketing
+                            </p>
+                            <h1 className="mb-3 max-w-2xl text-2xl sm:text-4xl font-semibold tracking-tight leading-tight">
+                                Temukan dan hadiri event terbaik di sekitarmu
+                            </h1>
+                            <p className="mb-6 max-w-xl text-sm text-slate-300 leading-relaxed">
+                                Belum ada event publik yang tayang saat ini. Jelajahi kategori atau mulai buat event pertamamu di Hajirin.
+                            </p>
+                            <div className="flex flex-wrap items-center gap-3">
+                                <Link href="/kategori" className={buttonClass('primary', 'lg')}>
+                                    Jelajahi Kategori
+                                </Link>
+                                <Button variant="outline" size="lg" onClick={handleCreateEventClick}>
+                                    Mulai Buat Event
+                                </Button>
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </section>
 
                 {/* Search Box */}
@@ -802,12 +556,11 @@ export default function Home({ auth, categories = [], events = [], bookmarkedEve
                                     className="h-11 w-full appearance-none rounded-lg border border-slate-200 bg-slate-50 pl-10 pr-9 text-sm font-medium text-slate-700 focus:border-brand-blue focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue/15 transition"
                                 >
                                     <option value="Semua Kota">Semua Kota</option>
-                                    <option value="Jakarta">Jakarta</option>
-                                    <option value="Surabaya">Surabaya</option>
-                                    <option value="Bandung">Bandung</option>
-                                    <option value="Yogyakarta">Yogyakarta</option>
-                                    <option value="Bali">Bali</option>
-                                    <option value="Tangerang">Tangerang</option>
+                                    {availableCities.map((city) => (
+                                        <option key={city} value={city}>
+                                            {city}
+                                        </option>
+                                    ))}
                                 </select>
                                 <ChevronDown
                                     className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 size-4 text-slate-400"
@@ -938,26 +691,38 @@ export default function Home({ auth, categories = [], events = [], bookmarkedEve
                             actionHref="/kategori"
                         />
                         <section className="px-4 pb-8 sm:px-8 lg:px-10">
-                            <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
-                                {featuredEvents.map((evt) => (
-                                    <FeaturedCard
-                                        key={evt.title}
-                                        {...evt}
-                                        isBookmarked={
-                                            bookmarkedSet.has(evt.id) || bookmarkedSet.has(evt.slug)
-                                        }
-                                        onToggleBookmark={(e) =>
-                                            handleToggleBookmark(evt.id, evt.slug, evt.title, e)
-                                        }
-                                        onBuyTicket={(e) => {
-                                            if (!auth?.user) {
-                                                e.preventDefault();
-                                                openAuthModal('login');
+                            {featuredEvents.length > 0 ? (
+                                <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
+                                    {featuredEvents.map((evt) => (
+                                        <FeaturedCard
+                                            key={evt.id || evt.slug}
+                                            {...evt}
+                                            isBookmarked={
+                                                bookmarkedSet.has(evt.id) ||
+                                                bookmarkedSet.has(evt.slug)
                                             }
-                                        }}
-                                    />
-                                ))}
-                            </div>
+                                            onToggleBookmark={(e) =>
+                                                handleToggleBookmark(
+                                                    evt.id,
+                                                    evt.slug,
+                                                    evt.title,
+                                                    e
+                                                )
+                                            }
+                                            onBuyTicket={(e) => {
+                                                if (!auth?.user) {
+                                                    e.preventDefault();
+                                                    openAuthModal('login');
+                                                }
+                                            }}
+                                        />
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="rounded-xl border border-dashed border-slate-300 bg-white px-6 py-10 text-center text-sm text-slate-500">
+                                    Belum ada event unggulan yang tersedia saat ini.
+                                </div>
+                            )}
                         </section>
 
                         <SectionHeading
@@ -967,11 +732,17 @@ export default function Home({ auth, categories = [], events = [], bookmarkedEve
                             actionHref="/kategori"
                         />
                         <section className="px-4 pb-10 sm:px-8 lg:px-10">
-                            <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
-                                {popularEvents.map((evt) => (
-                                    <PopularCard key={evt.title} {...evt} />
-                                ))}
-                            </div>
+                            {popularEvents.length > 0 ? (
+                                <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
+                                    {popularEvents.map((evt) => (
+                                        <PopularCard key={evt.id || evt.slug} {...evt} />
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="rounded-xl border border-dashed border-slate-300 bg-white px-6 py-10 text-center text-sm text-slate-500">
+                                    Belum ada event populer yang tersedia saat ini.
+                                </div>
+                            )}
                         </section>
 
                         <section
@@ -1045,7 +816,13 @@ export default function Home({ auth, categories = [], events = [], bookmarkedEve
                 <div className="mb-10 grid grid-cols-1 gap-8 md:grid-cols-4">
                     <div className="pr-4">
                         <div className="mb-3 flex items-center gap-2">
-                            <img src="/hajirin_icon.svg" alt="" className="h-7 w-auto" />
+                            <img
+                                src="/hajirin_icon.svg"
+                                alt=""
+                                loading="lazy"
+                                decoding="async"
+                                className="h-7 w-auto"
+                            />
                             <span className="text-lg font-bold tracking-tight text-navy">HAJIRIN</span>
                         </div>
                         <p className="mb-5 text-xs leading-relaxed text-slate-500">
@@ -1168,11 +945,7 @@ function FeaturedCard({
     onToggleBookmark,
     onBuyTicket,
 }) {
-    const imageSrc = !image
-        ? '/images/events/tech_hero.jpg'
-        : image.startsWith('/')
-          ? image
-          : `/images/events/${image}`;
+    const imageSrc = resolveImageSrc(image);
 
     return (
         <Link
@@ -1183,6 +956,8 @@ function FeaturedCard({
                 <img
                     src={imageSrc}
                     alt=""
+                    loading="lazy"
+                    decoding="async"
                     className="size-full object-cover transition duration-500 group-hover:scale-105"
                 />
                 {category && (
@@ -1250,7 +1025,18 @@ function FeaturedCard({
     );
 }
 
-function PopularCard({ slug, image, label, date, title, place, price, availability }) {
+function PopularCard({
+    slug,
+    image,
+    label,
+    date,
+    dateShort,
+    title,
+    place,
+    price,
+    availability,
+    remainingQuota,
+}) {
     const isUrgent = label === 'Hampir Habis';
 
     return (
@@ -1260,21 +1046,25 @@ function PopularCard({ slug, image, label, date, title, place, price, availabili
         >
             <div className="relative h-40 overflow-hidden bg-slate-100 shrink-0">
                 <img
-                    src={`/images/events/${image}`}
+                    src={resolveImageSrc(image)}
                     alt=""
+                    loading="lazy"
+                    decoding="async"
                     className="size-full object-cover transition duration-500 group-hover:scale-105"
                 />
                 <span className="absolute left-3 top-3 rounded-md bg-white/95 px-2 py-0.5 text-xs font-medium text-slate-800 backdrop-blur-xs">
                     {label}
                 </span>
-                {isUrgent && (
+                {isUrgent && remainingQuota > 0 && (
                     <span className="absolute bottom-2.5 right-2.5 rounded-md bg-navy/80 px-2 py-0.5 text-xs font-medium text-white backdrop-blur-xs tabular-nums">
-                        Sisa 12 Tiket
+                        Sisa {remainingQuota} Tiket
                     </span>
                 )}
             </div>
             <div className="p-4 flex flex-col flex-grow">
-                <p className="mb-1 text-xs font-medium text-slate-500 tabular-nums">{date}</p>
+                <p className="mb-1 text-xs font-medium text-slate-500 tabular-nums">
+                    {dateShort || date}
+                </p>
                 <h3 className="mb-2 line-clamp-2 text-sm font-semibold leading-snug text-slate-900 group-hover:text-brand-blue transition-colors">
                     {title}
                 </h3>

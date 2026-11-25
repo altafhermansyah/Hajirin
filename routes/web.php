@@ -26,15 +26,13 @@ use App\Http\Controllers\Eo\EoProfileController;
 use App\Http\Controllers\Eo\EoStaffController;
 use App\Http\Controllers\EoApplicationController;
 use App\Http\Controllers\EventController;
+use App\Http\Controllers\HomeController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\StaffCheckInController;
 use App\Http\Controllers\UserDashboardController;
 use App\Http\Controllers\UserOrderController;
 use App\Http\Controllers\UserProfileController;
 use App\Http\Controllers\UserTicketController;
-use App\Models\Category;
-use Carbon\Carbon;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -42,24 +40,27 @@ use Inertia\Inertia;
 Route::middleware('auth')->group(function () {
     Route::get('/checkout', [CheckoutController::class, 'show'])->name('checkout');
     Route::post('/checkout', [CheckoutController::class, 'store'])
-        ->middleware('throttle:20,1')
+        ->middleware('throttle:checkout')
         ->name('checkout.store');
 
     Route::get('/eo-applications/create', [EoApplicationController::class, 'create'])
         ->name('eo-applications.create');
     Route::post('/eo-applications', [EoApplicationController::class, 'store'])
-        ->middleware('throttle:5,1')
+        ->middleware('throttle:uploads')
         ->name('eo-applications.store');
 
     // Route Bookmark Event
     Route::post('/events/{event}/bookmark', [BookmarkController::class, 'toggle'])
+        ->middleware('throttle:user-actions')
         ->name('events.bookmark');
     Route::get('/bookmarks', fn () => redirect()->to(route('dashboard').'#bookmark'))
         ->name('bookmarks');
 
     // Route Profil User
     Route::get('/profile', [UserProfileController::class, 'show'])->name('profile');
-    Route::match(['put', 'post'], '/profile', [UserProfileController::class, 'update'])->name('profile.update');
+    Route::match(['put', 'post'], '/profile', [UserProfileController::class, 'update'])
+        ->middleware('throttle:uploads')
+        ->name('profile.update');
 
     // Route Halaman Detail E-Tiket & Scan QR
     Route::get('/my-tickets/{orderReference}', [UserTicketController::class, 'show'])->name('my-tickets.show');
@@ -72,8 +73,10 @@ Route::middleware('auth')->group(function () {
 
     // Route Notifikasi Pengguna
     Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])
+        ->middleware('throttle:user-actions')
         ->name('notifications.read-all');
     Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead'])
+        ->middleware('throttle:user-actions')
         ->name('notifications.read');
 
     // Route Portal Check-in Khusus Staff Event
@@ -85,61 +88,8 @@ Route::middleware('auth')->group(function () {
     });
 });
 
-// Route Home (Mengirimkan data categories dan events dari database)
-Route::get('/', function () {
-    $minPrices = DB::table('ticket_prices')
-        ->join('ticket_types', 'ticket_types.id', '=', 'ticket_prices.ticket_type_id')
-        ->where('ticket_types.status', 'ACTIVE')
-        ->where('ticket_prices.status', 'ACTIVE')
-        ->groupBy('ticket_types.event_id')
-        ->selectRaw('ticket_types.event_id, MIN(ticket_prices.price) as min_price')
-        ->pluck('min_price', 'ticket_types.event_id');
-
-    $events = DB::table('events')
-        ->join('categories', 'events.category_id', '=', 'categories.id')
-        ->join('users', 'events.eo_id', '=', 'users.id')
-        ->where('events.status', 'PUBLISHED')
-        ->select(
-            'events.id',
-            'events.title',
-            'events.slug',
-            'events.starts_at',
-            'events.venue_name',
-            'events.event_type',
-            'events.banner_path',
-            'categories.name as category_name',
-            'users.name as organizer_name'
-        )
-        ->orderBy('events.starts_at')
-        ->get()
-        ->map(function ($event) use ($minPrices) {
-            $minPrice = $minPrices[$event->id] ?? null;
-            $numericPrice = $minPrice !== null ? (float) $minPrice : 0;
-
-            return [
-                'id' => $event->id,
-                'slug' => $event->slug,
-                'category' => $event->category_name,
-                'title' => $event->title,
-                'starts_at' => $event->starts_at,
-                'date' => Carbon::parse($event->starts_at)->locale('id')->translatedFormat('D, d M Y • H:i').' WIB',
-                'place' => $event->venue_name ?: ($event->event_type === 'ONLINE' ? 'Online Event' : 'Lokasi Diumumkan'),
-                'organizer' => $event->organizer_name,
-                'price' => $numericPrice > 0 ? 'Rp'.number_format($numericPrice, 0, ',', '.') : 'Gratis',
-                'image' => $event->banner_path ?: '/images/events/tech_hero.jpg',
-            ];
-        });
-
-    $bookmarkedEventIds = auth()->check()
-        ? DB::table('bookmarks')->where('user_id', auth()->id())->pluck('event_id')->toArray()
-        : [];
-
-    return Inertia::render('Home', [
-        'categories' => Category::all(),
-        'events' => $events,
-        'bookmarkedEventIds' => $bookmarkedEventIds,
-    ]);
-})->name('home');
+// Route Home (100% dinamis dari database)
+Route::get('/', HomeController::class)->name('home');
 
 // Route Dashboard (Membutuhkan Login)
 Route::get('/dashboard', UserDashboardController::class)
@@ -166,9 +116,13 @@ Route::middleware(['auth', 'eo'])->prefix('eo')->name('eo.')->group(function () 
 
     Route::get('/events', [EoEventController::class, 'index'])->name('events.index');
     Route::get('/events/create', [EoEventController::class, 'create'])->name('events.create');
-    Route::post('/events', [EoEventController::class, 'store'])->name('events.store');
+    Route::post('/events', [EoEventController::class, 'store'])
+        ->middleware('throttle:uploads')
+        ->name('events.store');
     Route::get('/events/{id}/edit', [EoEventController::class, 'edit'])->name('events.edit');
-    Route::put('/events/{id}', [EoEventController::class, 'update'])->name('events.update');
+    Route::put('/events/{id}', [EoEventController::class, 'update'])
+        ->middleware('throttle:uploads')
+        ->name('events.update');
     Route::post('/events/{id}/submit', [EoEventController::class, 'submitForReview'])->name('events.submit');
     Route::post('/events/{id}/cancel', [EoEventController::class, 'cancel'])->name('events.cancel');
 
@@ -263,14 +217,18 @@ Route::middleware('guest')->group(function () {
     Route::get('/reset-password/{token}', [PasswordResetController::class, 'createReset'])
         ->name('password.reset');
 
-    Route::middleware('throttle:5,1')->group(function () {
-        Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('login');
-        Route::post('/register', [RegisteredUserController::class, 'store'])->name('register');
-        Route::post('/forgot-password', [PasswordResetController::class, 'sendResetLink'])
-            ->name('password.email');
-        Route::post('/reset-password', [PasswordResetController::class, 'resetPassword'])
-            ->name('password.store');
-    });
+    Route::post('/login', [AuthenticatedSessionController::class, 'store'])
+        ->middleware('throttle:auth-login')
+        ->name('login');
+    Route::post('/register', [RegisteredUserController::class, 'store'])
+        ->middleware('throttle:auth-register')
+        ->name('register');
+    Route::post('/forgot-password', [PasswordResetController::class, 'sendResetLink'])
+        ->middleware('throttle:password-reset')
+        ->name('password.email');
+    Route::post('/reset-password', [PasswordResetController::class, 'resetPassword'])
+        ->middleware('throttle:password-reset')
+        ->name('password.store');
 });
 
 // Route Keluar Akun (Logout)

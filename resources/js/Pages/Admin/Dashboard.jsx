@@ -420,6 +420,8 @@ export default function AdminDashboard({
                                         <img
                                             src={evt.banner}
                                             alt=""
+                                            loading="lazy"
+                                            decoding="async"
                                             className="size-16 sm:size-20 rounded-lg object-cover border border-slate-200 bg-slate-100 shrink-0"
                                         />
                                         <div className="space-y-2 flex-1 min-w-0">

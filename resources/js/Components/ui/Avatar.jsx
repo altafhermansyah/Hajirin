@@ -31,6 +31,8 @@ export function Avatar({ name = '', src = null, size = 'md', shape = 'circle', c
             <img
                 src={src}
                 alt={name}
+                loading="lazy"
+                decoding="async"
                 className={cn(
                     'shrink-0 object-cover border border-slate-200',
                     shapeClass,

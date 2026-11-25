@@ -14,6 +14,7 @@ use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -160,7 +161,7 @@ class EoEventController extends Controller
 
         $bannerPath = '/images/events/tech_hero.jpg';
         if ($request->hasFile('banner')) {
-            $storedPath = $request->file('banner')->store('banners', 'public');
+            $storedPath = $this->storeOptimizedImage($request->file('banner'), 'banners', 'public', 1600, 80);
             $bannerPath = '/storage/'.$storedPath;
         }
 
@@ -310,7 +311,11 @@ class EoEventController extends Controller
 
             $bannerPath = $event->banner_path;
             if ($request->hasFile('banner')) {
-                $storedPath = $request->file('banner')->store('banners', 'public');
+                if ($event->banner_path && Str::startsWith($event->banner_path, '/storage/banners/')) {
+                    Storage::disk('public')->delete(str_replace('/storage/', '', $event->banner_path));
+                }
+
+                $storedPath = $this->storeOptimizedImage($request->file('banner'), 'banners', 'public', 1600, 80);
                 $bannerPath = '/storage/'.$storedPath;
             }
 

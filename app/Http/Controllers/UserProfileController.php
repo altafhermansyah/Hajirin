@@ -55,7 +55,7 @@ class UserProfileController extends Controller
                 Storage::disk('public')->delete($oldPath);
             }
 
-            $path = $request->file('avatar')->store('avatars', 'public');
+            $path = $this->storeOptimizedImage($request->file('avatar'), 'avatars', 'public', 512, 82);
             $updateData['avatar_path'] = '/storage/'.$path;
         }
 

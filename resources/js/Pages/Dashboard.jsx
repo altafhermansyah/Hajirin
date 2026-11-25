@@ -212,6 +212,8 @@ export default function Dashboard({ auth, dashboard }) {
                                                     <img
                                                         src={ticket.banner}
                                                         alt={ticket.eventTitle}
+                                                        loading="lazy"
+                                                        decoding="async"
                                                         className="size-20 rounded-lg object-cover shrink-0 border border-slate-200 bg-slate-100"
                                                     />
                                                     <div className="min-w-0 flex-1 space-y-2">
@@ -305,6 +307,8 @@ export default function Dashboard({ auth, dashboard }) {
                                                 <img
                                                     src={evt.image}
                                                     alt={evt.title}
+                                                    loading="lazy"
+                                                    decoding="async"
                                                     className="size-full object-cover transition duration-500 group-hover:scale-105"
                                                 />
                                                 <span className="absolute left-3 top-3 rounded-md bg-white/95 px-2 py-0.5 text-xs font-medium text-slate-800 backdrop-blur-xs">
@@ -492,6 +496,8 @@ export default function Dashboard({ auth, dashboard }) {
                                                 <img
                                                     src={avatarPreview}
                                                     alt={user.name}
+                                                    loading="lazy"
+                                                    decoding="async"
                                                     className="size-full object-cover transition duration-200 group-hover:scale-105"
                                                 />
                                             ) : (
