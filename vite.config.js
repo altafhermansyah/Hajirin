@@ -19,6 +19,15 @@ export default defineConfig({
         tailwindcss(),
     ],
     server: {
+        host: '127.0.0.1',
+        warmup: {
+            clientFiles: [
+                './resources/js/Pages/Home.jsx',
+                './resources/js/Pages/Dashboard.jsx',
+                './resources/js/Pages/Eo/Dashboard.jsx',
+                './resources/js/Pages/Admin/Dashboard.jsx',
+            ],
+        },
         watch: {
             ignored: ['**/storage/framework/views/**'],
         },
