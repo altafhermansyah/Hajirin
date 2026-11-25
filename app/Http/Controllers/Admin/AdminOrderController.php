@@ -28,12 +28,20 @@ class AdminOrderController extends Controller
         $eventIdFilter = (string) $request->input('event_id', 'ALL');
         $sort = (string) $request->input('sort', 'latest');
 
-        // Statistik Keseluruhan
-        $totalOrders = Order::count();
-        $paidOrdersCount = Order::where('status', 'PAID')->count();
-        $pendingOrdersCount = Order::where('status', 'PENDING')->count();
-        $cancelledOrdersCount = Order::whereIn('status', ['CANCELLED', 'EXPIRED'])->count();
-        $totalRevenue = (float) Order::where('status', 'PAID')->sum('total_amount');
+        // Statistik Keseluruhan (1 query agregat kondisional)
+        $orderStats = DB::table('orders')
+            ->selectRaw('COUNT(*) as total_orders')
+            ->selectRaw("COUNT(CASE WHEN status = 'PAID' THEN 1 END) as paid_orders")
+            ->selectRaw("COUNT(CASE WHEN status = 'PENDING' THEN 1 END) as pending_orders")
+            ->selectRaw("COUNT(CASE WHEN status IN ('CANCELLED', 'EXPIRED') THEN 1 END) as cancelled_orders")
+            ->selectRaw("COALESCE(SUM(CASE WHEN status = 'PAID' THEN total_amount ELSE 0 END), 0) as total_revenue")
+            ->first();
+
+        $totalOrders = (int) ($orderStats->total_orders ?? 0);
+        $paidOrdersCount = (int) ($orderStats->paid_orders ?? 0);
+        $pendingOrdersCount = (int) ($orderStats->pending_orders ?? 0);
+        $cancelledOrdersCount = (int) ($orderStats->cancelled_orders ?? 0);
+        $totalRevenue = (float) ($orderStats->total_revenue ?? 0);
 
         $query = Order::query()
             ->with([

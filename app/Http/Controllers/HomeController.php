@@ -15,30 +15,7 @@ class HomeController extends Controller
      */
     public function __invoke(): Response
     {
-        $minPrices = DB::table('ticket_prices')
-            ->join('ticket_types', 'ticket_types.id', '=', 'ticket_prices.ticket_type_id')
-            ->where('ticket_types.status', 'ACTIVE')
-            ->where('ticket_prices.status', 'ACTIVE')
-            ->groupBy('ticket_types.event_id')
-            ->selectRaw('ticket_types.event_id, MIN(ticket_prices.price) as min_price')
-            ->pluck('min_price', 'ticket_types.event_id');
-
-        $quotaStats = DB::table('ticket_types')
-            ->where('status', 'ACTIVE')
-            ->groupBy('event_id')
-            ->selectRaw('event_id, COALESCE(SUM(initial_quota), 0) as initial_quota, COALESCE(SUM(quota), 0) as remaining_quota')
-            ->get()
-            ->keyBy('event_id');
-
-        $soldCounts = DB::table('tickets')
-            ->join('orders', 'orders.id', '=', 'tickets.order_id')
-            ->where('orders.status', 'PAID')
-            ->whereIn('tickets.status', ['ACTIVE', 'USED'])
-            ->groupBy('orders.event_id')
-            ->selectRaw('orders.event_id, COUNT(tickets.id) as sold_count')
-            ->pluck('sold_count', 'orders.event_id');
-
-        $publishedEvents = DB::table('events')
+        $publishedRows = DB::table('events')
             ->join('categories', 'events.category_id', '=', 'categories.id')
             ->join('users', 'events.eo_id', '=', 'users.id')
             ->where('events.status', 'PUBLISHED')
@@ -57,7 +34,44 @@ class HomeController extends Controller
                 'users.name as organizer_name'
             )
             ->orderBy('events.starts_at')
-            ->get()
+            ->limit(60)
+            ->get();
+
+        $eventIds = $publishedRows->pluck('id')->all();
+
+        $minPrices = $eventIds !== []
+            ? DB::table('ticket_prices')
+                ->join('ticket_types', 'ticket_types.id', '=', 'ticket_prices.ticket_type_id')
+                ->whereIn('ticket_types.event_id', $eventIds)
+                ->where('ticket_types.status', 'ACTIVE')
+                ->where('ticket_prices.status', 'ACTIVE')
+                ->groupBy('ticket_types.event_id')
+                ->selectRaw('ticket_types.event_id, MIN(ticket_prices.price) as min_price')
+                ->pluck('min_price', 'ticket_types.event_id')
+            : collect();
+
+        $quotaStats = $eventIds !== []
+            ? DB::table('ticket_types')
+                ->whereIn('event_id', $eventIds)
+                ->where('status', 'ACTIVE')
+                ->groupBy('event_id')
+                ->selectRaw('event_id, COALESCE(SUM(initial_quota), 0) as initial_quota, COALESCE(SUM(quota), 0) as remaining_quota')
+                ->get()
+                ->keyBy('event_id')
+            : collect();
+
+        $soldCounts = $eventIds !== []
+            ? DB::table('tickets')
+                ->join('orders', 'orders.id', '=', 'tickets.order_id')
+                ->whereIn('orders.event_id', $eventIds)
+                ->where('orders.status', 'PAID')
+                ->whereIn('tickets.status', ['ACTIVE', 'USED'])
+                ->groupBy('orders.event_id')
+                ->selectRaw('orders.event_id, COUNT(tickets.id) as sold_count')
+                ->pluck('sold_count', 'orders.event_id')
+            : collect();
+
+        $publishedEvents = $publishedRows
             ->map(function ($event) use ($minPrices, $quotaStats, $soldCounts): array {
                 $minPrice = $minPrices[$event->id] ?? null;
                 $numericPrice = $minPrice !== null ? (float) $minPrice : 0;
@@ -103,7 +117,7 @@ class HomeController extends Controller
                     'city' => $event->city,
                     'organizer' => $event->organizer_name,
                     'price' => $numericPrice > 0 ? 'Rp'.number_format($numericPrice, 0, ',', '.') : 'Gratis',
-                    'image' => $event->banner_path ?: '/images/events/tech_hero.jpg',
+                    'image' => $event->banner_path ?: '/images/events/tech_hero.webp',
                     'status' => $statusLabel,
                     'label' => $isLowStock ? 'Hampir Habis' : ($ticketsSold > 0 ? 'Populer' : 'Baru'),
                     'availability' => $availability,

@@ -61,6 +61,7 @@ class AdminDashboardController extends Controller
             )
             ->orderByRaw("CASE WHEN eo_applications.status = 'PENDING' THEN 0 ELSE 1 END")
             ->orderByDesc('eo_applications.created_at')
+            ->limit(20)
             ->get()
             ->map(function ($app) {
                 return [
@@ -85,7 +86,9 @@ class AdminDashboardController extends Controller
                 ];
             });
 
-        $pendingEoApplications = $eoApplications->where('status', 'PENDING')->count();
+        $pendingEoApplications = DB::table('eo_applications')
+            ->where('status', 'PENDING')
+            ->count();
 
         $totalQuotaSubquery = DB::table('ticket_types')
             ->whereColumn('ticket_types.event_id', 'events.id')
@@ -154,7 +157,7 @@ class AdminDashboardController extends Controller
                         ? 'Online Event'
                         : (($event->city ? $event->city.' · ' : '').($event->venue_name ?? '-')),
                     'startsAtFormatted' => Carbon::parse($event->starts_at)->locale('id')->translatedFormat('d M Y, H:i').' WIB',
-                    'banner' => $event->banner_path ?: '/images/events/tech_hero.jpg',
+                    'banner' => $event->banner_path ?: '/images/events/tech_hero.webp',
                     'status' => $event->status,
                     'rejectionReason' => $event->rejection_reason,
                     'organizerName' => $event->organization_name ?: $event->organizer_user_name,
@@ -168,6 +171,7 @@ class AdminDashboardController extends Controller
         $recentUsers = DB::table('users')
             ->select('id', 'name', 'email', 'phone', 'role', 'created_at')
             ->latest('created_at')
+            ->limit(20)
             ->get();
 
         return Inertia::render('Admin/Dashboard', [

@@ -26,15 +26,7 @@ class CategoryController extends Controller
                 || mb_strtolower($category->name) === $normalizedType)
             : null;
 
-        $minPrices = DB::table('ticket_prices')
-            ->join('ticket_types', 'ticket_types.id', '=', 'ticket_prices.ticket_type_id')
-            ->where('ticket_types.status', 'ACTIVE')
-            ->where('ticket_prices.status', 'ACTIVE')
-            ->groupBy('ticket_types.event_id')
-            ->selectRaw('ticket_types.event_id, MIN(ticket_prices.price) as min_price')
-            ->pluck('min_price', 'ticket_types.event_id');
-
-        $events = DB::table('events')
+        $eventRows = DB::table('events')
             ->join('categories', 'events.category_id', '=', 'categories.id')
             ->join('users', 'events.eo_id', '=', 'users.id')
             ->where('events.status', 'PUBLISHED')
@@ -51,7 +43,23 @@ class CategoryController extends Controller
                 'users.name as organizer_name'
             )
             ->orderBy('events.starts_at')
-            ->get()
+            ->limit(100)
+            ->get();
+
+        $eventIds = $eventRows->pluck('id')->all();
+
+        $minPrices = $eventIds !== []
+            ? DB::table('ticket_prices')
+                ->join('ticket_types', 'ticket_types.id', '=', 'ticket_prices.ticket_type_id')
+                ->whereIn('ticket_types.event_id', $eventIds)
+                ->where('ticket_types.status', 'ACTIVE')
+                ->where('ticket_prices.status', 'ACTIVE')
+                ->groupBy('ticket_types.event_id')
+                ->selectRaw('ticket_types.event_id, MIN(ticket_prices.price) as min_price')
+                ->pluck('min_price', 'ticket_types.event_id')
+            : collect();
+
+        $events = $eventRows
             ->map(function ($event) use ($minPrices) {
                 $minPrice = $minPrices[$event->id] ?? null;
                 $numericPrice = $minPrice !== null ? (float) $minPrice : 0;
@@ -67,7 +75,7 @@ class CategoryController extends Controller
                     'location' => $event->venue_name ?: ($event->event_type === 'ONLINE' ? 'Online Event' : 'Lokasi Diumumkan'),
                     'organizer' => $event->organizer_name,
                     'price' => $numericPrice > 0 ? 'Rp'.number_format($numericPrice, 0, ',', '.') : 'Gratis',
-                    'image' => $event->banner_path ?: '/images/events/tech_hero.jpg',
+                    'image' => $event->banner_path ?: '/images/events/tech_hero.webp',
                 ];
             });
 

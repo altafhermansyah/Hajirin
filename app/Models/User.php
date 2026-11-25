@@ -125,11 +125,15 @@ class User extends Authenticatable
 
     public function hasRole(string $code): bool
     {
-        $resolvedCode = $this->role_id !== null
-            ? $this->roleRecord?->code
-            : $this->role;
+        if ($this->relationLoaded('roleRecord')) {
+            return strtoupper((string) $this->roleRecord?->code) === strtoupper($code);
+        }
 
-        return strtoupper((string) $resolvedCode) === strtoupper($code);
+        if (filled($this->role)) {
+            return strtoupper((string) $this->role) === strtoupper($code);
+        }
+
+        return strtoupper((string) $this->roleRecord?->code) === strtoupper($code);
     }
 
     public function isAdmin(): bool

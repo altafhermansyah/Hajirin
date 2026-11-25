@@ -23,16 +23,6 @@ class UserDashboardController extends Controller
 
         $userId = $request->user()->id;
 
-        $upcomingEventCount = DB::table('tickets')
-            ->join('orders', 'orders.id', '=', 'tickets.order_id')
-            ->join('events', 'events.id', '=', 'orders.event_id')
-            ->where('orders.user_id', $userId)
-            ->where('orders.status', 'PAID')
-            ->where('tickets.status', 'ACTIVE')
-            ->where('events.starts_at', '>=', now())
-            ->distinct()
-            ->count('events.id');
-
         $ordersQuery = DB::table('orders')
             ->join('events', 'events.id', '=', 'orders.event_id')
             ->leftJoin('payments', 'payments.order_id', '=', 'orders.id')
@@ -58,20 +48,22 @@ class UserDashboardController extends Controller
             ->limit(20)
             ->get();
 
-        $orderIds = $ordersQuery->pluck('id')->toArray();
-        $orderItemsByOrder = DB::table('order_items')
-            ->join('ticket_types', 'ticket_types.id', '=', 'order_items.ticket_type_id')
-            ->whereIn('order_items.order_id', $orderIds)
-            ->select(
-                'order_items.id',
-                'order_items.order_id',
-                'order_items.quantity',
-                'order_items.unit_price',
-                'order_items.subtotal',
-                'ticket_types.name as ticket_name'
-            )
-            ->get()
-            ->groupBy('order_id');
+        $orderIds = $ordersQuery->pluck('id')->all();
+        $orderItemsByOrder = $orderIds !== []
+            ? DB::table('order_items')
+                ->join('ticket_types', 'ticket_types.id', '=', 'order_items.ticket_type_id')
+                ->whereIn('order_items.order_id', $orderIds)
+                ->select(
+                    'order_items.id',
+                    'order_items.order_id',
+                    'order_items.quantity',
+                    'order_items.unit_price',
+                    'order_items.subtotal',
+                    'ticket_types.name as ticket_name'
+                )
+                ->get()
+                ->groupBy('order_id')
+            : collect();
 
         $recentOrders = $ordersQuery->map(function ($order) use ($orderItemsByOrder) {
             $items = ($orderItemsByOrder[$order->id] ?? collect())->map(function ($it) {
@@ -107,7 +99,7 @@ class UserDashboardController extends Controller
                 'eventDate' => Carbon::parse($order->event_starts_at)->locale('id')->translatedFormat('l, d F Y • H:i').' WIB',
                 'eventLocation' => $order->venue_name ?: ($order->event_type === 'ONLINE' ? 'Online Event' : 'Lokasi Diumumkan'),
                 'eventAddress' => $order->event_address,
-                'eventBanner' => $order->event_banner ?: '/images/events/tech_hero.jpg',
+                'eventBanner' => $order->event_banner ?: '/images/events/tech_hero.webp',
                 'paymentMethod' => $order->payment_method ?: ($totalAmount <= 0 ? 'FREE' : 'QRIS'),
                 'paymentReference' => $order->payment_reference ?: '-',
                 'items' => $items,
@@ -169,7 +161,7 @@ class UserDashboardController extends Controller
                 'eventDate' => Carbon::parse($first->starts_at)->locale('id')->translatedFormat('l, d F Y • H:i').' WIB',
                 'eventLocation' => $first->venue_name ?: ($first->event_type === 'ONLINE' ? 'Online Event' : 'Lokasi Diumumkan'),
                 'eventAddress' => $first->address,
-                'banner' => $first->banner_path ?: '/images/events/tech_hero.jpg',
+                'banner' => $first->banner_path ?: '/images/events/tech_hero.webp',
                 'allTickets' => $orderTickets->map(function ($t, $idx) {
                     return [
                         'id' => $t->id,
@@ -184,15 +176,7 @@ class UserDashboardController extends Controller
             ];
         })->values();
 
-        $minPrices = DB::table('ticket_prices')
-            ->join('ticket_types', 'ticket_types.id', '=', 'ticket_prices.ticket_type_id')
-            ->where('ticket_types.status', 'ACTIVE')
-            ->where('ticket_prices.status', 'ACTIVE')
-            ->groupBy('ticket_types.event_id')
-            ->selectRaw('ticket_types.event_id, MIN(ticket_prices.price) as min_price')
-            ->pluck('min_price', 'ticket_types.event_id');
-
-        $bookmarkedEvents = DB::table('bookmarks')
+        $bookmarkedRows = DB::table('bookmarks')
             ->join('events', 'events.id', '=', 'bookmarks.event_id')
             ->join('categories', 'categories.id', '=', 'events.category_id')
             ->join('users', 'users.id', '=', 'events.eo_id')
@@ -211,7 +195,22 @@ class UserDashboardController extends Controller
                 'bookmarks.created_at as bookmarked_at'
             )
             ->orderByDesc('bookmarks.created_at')
-            ->get()
+            ->get();
+
+        $bookmarkedEventIds = $bookmarkedRows->pluck('id')->all();
+
+        $minPrices = $bookmarkedEventIds !== []
+            ? DB::table('ticket_prices')
+                ->join('ticket_types', 'ticket_types.id', '=', 'ticket_prices.ticket_type_id')
+                ->whereIn('ticket_types.event_id', $bookmarkedEventIds)
+                ->where('ticket_types.status', 'ACTIVE')
+                ->where('ticket_prices.status', 'ACTIVE')
+                ->groupBy('ticket_types.event_id')
+                ->selectRaw('ticket_types.event_id, MIN(ticket_prices.price) as min_price')
+                ->pluck('min_price', 'ticket_types.event_id')
+            : collect();
+
+        $bookmarkedEvents = $bookmarkedRows
             ->map(function ($event) use ($minPrices) {
                 $minPrice = $minPrices[$event->id] ?? null;
                 $numericPrice = $minPrice !== null ? (float) $minPrice : 0;
@@ -225,7 +224,7 @@ class UserDashboardController extends Controller
                     'date' => Carbon::parse($event->starts_at)->locale('id')->translatedFormat('l, d F Y • H:i').' WIB',
                     'place' => $event->venue_name ?: ($event->event_type === 'ONLINE' ? 'Online Event' : 'Lokasi Diumumkan'),
                     'price' => $numericPrice > 0 ? 'Rp'.number_format($numericPrice, 0, ',', '.') : 'Gratis',
-                    'image' => $event->banner_path ?: '/images/events/tech_hero.jpg',
+                    'image' => $event->banner_path ?: '/images/events/tech_hero.webp',
                     'bookmarkedAt' => Carbon::parse($event->bookmarked_at)->locale('id')->diffForHumans(),
                 ];
             });
@@ -246,15 +245,19 @@ class UserDashboardController extends Controller
                     ->translatedFormat('d M Y, H:i').' WIB',
             ]);
 
+        $now = now();
+        $activeTickets = $rawTickets->where('ticket_status', 'ACTIVE');
+        $ticketCount = $activeTickets->count();
+        $upcomingEventCount = $activeTickets
+            ->filter(fn ($ticket): bool => Carbon::parse($ticket->starts_at)->greaterThanOrEqualTo($now))
+            ->pluck('event_id')
+            ->unique()
+            ->count();
+
         return Inertia::render('Dashboard', [
             'dashboard' => [
                 'orderCount' => DB::table('orders')->where('user_id', $userId)->count(),
-                'ticketCount' => DB::table('tickets')
-                    ->join('orders', 'orders.id', '=', 'tickets.order_id')
-                    ->where('orders.user_id', $userId)
-                    ->where('orders.status', 'PAID')
-                    ->where('tickets.status', 'ACTIVE')
-                    ->count(),
+                'ticketCount' => $ticketCount,
                 'upcomingEventCount' => $upcomingEventCount,
                 'recentOrders' => $recentOrders,
                 'myTickets' => $myTickets,

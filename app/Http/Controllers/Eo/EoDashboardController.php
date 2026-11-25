@@ -58,29 +58,7 @@ class EoDashboardController extends Controller
             ->selectRaw('COALESCE(SUM(ticket_types.quota), 0) as total_remaining_quota')
             ->first();
 
-        $initialQuotaSubquery = DB::table('ticket_types')
-            ->whereColumn('ticket_types.event_id', 'events.id')
-            ->where('ticket_types.status', 'ACTIVE')
-            ->selectRaw('COALESCE(SUM(ticket_types.initial_quota), 0)');
-
-        $remainingQuotaSubquery = DB::table('ticket_types')
-            ->whereColumn('ticket_types.event_id', 'events.id')
-            ->where('ticket_types.status', 'ACTIVE')
-            ->selectRaw('COALESCE(SUM(ticket_types.quota), 0)');
-
-        $ticketsSoldSubquery = DB::table('tickets')
-            ->join('orders', 'orders.id', '=', 'tickets.order_id')
-            ->whereColumn('orders.event_id', 'events.id')
-            ->where('orders.status', 'PAID')
-            ->whereIn('tickets.status', ['ACTIVE', 'USED'])
-            ->selectRaw('COUNT(tickets.id)');
-
-        $eventRevenueSubquery = DB::table('orders')
-            ->whereColumn('orders.event_id', 'events.id')
-            ->where('orders.status', 'PAID')
-            ->selectRaw('COALESCE(SUM(orders.total_amount), 0)');
-
-        $myEvents = DB::table('events')
+        $eventRows = DB::table('events')
             ->join('categories', 'categories.id', '=', 'events.category_id')
             ->where('events.eo_id', $eoId)
             ->select(
@@ -98,19 +76,49 @@ class EoDashboardController extends Controller
                 'events.cancellation_reason',
                 'categories.name as category_name'
             )
-            ->addSelect([
-                'initial_quota' => $initialQuotaSubquery,
-                'remaining_quota' => $remainingQuotaSubquery,
-                'tickets_sold' => $ticketsSoldSubquery,
-                'revenue' => $eventRevenueSubquery,
-            ])
             ->orderByDesc('events.created_at')
-            ->get()
-            ->map(function ($event) {
-                $revenue = (float) ($event->revenue ?? 0);
-                $initialQuota = (int) ($event->initial_quota ?? 0);
-                $remainingQuota = (int) ($event->remaining_quota ?? 0);
-                $ticketsSold = (int) ($event->tickets_sold ?? 0);
+            ->limit(50)
+            ->get();
+
+        $eventIds = $eventRows->pluck('id')->all();
+
+        $eventQuotaMap = $eventIds !== []
+            ? DB::table('ticket_types')
+                ->whereIn('event_id', $eventIds)
+                ->where('status', 'ACTIVE')
+                ->groupBy('event_id')
+                ->selectRaw('event_id, COALESCE(SUM(initial_quota), 0) as initial_quota, COALESCE(SUM(quota), 0) as remaining_quota')
+                ->get()
+                ->keyBy('event_id')
+            : collect();
+
+        $eventTicketsSoldMap = $eventIds !== []
+            ? DB::table('tickets')
+                ->join('orders', 'orders.id', '=', 'tickets.order_id')
+                ->whereIn('orders.event_id', $eventIds)
+                ->where('orders.status', 'PAID')
+                ->whereIn('tickets.status', ['ACTIVE', 'USED'])
+                ->groupBy('orders.event_id')
+                ->selectRaw('orders.event_id, COUNT(tickets.id) as sold_count')
+                ->pluck('sold_count', 'orders.event_id')
+            : collect();
+
+        $eventRevenueMap = $eventIds !== []
+            ? DB::table('orders')
+                ->whereIn('event_id', $eventIds)
+                ->where('status', 'PAID')
+                ->groupBy('event_id')
+                ->selectRaw('event_id, COALESCE(SUM(total_amount), 0) as revenue')
+                ->pluck('revenue', 'event_id')
+            : collect();
+
+        $myEvents = $eventRows
+            ->map(function ($event) use ($eventQuotaMap, $eventTicketsSoldMap, $eventRevenueMap) {
+                $quota = $eventQuotaMap->get($event->id);
+                $revenue = (float) ($eventRevenueMap[$event->id] ?? 0);
+                $initialQuota = (int) ($quota->initial_quota ?? 0);
+                $remainingQuota = (int) ($quota->remaining_quota ?? 0);
+                $ticketsSold = (int) ($eventTicketsSoldMap[$event->id] ?? 0);
 
                 return [
                     'id' => $event->id,
@@ -121,7 +129,7 @@ class EoDashboardController extends Controller
                     'city' => $event->city ?: ($event->event_type === 'ONLINE' ? 'Online' : '-'),
                     'location' => $event->venue_name ?: ($event->event_type === 'ONLINE' ? 'Online Event' : 'Lokasi Diumumkan'),
                     'dateFormatted' => Carbon::parse($event->starts_at)->locale('id')->translatedFormat('d M Y • H:i').' WIB',
-                    'banner' => $event->banner_path ?: '/images/events/tech_hero.jpg',
+                    'banner' => $event->banner_path ?: '/images/events/tech_hero.webp',
                     'status' => $event->status,
                     'rejectionReason' => $event->rejection_reason,
                     'cancellationReason' => $event->cancellation_reason,

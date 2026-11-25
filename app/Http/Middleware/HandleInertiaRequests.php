@@ -46,12 +46,33 @@ class HandleInertiaRequests extends Middleware
                 'success' => fn () => $request->session()->get('success'),
                 'error' => fn () => $request->session()->get('error'),
             ],
-            'adminCounts' => fn () => $request->user()?->isAdmin() ? [
-                'pendingApplications' => DB::table('eo_applications')->where('status', 'PENDING')->count(),
-                'pendingEvents' => DB::table('events')->where('status', 'PENDING_REVIEW')->count(),
-                'pendingRefunds' => DB::table('refunds')->where('status', 'PENDING')->count(),
-            ] : null,
+            'adminCounts' => fn () => $this->resolveAdminCounts($request),
             'notifications' => fn () => $this->resolveNotifications($request),
+        ];
+    }
+
+    /**
+     * Ambil ringkasan angka antrean moderasi Admin dalam satu query gabungan.
+     *
+     * @return array{pendingApplications: int, pendingEvents: int, pendingRefunds: int}|null
+     */
+    private function resolveAdminCounts(Request $request): ?array
+    {
+        if (! $request->user()?->isAdmin()) {
+            return null;
+        }
+
+        $row = DB::selectOne("
+            SELECT
+                (SELECT COUNT(*) FROM eo_applications WHERE status = 'PENDING') AS pending_applications,
+                (SELECT COUNT(*) FROM events WHERE status = 'PENDING_REVIEW') AS pending_events,
+                (SELECT COUNT(*) FROM refunds WHERE status = 'PENDING') AS pending_refunds
+        ");
+
+        return [
+            'pendingApplications' => (int) ($row->pending_applications ?? 0),
+            'pendingEvents' => (int) ($row->pending_events ?? 0),
+            'pendingRefunds' => (int) ($row->pending_refunds ?? 0),
         ];
     }
 

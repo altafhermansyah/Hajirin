@@ -8,6 +8,7 @@ use App\Models\Ticket;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -24,11 +25,18 @@ class AdminTicketController extends Controller
         $eventIdFilter = (string) $request->input('event_id', 'ALL');
         $sort = (string) $request->input('sort', 'latest');
 
-        // Statistik Tiket
-        $totalTickets = Ticket::count();
-        $activeTickets = Ticket::where('status', 'ACTIVE')->count();
-        $usedTickets = Ticket::where('status', 'USED')->count();
-        $cancelledTickets = Ticket::where('status', 'CANCELLED')->count();
+        // Statistik Tiket (1 query agregat kondisional)
+        $ticketStats = DB::table('tickets')
+            ->selectRaw('COUNT(*) as total_tickets')
+            ->selectRaw("COUNT(CASE WHEN status = 'ACTIVE' THEN 1 END) as active_tickets")
+            ->selectRaw("COUNT(CASE WHEN status = 'USED' THEN 1 END) as used_tickets")
+            ->selectRaw("COUNT(CASE WHEN status = 'CANCELLED' THEN 1 END) as cancelled_tickets")
+            ->first();
+
+        $totalTickets = (int) ($ticketStats->total_tickets ?? 0);
+        $activeTickets = (int) ($ticketStats->active_tickets ?? 0);
+        $usedTickets = (int) ($ticketStats->used_tickets ?? 0);
+        $cancelledTickets = (int) ($ticketStats->cancelled_tickets ?? 0);
 
         $query = Ticket::query()
             ->with([

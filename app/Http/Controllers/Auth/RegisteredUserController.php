@@ -19,7 +19,7 @@ class RegisteredUserController extends Controller
     {
         $user = new User([
             'name' => $request->name,
-            'email' => $request->email,
+            'email' => mb_strtolower(trim((string) $request->email)),
             'password' => Hash::make($request->password),
         ]);
         $user->role = 'USER';

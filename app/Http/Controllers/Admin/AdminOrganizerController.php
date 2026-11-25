@@ -66,66 +66,40 @@ class AdminOrganizerController extends Controller
             ->count();
 
         // Subquery data EO Application
-        $orgNameSubquery = DB::table('eo_applications')
-            ->whereColumn('eo_applications.user_id', 'users.id')
-            ->where('eo_applications.status', 'APPROVED')
-            ->select('organization_name')
-            ->limit(1);
+        $eoEventStats = DB::table('events')
+            ->groupBy('eo_id')
+            ->selectRaw('eo_id, COUNT(id) as events_count')
+            ->selectRaw("COUNT(CASE WHEN status = 'PUBLISHED' THEN 1 END) as published_events_count");
 
-        $portfolioUrlSubquery = DB::table('eo_applications')
-            ->whereColumn('eo_applications.user_id', 'users.id')
-            ->where('eo_applications.status', 'APPROVED')
-            ->select('portfolio_url')
-            ->limit(1);
-
-        $documentPathSubquery = DB::table('eo_applications')
-            ->whereColumn('eo_applications.user_id', 'users.id')
-            ->where('eo_applications.status', 'APPROVED')
-            ->select('document_path')
-            ->limit(1);
-
-        $applicationIdSubquery = DB::table('eo_applications')
-            ->whereColumn('eo_applications.user_id', 'users.id')
-            ->where('eo_applications.status', 'APPROVED')
-            ->select('id')
-            ->limit(1);
-
-        // Subquery metrik event & penjualan per EO
-        $eventsCountSubquery = DB::table('events')
-            ->whereColumn('events.eo_id', 'users.id')
-            ->selectRaw('COUNT(events.id)');
-
-        $publishedEventsCountSubquery = DB::table('events')
-            ->whereColumn('events.eo_id', 'users.id')
-            ->where('events.status', 'PUBLISHED')
-            ->selectRaw('COUNT(events.id)');
-
-        $ticketsCountSubquery = DB::table('tickets')
-            ->join('orders', 'orders.id', '=', 'tickets.order_id')
+        $eoRevenueStats = DB::table('orders')
             ->join('events', 'events.id', '=', 'orders.event_id')
-            ->whereColumn('events.eo_id', 'users.id')
             ->where('orders.status', 'PAID')
-            ->selectRaw('COUNT(tickets.id)');
-
-        $revenueSubquery = DB::table('orders')
-            ->join('events', 'events.id', '=', 'orders.event_id')
-            ->whereColumn('events.eo_id', 'users.id')
-            ->where('orders.status', 'PAID')
-            ->selectRaw('COALESCE(SUM(orders.total_amount), 0)');
+            ->groupBy('events.eo_id')
+            ->selectRaw('events.eo_id, COALESCE(SUM(orders.total_amount), 0) as total_revenue');
 
         $query = DB::table('users')
+            ->leftJoin('eo_applications', function ($join): void {
+                $join->on('eo_applications.user_id', '=', 'users.id')
+                    ->where('eo_applications.status', '=', 'APPROVED');
+            })
+            ->leftJoinSub($eoEventStats, 'eo_event_stats', 'eo_event_stats.eo_id', '=', 'users.id')
+            ->leftJoinSub($eoRevenueStats, 'eo_revenue_stats', 'eo_revenue_stats.eo_id', '=', 'users.id')
             ->where('users.role', 'EO')
-            ->select('users.id', 'users.name', 'users.email', 'users.phone', 'users.status', 'users.created_at')
-            ->addSelect([
-                'organization_name' => $orgNameSubquery,
-                'portfolio_url' => $portfolioUrlSubquery,
-                'document_path' => $documentPathSubquery,
-                'application_id' => $applicationIdSubquery,
-                'events_count' => $eventsCountSubquery,
-                'published_events_count' => $publishedEventsCountSubquery,
-                'tickets_sold' => $ticketsCountSubquery,
-                'total_revenue' => $revenueSubquery,
-            ]);
+            ->select(
+                'users.id',
+                'users.name',
+                'users.email',
+                'users.phone',
+                'users.status',
+                'users.created_at',
+                'eo_applications.id as application_id',
+                'eo_applications.organization_name',
+                'eo_applications.portfolio_url',
+                'eo_applications.document_path',
+                DB::raw('COALESCE(eo_event_stats.events_count, 0) as events_count'),
+                DB::raw('COALESCE(eo_event_stats.published_events_count, 0) as published_events_count'),
+                DB::raw('COALESCE(eo_revenue_stats.total_revenue, 0) as total_revenue')
+            );
 
         // Filter Pencarian
         if ($search !== '') {
@@ -171,11 +145,23 @@ class AdminOrganizerController extends Controller
 
         $paginated = $query->paginate(10)->withQueryString();
 
-        $organizers = $paginated->through(function ($eo) {
+        $pageEoIds = $paginated->getCollection()->pluck('id')->all();
+        $ticketsSoldByEo = $pageEoIds !== []
+            ? DB::table('tickets')
+                ->join('orders', 'orders.id', '=', 'tickets.order_id')
+                ->join('events', 'events.id', '=', 'orders.event_id')
+                ->whereIn('events.eo_id', $pageEoIds)
+                ->where('orders.status', 'PAID')
+                ->groupBy('events.eo_id')
+                ->selectRaw('events.eo_id, COUNT(tickets.id) as tickets_sold')
+                ->pluck('tickets_sold', 'events.eo_id')
+            : collect();
+
+        $organizers = $paginated->through(function ($eo) use ($ticketsSoldByEo) {
             $revenue = (float) ($eo->total_revenue ?? 0);
             $eventsCount = (int) ($eo->events_count ?? 0);
             $publishedCount = (int) ($eo->published_events_count ?? 0);
-            $ticketsSold = (int) ($eo->tickets_sold ?? 0);
+            $ticketsSold = (int) ($ticketsSoldByEo[$eo->id] ?? 0);
             $isVerified = ! empty($eo->organization_name);
 
             return [
