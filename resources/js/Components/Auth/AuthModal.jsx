@@ -36,6 +36,10 @@ export default function AuthModal({
             setView(initialView);
             loginForm.clearErrors();
             registerForm.clearErrors();
+
+            void import('../../Pages/Dashboard.jsx');
+            void import('../../Pages/Eo/Dashboard.jsx');
+            void import('../../Pages/Admin/Dashboard.jsx');
         }
     }, [isOpen, initialView]);
 

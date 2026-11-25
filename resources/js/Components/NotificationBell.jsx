@@ -51,7 +51,7 @@ export default function NotificationBell() {
     const unreadCount = notifications?.unreadCount ?? 0;
     const items = notifications?.items ?? [];
 
-    usePoll(30000, { only: ['notifications'] }, { autoStart: Boolean(notifications) });
+    usePoll(60000, { only: ['notifications'] }, { autoStart: Boolean(notifications) });
 
     useEffect(() => {
         if (!isOpen) return;

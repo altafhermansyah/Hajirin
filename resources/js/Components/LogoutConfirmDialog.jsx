@@ -1,4 +1,4 @@
-import { useId, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { router } from '@inertiajs/react';
 import { LogOut } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from './ui/Dialog';
@@ -6,6 +6,12 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from './ui/Dial
 export default function LogoutConfirmDialog({ open, onOpenChange }) {
     const [isLoggingOut, setIsLoggingOut] = useState(false);
     const titleId = useId();
+
+    useEffect(() => {
+        if (open) {
+            void import('../Pages/Home.jsx');
+        }
+    }, [open]);
 
     const handleClose = () => {
         if (isLoggingOut) return;

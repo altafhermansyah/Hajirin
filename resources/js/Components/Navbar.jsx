@@ -99,6 +99,7 @@ export default function Navbar({
                 <div className="flex items-center gap-6 sm:gap-8 shrink-0">
                     <Link
                         href="/"
+                        prefetch
                         className="flex items-center gap-2 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue"
                         aria-label="Beranda Hajirin"
                     >
@@ -123,6 +124,7 @@ export default function Navbar({
                         </Link>
                         <Link
                             href="/kategori"
+                            prefetch
                             className={`transition-colors hover:text-slate-900 rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue ${
                                 activeLink === 'kategori' ? 'text-brand-blue font-semibold' : ''
                             }`}
@@ -207,6 +209,7 @@ export default function Navbar({
                             <NotificationBell />
                             <Link
                                 href={userDashboardUrl}
+                                prefetch
                                 className="rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue transition hover:opacity-90"
                                 title={`Akun: ${user.name}`}
                                 aria-label={`Buka dashboard akun ${user.name}`}
