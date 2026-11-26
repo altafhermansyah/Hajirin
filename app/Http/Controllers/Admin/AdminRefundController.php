@@ -4,11 +4,13 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\ProcessRefundRequest;
+use App\Mail\RefundStatusMail;
 use App\Models\Refund;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -70,7 +72,22 @@ class AdminRefundController extends Controller
 
         $paginated = $query->paginate(10)->withQueryString();
 
-        $refunds = $paginated->through(function (Refund $refund) {
+        $eoIds = $paginated->getCollection()
+            ->pluck('order.event.eo_id')
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        $eoOrgNames = $eoIds !== []
+            ? DB::table('eo_applications')
+                ->whereIn('user_id', $eoIds)
+                ->where('status', 'APPROVED')
+                ->pluck('organization_name', 'user_id')
+            : collect();
+
+        $refunds = $paginated->through(function (Refund $refund) use ($eoOrgNames) {
+            $eoId = $refund->order?->event?->eo_id;
             $amount = (float) $refund->amount;
 
             return [
@@ -96,7 +113,7 @@ class AdminRefundController extends Controller
                 'event' => [
                     'id' => $refund->order?->event?->id,
                     'title' => $refund->order?->event?->title ?? '-',
-                    'organizerName' => $refund->order?->event?->eo?->name ?? '-',
+                    'organizerName' => ($eoId ? ($eoOrgNames[$eoId] ?? null) : null) ?? $refund->order?->event?->eo?->name ?? '-',
                 ],
             ];
         });
@@ -127,7 +144,7 @@ class AdminRefundController extends Controller
         $resolutionNote = $validated['resolution_note'] ?? 'Pengembalian dana telah diverifikasi dan disetujui oleh Administrator.';
 
         DB::transaction(function () use ($admin, $id, $resolutionNote): void {
-            $refund = Refund::with(['order.items.ticketType', 'order.tickets'])
+            $refund = Refund::with(['order.items.ticketType', 'order.tickets', 'order.event', 'requestedByUser'])
                 ->where('id', $id)
                 ->lockForUpdate()
                 ->firstOrFail();
@@ -165,16 +182,31 @@ class AdminRefundController extends Controller
                 }
             }
 
+            $amountFormatted = 'Rp'.number_format((float) $refund->amount, 0, ',', '.');
+
             // Kirim notifikasi ke pemohon
             DB::table('notifications')->insert([
                 'id' => Str::uuid()->toString(),
                 'user_id' => $refund->requested_by,
                 'type' => 'REFUND_UPDATED',
                 'title' => 'Pengembalian Dana Disetujui!',
-                'message' => 'Permohonan pengembalian dana sebesar Rp'.number_format((float) $refund->amount, 0, ',', '.')." untuk pesanan #{$refund->order?->order_reference} telah disetujui. Catatan: {$resolutionNote}",
+                'message' => "Permohonan pengembalian dana sebesar {$amountFormatted} untuk pesanan #{$refund->order?->order_reference} telah disetujui. Catatan: {$resolutionNote}",
                 'action_url' => '/dashboard',
                 'created_at' => now(),
             ]);
+
+            if ($refund->requestedByUser) {
+                Mail::to($refund->requestedByUser->email)->send(
+                    (new RefundStatusMail(
+                        applicantName: $refund->requestedByUser->name,
+                        orderReference: $refund->order?->order_reference ?? '-',
+                        eventTitle: $refund->order?->event?->title ?? 'Event Hajirin',
+                        amountFormatted: $amountFormatted,
+                        approved: true,
+                        resolutionNote: $resolutionNote,
+                    ))->afterCommit()
+                );
+            }
         });
 
         return back()->with('success', 'Permohonan pengembalian dana berhasil disetujui dan tiket terkait telah dibatalkan.');
@@ -195,7 +227,7 @@ class AdminRefundController extends Controller
         }
 
         DB::transaction(function () use ($admin, $id, $validated): void {
-            $refund = Refund::with('order')
+            $refund = Refund::with(['order.event', 'requestedByUser'])
                 ->where('id', $id)
                 ->lockForUpdate()
                 ->firstOrFail();
@@ -223,6 +255,19 @@ class AdminRefundController extends Controller
                 'action_url' => '/dashboard',
                 'created_at' => now(),
             ]);
+
+            if ($refund->requestedByUser) {
+                Mail::to($refund->requestedByUser->email)->send(
+                    (new RefundStatusMail(
+                        applicantName: $refund->requestedByUser->name,
+                        orderReference: $refund->order?->order_reference ?? '-',
+                        eventTitle: $refund->order?->event?->title ?? 'Event Hajirin',
+                        amountFormatted: 'Rp'.number_format((float) $refund->amount, 0, ',', '.'),
+                        approved: false,
+                        resolutionNote: $validated['resolution_note'],
+                    ))->afterCommit()
+                );
+            }
         });
 
         return back()->with('success', 'Permohonan pengembalian dana telah ditolak dengan catatan evaluasi.');

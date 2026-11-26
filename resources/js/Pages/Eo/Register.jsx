@@ -1,10 +1,12 @@
 import { Head, useForm, usePage } from '@inertiajs/react';
+import { useState } from 'react';
 import Navbar from '../../Components/Navbar';
-import { Building2, ExternalLink, FileCheck2, FileUp } from 'lucide-react';
+import { Building2, ExternalLink, FileCheck2, FileUp, MailWarning } from 'lucide-react';
 import { Card } from '../../Components/ui/Card';
 import { StatusBadge } from '../../Components/ui/StatusBadge';
 import { FlashBanner } from '../../Components/ui/FlashBanner';
 import { Button, buttonClass } from '../../Components/ui/Button';
+import EmailVerificationModal from '../../Components/Auth/EmailVerificationModal';
 
 const STATUS_META = {
     PENDING: { tone: 'warning', label: 'Menunggu Verifikasi Admin' },
@@ -18,6 +20,8 @@ const INPUT_CLASS =
 export default function EoRegister({ auth, eoApplication = null }) {
     const user = auth?.user || { name: '', email: '', phone: '' };
     const { flash } = usePage().props;
+    const [isVerifyModalOpen, setIsVerifyModalOpen] = useState(false);
+    const isEmailVerified = Boolean(user.email_verified_at);
 
     const eoForm = useForm({
         organization_name:
@@ -34,6 +38,10 @@ export default function EoRegister({ auth, eoApplication = null }) {
 
     const handleEoApplicationSubmit = (e) => {
         e.preventDefault();
+        if (!isEmailVerified) {
+            setIsVerifyModalOpen(true);
+            return;
+        }
         eoForm.post('/eo-applications', {
             forceFormData: true,
             preserveScroll: true,
@@ -60,6 +68,40 @@ export default function EoRegister({ auth, eoApplication = null }) {
                 >
                     {flash?.success && <FlashBanner tone="success" message={flash.success} />}
                     {flash?.error && <FlashBanner tone="error" message={flash.error} />}
+                    {eoForm.errors.email_verification && (
+                        <FlashBanner tone="error" message={eoForm.errors.email_verification} />
+                    )}
+
+                    {!isEmailVerified && (
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50/90 px-4 py-3.5 text-sm text-amber-950">
+                            <div className="flex items-start gap-3">
+                                <MailWarning
+                                    className="mt-0.5 size-5 shrink-0 text-amber-600"
+                                    aria-hidden="true"
+                                />
+                                <div>
+                                    <p className="font-semibold text-amber-950">
+                                        Verifikasi email diperlukan sebelum mendaftar EO
+                                    </p>
+                                    <p className="mt-0.5 text-xs text-amber-900/80 leading-relaxed">
+                                        Konfirmasi kode OTP 6 digit ke email{' '}
+                                        <span className="font-medium text-amber-950">
+                                            {user.email}
+                                        </span>{' '}
+                                        agar notifikasi hasil verifikasi Admin dapat terkirim.
+                                    </p>
+                                </div>
+                            </div>
+                            <Button
+                                variant="primary"
+                                size="sm"
+                                className="shrink-0 self-start sm:self-center"
+                                onClick={() => setIsVerifyModalOpen(true)}
+                            >
+                                Verifikasi Email Sekarang
+                            </Button>
+                        </div>
+                    )}
 
                     <Card as="section" className="overflow-hidden">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-200 px-6 py-5 gap-3 bg-white">
@@ -369,6 +411,12 @@ export default function EoRegister({ auth, eoApplication = null }) {
                         </div>
                     </Card>
                 </main>
+
+                <EmailVerificationModal
+                    open={isVerifyModalOpen}
+                    onClose={() => setIsVerifyModalOpen(false)}
+                    email={user.email}
+                />
             </div>
         </>
     );

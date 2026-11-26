@@ -11,10 +11,13 @@ import {
     X,
     ChevronRight,
     RotateCcw,
+    LocateFixed,
+    Loader2,
 } from 'lucide-react';
 import AuthModal from '../../Components/Auth/AuthModal';
 import Navbar from '../../Components/Navbar';
 import { Button, buttonClass } from '../../Components/ui/Button';
+import { findNearestCity } from '../../lib/cityGeolocation';
 
 export default function Nearby({
     auth,
@@ -36,13 +39,81 @@ export default function Nearby({
     const [searchQuery, setSearchQuery] = useState(initialSearch);
     const [bookmarkedSet, setBookmarkedSet] = useState(new Set(bookmarkedEventIds || []));
     const [toast, setToast] = useState(null);
+    const [geoStatus, setGeoStatus] = useState('idle'); // 'idle' | 'loading' | 'detected' | 'error'
+    const [geoMessage, setGeoMessage] = useState('');
 
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
     const [authView, setAuthView] = useState('login');
 
     useEffect(() => {
+        setSelectedCity(initialCity);
+    }, [initialCity]);
+
+    useEffect(() => {
         setBookmarkedSet(new Set(bookmarkedEventIds || []));
     }, [bookmarkedEventIds]);
+
+    function handleSelectCity(city) {
+        setSelectedCity(city);
+        const query = {};
+        if (city && city !== 'Semua Kota') {
+            query.city = city;
+        }
+        if (searchQuery.trim()) {
+            query.q = searchQuery.trim();
+        }
+        router.get('/event-terdekat', query, {
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
+        });
+    }
+
+    function handleDetectLocation() {
+        if (typeof window === 'undefined' || !navigator?.geolocation) {
+            setGeoStatus('error');
+            setGeoMessage('Browser perangkat Anda tidak mendukung fitur deteksi lokasi.');
+            return;
+        }
+
+        setGeoStatus('loading');
+        setGeoMessage('Meminta izin akses lokasi perangkat...');
+
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const { latitude, longitude } = position.coords;
+                const nearest = findNearestCity(latitude, longitude, availableCities);
+
+                if (nearest) {
+                    handleSelectCity(nearest.city);
+                    setGeoStatus('detected');
+                    setGeoMessage(
+                        `Lokasi terdekat terdeteksi: ${nearest.city} (~${nearest.distanceKm} km). Koordinat hanya diproses di perangkat Anda.`
+                    );
+                } else {
+                    setGeoStatus('error');
+                    setGeoMessage('Tidak dapat mencocokkan kota terdekat. Silakan pilih kota secara manual.');
+                }
+            },
+            (err) => {
+                setGeoStatus('error');
+                if (err.code === 1) {
+                    setGeoMessage(
+                        'Izin lokasi ditolak. Anda tetap dapat memilih kota secara manual di daftar bawah.'
+                    );
+                } else if (err.code === 3) {
+                    setGeoMessage('Waktu deteksi lokasi habis. Coba ulangi atau pilih kota secara manual.');
+                } else {
+                    setGeoMessage('Lokasi perangkat tidak dapat ditentukan saat ini.');
+                }
+            },
+            {
+                enableHighAccuracy: false,
+                timeout: 10000,
+                maximumAge: 300000,
+            }
+        );
+    }
 
     function openAuthModal(view) {
         setAuthView(view);
@@ -184,6 +255,24 @@ export default function Nearby({
                                 </div>
 
                                 <div className="flex flex-wrap items-center gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={handleDetectLocation}
+                                        disabled={geoStatus === 'loading'}
+                                        title="Deteksi kota terdekat dari GPS perangkat tanpa mengirim koordinat ke server"
+                                        className="inline-flex items-center gap-1.5 rounded-lg border border-brand-blue/30 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-brand-blue hover:bg-blue-100 disabled:opacity-60 transition cursor-pointer"
+                                    >
+                                        {geoStatus === 'loading' ? (
+                                            <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
+                                        ) : (
+                                            <LocateFixed className="size-3.5" aria-hidden="true" />
+                                        )}
+                                        <span>
+                                            {geoStatus === 'loading'
+                                                ? 'Mendeteksi...'
+                                                : 'Gunakan Lokasi Saya'}
+                                        </span>
+                                    </button>
                                     {availableCities.map((city) => {
                                         const active = selectedCity === city;
                                         return (
@@ -191,7 +280,7 @@ export default function Nearby({
                                                 key={city}
                                                 type="button"
                                                 aria-pressed={active}
-                                                onClick={() => setSelectedCity(city)}
+                                                onClick={() => handleSelectCity(city)}
                                                 className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition border cursor-pointer ${
                                                     active
                                                         ? 'bg-brand-blue text-white border-brand-blue'
@@ -205,6 +294,26 @@ export default function Nearby({
                                     })}
                                 </div>
                             </div>
+
+                            {geoMessage ? (
+                                <p
+                                    role="status"
+                                    aria-live="polite"
+                                    className={`mt-3 text-xs font-medium ${
+                                        geoStatus === 'error'
+                                            ? 'text-rose-600'
+                                            : geoStatus === 'detected'
+                                              ? 'text-emerald-700'
+                                              : 'text-slate-500'
+                                    }`}
+                                >
+                                    {geoMessage}
+                                </p>
+                            ) : (
+                                <p className="mt-3 text-xs text-slate-500">
+                                    Klik <strong>Gunakan Lokasi Saya</strong> jika ingin mengizinkan deteksi kota terdekat. Koordinat GPS hanya diproses di perangkat Anda dan tidak disimpan di server.
+                                </p>
+                            )}
                         </div>
                     </section>
 
@@ -350,8 +459,13 @@ export default function Nearby({
                                     variant="primary"
                                     size="md"
                                     onClick={() => {
-                                        setSelectedCity('Semua Kota');
                                         setSearchQuery('');
+                                        setSelectedCity('Semua Kota');
+                                        router.get('/event-terdekat', {}, {
+                                            preserveState: true,
+                                            preserveScroll: true,
+                                            replace: true,
+                                        });
                                     }}
                                 >
                                     <RotateCcw className="size-4" aria-hidden="true" />

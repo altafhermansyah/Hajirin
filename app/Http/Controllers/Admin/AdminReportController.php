@@ -112,12 +112,17 @@ class AdminReportController extends Controller
         // 2. Rekapitulasi Penjualan per Event
         $eventsQuery = DB::table('events')
             ->join('users as organizers', 'organizers.id', '=', 'events.eo_id')
+            ->leftJoin('eo_applications', function ($join): void {
+                $join->on('eo_applications.user_id', '=', 'organizers.id')
+                    ->where('eo_applications.status', '=', 'APPROVED');
+            })
             ->join('categories', 'categories.id', '=', 'events.category_id')
             ->when(! empty($categoryId), fn (Builder $q) => $q->where('events.category_id', $categoryId))
             ->when(! empty($search), function (Builder $q) use ($search) {
                 $q->where(function (Builder $sub) use ($search) {
                     $sub->where('events.title', 'ILIKE', "%{$search}%")
-                        ->orWhere('organizers.name', 'ILIKE', "%{$search}%");
+                        ->orWhere('organizers.name', 'ILIKE', "%{$search}%")
+                        ->orWhere('eo_applications.organization_name', 'ILIKE', "%{$search}%");
                 });
             });
 
@@ -158,7 +163,7 @@ class AdminReportController extends Controller
                 'events.status',
                 'events.starts_at',
                 'categories.name as category_name',
-                'organizers.name as organizer_name'
+                DB::raw('COALESCE(eo_applications.organization_name, organizers.name) as organizer_name')
             )
             ->orderByDesc('events.starts_at')
             ->get()

@@ -40,6 +40,7 @@ class StoreCheckoutRequest extends FormRequest
             'attendee_name' => ['required', 'string', 'max:100'],
             'attendee_email' => ['required', 'email', 'max:255'],
             'attendee_phone' => ['nullable', 'string', 'regex:/^[0-9]+$/', 'max:25'],
+            'idempotency_key' => ['nullable', 'uuid'],
         ];
     }
 
@@ -70,6 +71,7 @@ class StoreCheckoutRequest extends FormRequest
             'attendee_email.email' => 'Format alamat email pengunjung tidak valid.',
             'attendee_phone.regex' => 'Nomor telepon harus berupa angka, tidak boleh mengandung huruf atau simbol.',
             'attendee_phone.max' => 'Nomor telepon maksimal 25 digit.',
+            'idempotency_key.uuid' => 'Kunci idempotensi transaksi tidak valid.',
         ];
     }
 }

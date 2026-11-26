@@ -56,12 +56,17 @@ class AdminCheckInController extends Controller
             $order = $ticket->order;
             $event = $order->event;
 
+            $organizerName = DB::table('eo_applications')
+                ->where('user_id', $event->eo_id)
+                ->where('status', 'APPROVED')
+                ->value('organization_name') ?? $event->eo?->name ?? 'EO Platform';
+
             $ticketPayload = [
                 'ticketCode' => $ticket->ticket_code,
                 'attendeeName' => $ticket->attendee_name,
                 'attendeeEmail' => $ticket->attendee_email,
                 'eventTitle' => $event->title,
-                'organizerName' => $event->eo?->name ?? 'EO Platform',
+                'organizerName' => $organizerName,
                 'ticketTypeName' => $ticket->orderItem?->ticketType?->name ?? 'Tiket Masuk',
                 'orderReference' => $order->order_reference,
             ];
@@ -111,18 +116,36 @@ class AdminCheckInController extends Controller
                 ];
             }
 
-            // Catat check-in berhasil
+            $windowError = $event->checkInWindowError();
+            if ($windowError !== null) {
+                return [
+                    'outcome' => 'invalid',
+                    'message' => $windowError,
+                    'ticket' => $ticketPayload,
+                ];
+            }
+
+            // Catat check-in berhasil & batalkan undangan transfer PENDING bila ada
+            $now = now();
             $ticket->forceFill([
                 'status' => 'USED',
-                'checked_in_at' => now(),
+                'checked_in_at' => $now,
                 'checked_in_by' => $admin->id,
             ])->save();
+
+            DB::table('ticket_transfers')
+                ->where('ticket_id', $ticket->id)
+                ->where('status', 'PENDING')
+                ->update([
+                    'status' => 'CANCELLED',
+                    'updated_at' => $now,
+                ]);
 
             return [
                 'outcome' => 'success',
                 'message' => "Check-in berhasil! Selamat datang, {$ticket->attendee_name}.",
                 'ticket' => array_merge($ticketPayload, [
-                    'checkedInAt' => now()->locale('id')->translatedFormat('d M Y, H:i').' WIB',
+                    'checkedInAt' => $now->copy()->timezone(config('app.timezone'))->locale('id')->translatedFormat('d M Y, H:i').' WIB',
                 ]),
             ];
         });

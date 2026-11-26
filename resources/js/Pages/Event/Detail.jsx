@@ -209,16 +209,16 @@ export default function EventDetail({
 
     const sectionTabItems = [
         ['deskripsi', 'Deskripsi'],
-        ['tiket', 'Pilihan Tiket'],
         ['lokasi', 'Lokasi & Waktu'],
         ['syarat', 'Syarat & Ketentuan'],
+        ['tiket', 'Pilihan Tiket'],
     ];
 
     const sectionAnchors = {
         deskripsi: 'deskripsi',
-        tiket: 'pilih-tiket',
         lokasi: 'lokasi',
         syarat: 'syarat',
+        tiket: 'pilih-tiket',
     };
 
     return (
@@ -412,7 +412,11 @@ export default function EventDetail({
 
                                 <div className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-lg bg-slate-50 p-4 border border-slate-200/80">
                                     <div className="flex items-center gap-3">
-                                        <Avatar name={event.organizer || 'EO'} size="md" />
+                                        <Avatar
+                                            name={event.organizer || 'EO'}
+                                            src={event.organizer_avatar}
+                                            size="md"
+                                        />
                                         <div>
                                             <p className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
                                                 <span>{event.organizer}</span>
@@ -489,7 +493,67 @@ export default function EventDetail({
                                 </div>
                             </Card>
 
-                            {/* Ticket Selection */}
+                            {/* Location & Venue */}
+                            <Card as="section" id="lokasi" className="p-6 sm:p-7 scroll-mt-24">
+                                <h2 className="text-base font-semibold mb-4 flex items-center gap-2 text-slate-900">
+                                    <MapPin className="size-4 text-slate-400" aria-hidden="true" />
+                                    <span>Lokasi & Waktu Acara</span>
+                                </h2>
+
+                                <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                                    <p className="text-xs font-medium text-slate-500 mb-1">
+                                        Gedung / Tempat
+                                    </p>
+                                    <p className="text-sm font-semibold text-slate-900">
+                                        {event.location}
+                                    </p>
+                                    <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+                                        {event.fullAddress}
+                                    </p>
+
+                                    {event.event_type === 'OFFLINE' ? (
+                                        <div className="mt-4">
+                                            <a
+                                                href={getGoogleMapsUrl()}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className={buttonClass('outline', 'sm')}
+                                            >
+                                                <ExternalLink className="size-3.5 text-slate-500" aria-hidden="true" />
+                                                <span>Buka di Google Maps</span>
+                                            </a>
+                                        </div>
+                                    ) : (
+                                        <div className="mt-3 flex items-center gap-2 text-xs text-slate-700 bg-white p-3 rounded-lg border border-slate-200">
+                                            <Globe className="size-4 text-brand-blue shrink-0" aria-hidden="true" />
+                                            <span>
+                                                Tautan streaming / webinar akan diberikan pada e-tiket setelah konfirmasi pemesanan.
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
+                            </Card>
+
+                            {/* Terms & Conditions */}
+                            <Card as="section" id="syarat" className="p-6 sm:p-7 scroll-mt-24">
+                                <h2 className="text-base font-semibold mb-4 flex items-center gap-2 text-slate-900">
+                                    <ShieldCheck className="size-4 text-slate-400" aria-hidden="true" />
+                                    <span>Syarat & Ketentuan</span>
+                                </h2>
+                                <ol className="space-y-2.5 text-xs sm:text-sm text-slate-600">
+                                    {event.terms &&
+                                        event.terms.map((term, index) => (
+                                            <li key={index} className="flex items-start gap-2.5">
+                                                <span className="flex size-5 shrink-0 items-center justify-center rounded-md bg-slate-100 text-xs font-medium text-slate-600 mt-0.5 tabular-nums">
+                                                    {index + 1}
+                                                </span>
+                                                <span className="leading-relaxed">{term}</span>
+                                            </li>
+                                        ))}
+                                </ol>
+                            </Card>
+
+                            {/* Ticket Selection (Urutan Paling Bawah Sebelum Pembayaran) */}
                             <Card as="section" id="pilih-tiket" className="p-6 sm:p-7 scroll-mt-24">
                                 <div className="flex items-center justify-between gap-3 mb-5">
                                     <div>
@@ -640,66 +704,6 @@ export default function EventDetail({
                                         </div>
                                     )}
                                 </div>
-                            </Card>
-
-                            {/* Location & Venue */}
-                            <Card as="section" id="lokasi" className="p-6 sm:p-7 scroll-mt-24">
-                                <h2 className="text-base font-semibold mb-4 flex items-center gap-2 text-slate-900">
-                                    <MapPin className="size-4 text-slate-400" aria-hidden="true" />
-                                    <span>Lokasi & Waktu Acara</span>
-                                </h2>
-
-                                <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                                    <p className="text-xs font-medium text-slate-500 mb-1">
-                                        Gedung / Tempat
-                                    </p>
-                                    <p className="text-sm font-semibold text-slate-900">
-                                        {event.location}
-                                    </p>
-                                    <p className="text-xs text-slate-600 mt-1 leading-relaxed">
-                                        {event.fullAddress}
-                                    </p>
-
-                                    {event.event_type === 'OFFLINE' ? (
-                                        <div className="mt-4">
-                                            <a
-                                                href={getGoogleMapsUrl()}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className={buttonClass('outline', 'sm')}
-                                            >
-                                                <ExternalLink className="size-3.5 text-slate-500" aria-hidden="true" />
-                                                <span>Buka di Google Maps</span>
-                                            </a>
-                                        </div>
-                                    ) : (
-                                        <div className="mt-3 flex items-center gap-2 text-xs text-slate-700 bg-white p-3 rounded-lg border border-slate-200">
-                                            <Globe className="size-4 text-brand-blue shrink-0" aria-hidden="true" />
-                                            <span>
-                                                Tautan streaming / webinar akan diberikan pada e-tiket setelah konfirmasi pemesanan.
-                                            </span>
-                                        </div>
-                                    )}
-                                </div>
-                            </Card>
-
-                            {/* Terms & Conditions */}
-                            <Card as="section" id="syarat" className="p-6 sm:p-7 scroll-mt-24">
-                                <h2 className="text-base font-semibold mb-4 flex items-center gap-2 text-slate-900">
-                                    <ShieldCheck className="size-4 text-slate-400" aria-hidden="true" />
-                                    <span>Syarat & Ketentuan</span>
-                                </h2>
-                                <ol className="space-y-2.5 text-xs sm:text-sm text-slate-600">
-                                    {event.terms &&
-                                        event.terms.map((term, index) => (
-                                            <li key={index} className="flex items-start gap-2.5">
-                                                <span className="flex size-5 shrink-0 items-center justify-center rounded-md bg-slate-100 text-xs font-medium text-slate-600 mt-0.5 tabular-nums">
-                                                    {index + 1}
-                                                </span>
-                                                <span className="leading-relaxed">{term}</span>
-                                            </li>
-                                        ))}
-                                </ol>
                             </Card>
                         </div>
 

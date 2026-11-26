@@ -17,8 +17,12 @@ class Order extends Model
         'user_id',
         'event_id',
         'order_reference',
+        'idempotency_key',
         'status',
         'total_amount',
+        'attendee_name',
+        'attendee_email',
+        'attendee_phone',
         'expires_at',
         'paid_at',
     ];

@@ -46,6 +46,7 @@ export default function EoAttendees({
         event_id: filters.eventId || events[0]?.id || '',
         title: '',
         message: '',
+        send_email: false,
     });
 
     const openBroadcastModal = () => {
@@ -53,6 +54,7 @@ export default function EoAttendees({
             event_id: filters.eventId || events[0]?.id || '',
             title: '',
             message: '',
+            send_email: false,
         });
         broadcastForm.clearErrors();
         setIsBroadcastOpen(true);
@@ -64,7 +66,7 @@ export default function EoAttendees({
             preserveScroll: true,
             onSuccess: () => {
                 setIsBroadcastOpen(false);
-                broadcastForm.reset('title', 'message');
+                broadcastForm.reset('title', 'message', 'send_email');
             },
         });
     };
@@ -557,6 +559,28 @@ export default function EoAttendees({
                             </p>
                         )}
                     </div>
+
+                    <label
+                        htmlFor="broadcast-send-email"
+                        className="flex items-start gap-2.5 rounded-lg border border-slate-200 bg-slate-50/80 p-3 cursor-pointer hover:bg-slate-50 transition"
+                    >
+                        <input
+                            id="broadcast-send-email"
+                            type="checkbox"
+                            checked={broadcastForm.data.send_email}
+                            onChange={(e) =>
+                                broadcastForm.setData('send_email', e.target.checked)
+                            }
+                            className="mt-0.5 size-4 rounded border-slate-300 accent-brand-blue"
+                        />
+                        <span className="text-xs text-slate-700 leading-relaxed">
+                            <span className="font-semibold text-slate-900 block">
+                                Kirim juga salinan pengumuman via email
+                            </span>
+                            Email akan dikirim melalui antrean ke alamat email seluruh pemegang
+                            tiket aktif pada event ini.
+                        </span>
+                    </label>
 
                     <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-200">
                         <Button

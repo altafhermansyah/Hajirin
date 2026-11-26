@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 
 class Ticket extends Model
@@ -15,6 +17,7 @@ class Ticket extends Model
     protected $fillable = [
         'order_id',
         'order_item_id',
+        'holder_user_id',
         'ticket_code',
         'attendee_name',
         'attendee_email',
@@ -44,6 +47,21 @@ class Ticket extends Model
     public function checkedInByUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'checked_in_by');
+    }
+
+    public function holder(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'holder_user_id');
+    }
+
+    public function transfers(): HasMany
+    {
+        return $this->hasMany(TicketTransfer::class);
+    }
+
+    public function pendingTransfer(): HasOne
+    {
+        return $this->hasOne(TicketTransfer::class)->where('status', 'PENDING');
     }
 
     public function event(): HasOneThrough

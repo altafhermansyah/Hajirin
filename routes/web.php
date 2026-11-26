@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\AdminSearchController;
 use App\Http\Controllers\Admin\AdminTicketController;
 use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Auth\EmailVerificationOtpController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\BookmarkController;
@@ -29,6 +30,7 @@ use App\Http\Controllers\EventController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\StaffCheckInController;
+use App\Http\Controllers\TicketTransferController;
 use App\Http\Controllers\UserDashboardController;
 use App\Http\Controllers\UserOrderController;
 use App\Http\Controllers\UserProfileController;
@@ -56,16 +58,49 @@ Route::middleware('auth')->group(function () {
     Route::get('/bookmarks', fn () => redirect()->to(route('dashboard').'#bookmark'))
         ->name('bookmarks');
 
-    // Route Profil User
+    // Route Verifikasi Email (OTP 6-Digit)
+    Route::post('/email/otp/send', [EmailVerificationOtpController::class, 'send'])
+        ->middleware('throttle:otp-send')
+        ->name('email.otp.send');
+    Route::post('/email/otp/verify', [EmailVerificationOtpController::class, 'verify'])
+        ->middleware('throttle:otp-verify')
+        ->name('email.otp.verify');
+
+    // Route Profil User, Reset Sandi via Email, Export Data & Hapus Akun
     Route::get('/profile', [UserProfileController::class, 'show'])->name('profile');
     Route::match(['put', 'post'], '/profile', [UserProfileController::class, 'update'])
         ->middleware('throttle:uploads')
         ->name('profile.update');
+    Route::post('/profile/password-reset-link', [UserProfileController::class, 'sendPasswordResetLink'])
+        ->middleware('throttle:password-reset')
+        ->name('profile.password-reset-link');
+    Route::get('/profile/export-data', [UserProfileController::class, 'exportData'])
+        ->middleware('throttle:5,60')
+        ->name('profile.export-data');
+    Route::delete('/profile', [UserProfileController::class, 'destroy'])
+        ->middleware('throttle:5,60')
+        ->name('profile.destroy');
 
-    // Route Halaman Detail E-Tiket & Scan QR
+    // Route Halaman Detail E-Tiket & Scan QR + Transfer Tiket
     Route::get('/my-tickets/{orderReference}', [UserTicketController::class, 'show'])->name('my-tickets.show');
+    Route::post('/tickets/{ticket}/transfer', [TicketTransferController::class, 'initiate'])
+        ->middleware('throttle:user-actions')
+        ->name('tickets.transfer');
+    Route::delete('/ticket-transfers/{id}', [TicketTransferController::class, 'cancel'])
+        ->middleware('throttle:user-actions')
+        ->name('ticket-transfers.cancel');
+    Route::post('/ticket-transfers/{token}/accept', [TicketTransferController::class, 'accept'])
+        ->middleware('throttle:10,1')
+        ->name('ticket-transfers.accept');
 
-    // Route Halaman Detail Pesanan / Transaksi Invoice & Pengajuan Refund
+    // Route Pembayaran Simulasi & Detail Pesanan / Invoice & Pengajuan Refund
+    Route::get('/orders/{orderReference}/pay', [CheckoutController::class, 'pay'])->name('orders.pay');
+    Route::post('/orders/{orderReference}/confirm-payment', [CheckoutController::class, 'confirmPayment'])
+        ->middleware('throttle:checkout')
+        ->name('orders.confirm-payment');
+    Route::post('/orders/{orderReference}/cancel', [CheckoutController::class, 'cancelPending'])
+        ->middleware('throttle:user-actions')
+        ->name('orders.cancel');
     Route::get('/orders/{orderReference}', [UserOrderController::class, 'show'])->name('orders.show');
     Route::post('/orders/{orderReference}/refund', [UserOrderController::class, 'requestRefund'])
         ->middleware('throttle:5,1')
@@ -142,7 +177,9 @@ Route::middleware(['auth', 'eo'])->prefix('eo')->name('eo.')->group(function () 
     Route::delete('/staff/{id}', [EoStaffController::class, 'destroy'])->name('staff.destroy');
 
     Route::get('/profile', [EoProfileController::class, 'show'])->name('profile.show');
-    Route::put('/profile', [EoProfileController::class, 'update'])->name('profile.update');
+    Route::match(['put', 'post'], '/profile', [EoProfileController::class, 'update'])
+        ->middleware('throttle:uploads')
+        ->name('profile.update');
 });
 
 // Route Admin Dashboard & Moderasi EO + Event
@@ -203,6 +240,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/check-in', fn () => redirect()->route('admin.scanner.index'))->name('check-in');
 
     // Pencarian Cepat Global Topbar Admin
+
     Route::get('/search', AdminSearchController::class)->name('search');
 
     // Laporan & Keuangan Platform (Financial Reporting & Settlements)
@@ -210,12 +248,21 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/reports/export-pdf', [AdminReportController::class, 'exportPdf'])->name('reports.export-pdf');
 });
 
-// Route Autentikasi & Reset Kata Sandi (Guest)
+// Route Klaim Transfer Tiket (dapat dibuka publik untuk melihat detail & instruksi masuk/daftar)
+Route::get('/ticket-transfers/{token}', [TicketTransferController::class, 'show'])
+    ->name('ticket-transfers.show');
+
+// Route Atur Ulang Kata Sandi via Token Email (dapat diakses guest maupun pengguna yang sedang login)
+Route::get('/reset-password/{token}', [PasswordResetController::class, 'createReset'])
+    ->name('password.reset');
+Route::post('/reset-password', [PasswordResetController::class, 'resetPassword'])
+    ->middleware('throttle:password-reset')
+    ->name('password.store');
+
+// Route Autentikasi & Lupa Kata Sandi (Guest)
 Route::middleware('guest')->group(function () {
     Route::get('/forgot-password', [PasswordResetController::class, 'createForgot'])
         ->name('password.request');
-    Route::get('/reset-password/{token}', [PasswordResetController::class, 'createReset'])
-        ->name('password.reset');
 
     Route::post('/login', [AuthenticatedSessionController::class, 'store'])
         ->middleware('throttle:auth-login')
@@ -226,9 +273,6 @@ Route::middleware('guest')->group(function () {
     Route::post('/forgot-password', [PasswordResetController::class, 'sendResetLink'])
         ->middleware('throttle:password-reset')
         ->name('password.email');
-    Route::post('/reset-password', [PasswordResetController::class, 'resetPassword'])
-        ->middleware('throttle:password-reset')
-        ->name('password.store');
 });
 
 // Route Keluar Akun (Logout)

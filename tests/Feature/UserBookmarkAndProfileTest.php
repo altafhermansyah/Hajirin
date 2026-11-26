@@ -9,6 +9,7 @@ use Database\Seeders\CategorySeeder;
 use Database\Seeders\EventSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Password;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
@@ -101,19 +102,31 @@ class UserBookmarkAndProfileTest extends TestCase
     public function test_user_can_update_password(): void
     {
         $user = User::factory()->create([
+            'email' => 'gantisandi@example.com',
             'password' => Hash::make('password_lama_123'),
         ]);
 
-        $response = $this->actingAs($user)->put('/profile', [
-            'name' => $user->name,
+        $this->actingAs($user)
+            ->post('/profile/password-reset-link', [
+                'email' => 'gantisandi@example.com',
+            ])
+            ->assertSessionHas('password_reset_status');
+
+        $token = Password::broker()->createToken($user);
+
+        $response = $this->actingAs($user)->post('/reset-password', [
+            'token' => $token,
+            'email' => 'gantisandi@example.com',
             'password' => 'password_baru_456',
             'password_confirmation' => 'password_baru_456',
         ]);
 
-        $response->assertSessionHas('success');
+        $response->assertRedirect(route('dashboard').'#profil');
+        $response->assertSessionHas('password_reset_completed', true);
 
         $user->refresh();
         $this->assertTrue(Hash::check('password_baru_456', $user->password));
+        $this->assertNotNull($user->password_changed_at);
     }
 
     public function test_home_page_passes_bookmarked_event_ids(): void
@@ -170,10 +183,14 @@ class UserBookmarkAndProfileTest extends TestCase
 
     public function test_user_profile_update_validates_password_confirmation(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create([
+            'email' => 'cekpass@example.com',
+        ]);
+        $token = Password::broker()->createToken($user);
 
-        $response = $this->actingAs($user)->put('/profile', [
-            'name' => 'Nama Baru',
+        $response = $this->actingAs($user)->post('/reset-password', [
+            'token' => $token,
+            'email' => 'cekpass@example.com',
             'password' => 'newpassword123',
             'password_confirmation' => 'differentpassword',
         ]);

@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useForm, usePage } from '@inertiajs/react';
+import { Camera } from 'lucide-react';
 import EoLayout from '../../Layouts/EoLayout';
+import AccountSecurityAndPrivacy from '../../Components/AccountSecurityAndPrivacy';
 import {
     Card,
     CardHeader,
@@ -12,18 +14,51 @@ export default function EoProfile({
     organizerName = '',
     profile = {},
 }) {
-    const { flash } = usePage().props;
+    const { auth, flash } = usePage().props;
+    const fileInputRef = useRef(null);
+    const [avatarPreview, setAvatarPreview] = useState(
+        profile.avatarPath || auth?.user?.avatar_path || null
+    );
 
-    const { data, setData, put, processing, errors } = useForm({
+    const { data, setData, post, processing, errors, transform } = useForm({
         organization_name: profile.organizationName || '',
         contact_phone: profile.contactPhone || '',
         portfolio_url: profile.portfolioUrl || '',
+        avatar: null,
     });
+
+    useEffect(() => {
+        setAvatarPreview(profile.avatarPath || auth?.user?.avatar_path || null);
+    }, [profile.avatarPath, auth?.user?.avatar_path]);
+
+    const handleAvatarChange = (e) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            setData('avatar', file);
+            setAvatarPreview(URL.createObjectURL(file));
+        }
+    };
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        put('/eo/profile', {
+        transform((formData) => {
+            const payload = {
+                organization_name: formData.organization_name,
+                contact_phone: formData.contact_phone,
+                portfolio_url: formData.portfolio_url || '',
+            };
+            if (formData.avatar) {
+                payload.avatar = formData.avatar;
+            }
+            return payload;
+        });
+
+        post('/eo/profile', {
+            forceFormData: true,
             preserveScroll: true,
+            onSuccess: () => {
+                setData('avatar', null);
+            },
         });
     };
 
@@ -47,16 +82,16 @@ export default function EoProfile({
                     Profil Organisasi
                 </h1>
                 <p className="mt-1 text-sm text-gray-600">
-                    Kelola identitas penyelenggara yang tampil pada halaman event publik dan kontak PIC resmi Anda.
+                    Kelola logo/foto profil penyelenggara, identitas organisasi publik, kontak PIC resmi, dan keamanan akun Anda.
                 </p>
             </div>
 
             <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr] items-start">
-                {/* Form Informasi Organisasi */}
+                {/* Form Informasi Organisasi & Foto Profil EO */}
                 <Card as="section" className="overflow-hidden">
                     <CardHeader
-                        title="Identitas Organisasi"
-                        description="Perubahan akan langsung diperbarui pada halaman event milik organisasi Anda."
+                        title="Identitas & Logo Organisasi"
+                        description="Logo dan nama organisasi langsung tampil di halaman event publik serta topbar Creator Studio."
                     />
 
                     <form
@@ -65,6 +100,66 @@ export default function EoProfile({
                         onSubmit={handleSubmit}
                         className="p-5 sm:p-6 space-y-5"
                     >
+                        {/* Upload Foto / Logo EO */}
+                        <div className="flex flex-col sm:flex-row items-center gap-4 pb-5 border-b border-gray-200">
+                            <button
+                                type="button"
+                                onClick={() => fileInputRef.current?.click()}
+                                aria-label="Pilih foto profil atau logo organisasi"
+                                className="group relative size-20 rounded-full overflow-hidden border border-gray-200 bg-gray-100 flex items-center justify-center shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+                            >
+                                {avatarPreview ? (
+                                    <img
+                                        src={avatarPreview}
+                                        alt={organizerName || 'Logo EO'}
+                                        className="size-full object-cover transition duration-200 group-hover:scale-105"
+                                    />
+                                ) : (
+                                    <span className="text-xl font-semibold text-gray-700 uppercase">
+                                        {(organizerName || 'EO').charAt(0)}
+                                    </span>
+                                )}
+                                <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white">
+                                    <Camera className="size-4" aria-hidden="true" />
+                                    <span className="text-[11px] font-medium mt-0.5">Ubah</span>
+                                </div>
+                            </button>
+
+                            <div className="space-y-1.5 text-center sm:text-left flex-1">
+                                <input
+                                    ref={fileInputRef}
+                                    type="file"
+                                    accept="image/jpeg,image/png,image/jpg,image/webp"
+                                    onChange={handleAvatarChange}
+                                    className="hidden"
+                                />
+                                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                                    <EoButton
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => fileInputRef.current?.click()}
+                                    >
+                                        <Camera className="size-3.5 text-gray-500" aria-hidden="true" />
+                                        <span>Pilih Logo / Foto Profil EO</span>
+                                    </EoButton>
+                                    {data.avatar && (
+                                        <span className="text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-md">
+                                            {data.avatar.name} siap disimpan
+                                        </span>
+                                    )}
+                                </div>
+                                <p className="text-xs text-gray-500">
+                                    Format JPG, PNG, atau WEBP maksimal 5MB. Otomatis dioptimalkan ke WebP.
+                                </p>
+                                {errors.avatar && (
+                                    <p role="alert" className="text-xs font-medium text-red-600">
+                                        {errors.avatar}
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+
                         <fieldset className="space-y-4">
                             <legend className="sr-only">
                                 Formulir identitas dan kontak resmi penyelenggara
@@ -90,7 +185,7 @@ export default function EoProfile({
                                     className="mt-1.5 w-full h-9 px-3 rounded-md border border-gray-200 bg-white text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/15"
                                 />
                                 <p id="organization_name_help" className="mt-1 text-xs text-gray-500">
-                                    Nama ini tampil sebagai penyelenggara resmi di setiap halaman detail event.
+                                    Nama ini tampil sebagai penyelenggara resmi di beranda, kategori, detail event, dan e-tiket.
                                 </p>
                                 {errors.organization_name && (
                                     <p role="alert" className="mt-1 text-xs font-medium text-red-600">
@@ -223,6 +318,9 @@ export default function EoProfile({
                     </div>
                 </Card>
             </div>
+
+            {/* Keamanan Kata Sandi, Ekspor Data & Hapus Akun */}
+            {auth?.user && <AccountSecurityAndPrivacy user={auth.user} flash={flash} />}
         </EoLayout>
     );
 }

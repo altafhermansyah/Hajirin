@@ -21,7 +21,8 @@ class UserDashboardController extends Controller
             return redirect()->route('eo.dashboard');
         }
 
-        $userId = $request->user()->id;
+        $user = $request->user();
+        $userId = $user->id;
 
         $ordersQuery = DB::table('orders')
             ->join('events', 'events.id', '=', 'orders.event_id')
@@ -32,6 +33,7 @@ class UserDashboardController extends Controller
                 'orders.order_reference',
                 'orders.status',
                 'orders.total_amount',
+                'orders.expires_at',
                 'orders.created_at',
                 'orders.paid_at',
                 'events.title as event_title',
@@ -82,21 +84,27 @@ class UserDashboardController extends Controller
             })->values()->all();
 
             $totalAmount = (float) $order->total_amount;
+            $expiresAt = $order->expires_at ? Carbon::parse($order->expires_at)->timezone(config('app.timezone')) : null;
 
             return [
                 'id' => $order->id,
                 'orderReference' => $order->order_reference,
                 'order_reference' => $order->order_reference,
                 'status' => $order->status,
+                'isPending' => $order->status === 'PENDING' && ($expiresAt === null || $expiresAt->isFuture()),
+                'expiresAtIso' => $expiresAt?->toIso8601String(),
+                'expiresAtFormatted' => $expiresAt
+                    ? $expiresAt->copy()->locale('id')->translatedFormat('d M Y, H:i').' WIB'
+                    : null,
                 'title' => $order->event_title,
                 'total_amount' => $totalAmount,
                 'formattedTotalAmount' => $totalAmount > 0 ? 'Rp'.number_format($totalAmount, 0, ',', '.') : 'Gratis',
-                'createdAt' => Carbon::parse($order->created_at)->locale('id')->translatedFormat('l, d F Y • H:i').' WIB',
+                'createdAt' => Carbon::parse($order->created_at)->timezone(config('app.timezone'))->locale('id')->translatedFormat('l, d F Y • H:i').' WIB',
                 'created_at' => $order->created_at,
-                'paidAt' => $order->paid_at ? Carbon::parse($order->paid_at)->locale('id')->translatedFormat('l, d F Y • H:i').' WIB' : '-',
+                'paidAt' => $order->paid_at ? Carbon::parse($order->paid_at)->timezone(config('app.timezone'))->locale('id')->translatedFormat('l, d F Y • H:i').' WIB' : '-',
                 'eventTitle' => $order->event_title,
                 'eventSlug' => $order->event_slug,
-                'eventDate' => Carbon::parse($order->event_starts_at)->locale('id')->translatedFormat('l, d F Y • H:i').' WIB',
+                'eventDate' => Carbon::parse($order->event_starts_at)->timezone(config('app.timezone'))->locale('id')->translatedFormat('l, d F Y • H:i').' WIB',
                 'eventLocation' => $order->venue_name ?: ($order->event_type === 'ONLINE' ? 'Online Event' : 'Lokasi Diumumkan'),
                 'eventAddress' => $order->event_address,
                 'eventBanner' => $order->event_banner ?: '/images/events/tech_hero.webp',
@@ -106,22 +114,25 @@ class UserDashboardController extends Controller
             ];
         });
 
+        // Tiket Saya: mengambil tiket yang saat ini dipegang oleh user (termasuk hasil klaim transfer)
         $rawTickets = DB::table('tickets')
             ->join('orders', 'orders.id', '=', 'tickets.order_id')
             ->join('events', 'events.id', '=', 'orders.event_id')
             ->join('order_items', 'order_items.id', '=', 'tickets.order_item_id')
             ->join('ticket_types', 'ticket_types.id', '=', 'order_items.ticket_type_id')
-            ->where('orders.user_id', $userId)
+            ->whereRaw('COALESCE(tickets.holder_user_id, orders.user_id) = ?', [$userId])
             ->where('orders.status', 'PAID')
             ->select(
                 'tickets.id',
                 'tickets.order_id',
+                'tickets.holder_user_id',
                 'tickets.ticket_code',
                 'tickets.attendee_name',
                 'tickets.attendee_email',
                 'tickets.status as ticket_status',
                 'tickets.created_at',
                 'orders.order_reference',
+                'orders.user_id as order_buyer_id',
                 'events.id as event_id',
                 'events.title as event_title',
                 'events.slug as event_slug',
@@ -138,7 +149,7 @@ class UserDashboardController extends Controller
 
         // Mengelompokkan tiket berdasarkan pesanan sehingga jika membeli 2 atau 100 tiket,
         // yang tampil adalah 1 tiket pass per event sesuai pesanan pengguna.
-        $myTickets = $rawTickets->groupBy('order_reference')->map(function ($orderTickets) {
+        $myTickets = $rawTickets->groupBy('order_reference')->map(function ($orderTickets) use ($userId) {
             $first = $orderTickets->first();
             $totalCount = $orderTickets->count();
             $typeCounts = $orderTickets->groupBy('ticket_type_name')->map->count();
@@ -149,6 +160,7 @@ class UserDashboardController extends Controller
                 'id' => $first->id,
                 'orderId' => $first->order_id,
                 'orderReference' => $first->order_reference,
+                'isTransferredIn' => $first->order_buyer_id !== $userId,
                 'ticketCode' => $first->ticket_code,
                 'primaryTicketCode' => $first->ticket_code,
                 'attendeeName' => $first->attendee_name,
@@ -158,7 +170,7 @@ class UserDashboardController extends Controller
                 'ticketType' => $typesSummary ?: $first->ticket_type_name,
                 'eventTitle' => $first->event_title,
                 'eventSlug' => $first->event_slug,
-                'eventDate' => Carbon::parse($first->starts_at)->locale('id')->translatedFormat('l, d F Y • H:i').' WIB',
+                'eventDate' => Carbon::parse($first->starts_at)->timezone(config('app.timezone'))->locale('id')->translatedFormat('l, d F Y • H:i').' WIB',
                 'eventLocation' => $first->venue_name ?: ($first->event_type === 'ONLINE' ? 'Online Event' : 'Lokasi Diumumkan'),
                 'eventAddress' => $first->address,
                 'banner' => $first->banner_path ?: '/images/events/tech_hero.webp',
@@ -176,10 +188,43 @@ class UserDashboardController extends Controller
             ];
         })->values();
 
+        // Undangan transfer tiket yang ditujukan ke email user dan masih aktif
+        $incomingTransfers = DB::table('ticket_transfers')
+            ->join('tickets', 'tickets.id', '=', 'ticket_transfers.ticket_id')
+            ->join('orders', 'orders.id', '=', 'tickets.order_id')
+            ->join('events', 'events.id', '=', 'orders.event_id')
+            ->join('users as senders', 'senders.id', '=', 'ticket_transfers.from_user_id')
+            ->whereRaw('LOWER(ticket_transfers.recipient_email) = ?', [mb_strtolower($user->email)])
+            ->where('ticket_transfers.status', 'PENDING')
+            ->where('ticket_transfers.expires_at', '>', now())
+            ->orderByDesc('ticket_transfers.created_at')
+            ->select(
+                'ticket_transfers.id',
+                'ticket_transfers.token',
+                'ticket_transfers.expires_at',
+                'senders.name as sender_name',
+                'events.title as event_title',
+                'events.starts_at as event_starts_at'
+            )
+            ->get()
+            ->map(fn ($row): array => [
+                'id' => $row->id,
+                'token' => $row->token,
+                'senderName' => $row->sender_name,
+                'eventTitle' => $row->event_title,
+                'eventDate' => Carbon::parse($row->event_starts_at)->timezone(config('app.timezone'))->locale('id')->translatedFormat('d M Y, H:i').' WIB',
+                'expiresAtFormatted' => Carbon::parse($row->expires_at)->timezone(config('app.timezone'))->locale('id')->translatedFormat('d M Y, H:i').' WIB',
+                'claimUrl' => route('ticket-transfers.show', $row->token),
+            ]);
+
         $bookmarkedRows = DB::table('bookmarks')
             ->join('events', 'events.id', '=', 'bookmarks.event_id')
             ->join('categories', 'categories.id', '=', 'events.category_id')
             ->join('users', 'users.id', '=', 'events.eo_id')
+            ->leftJoin('eo_applications', function ($join): void {
+                $join->on('eo_applications.user_id', '=', 'users.id')
+                    ->where('eo_applications.status', '=', 'APPROVED');
+            })
             ->where('bookmarks.user_id', $userId)
             ->where('events.status', 'PUBLISHED')
             ->select(
@@ -191,7 +236,7 @@ class UserDashboardController extends Controller
                 'events.event_type',
                 'events.banner_path',
                 'categories.name as category_name',
-                'users.name as organizer_name',
+                DB::raw('COALESCE(eo_applications.organization_name, users.name) as organizer_name'),
                 'bookmarks.created_at as bookmarked_at'
             )
             ->orderByDesc('bookmarks.created_at')
@@ -221,7 +266,7 @@ class UserDashboardController extends Controller
                     'title' => $event->title,
                     'category' => $event->category_name,
                     'organizer' => $event->organizer_name,
-                    'date' => Carbon::parse($event->starts_at)->locale('id')->translatedFormat('l, d F Y • H:i').' WIB',
+                    'date' => Carbon::parse($event->starts_at)->timezone(config('app.timezone'))->locale('id')->translatedFormat('l, d F Y • H:i').' WIB',
                     'place' => $event->venue_name ?: ($event->event_type === 'ONLINE' ? 'Online Event' : 'Lokasi Diumumkan'),
                     'price' => $numericPrice > 0 ? 'Rp'.number_format($numericPrice, 0, ',', '.') : 'Gratis',
                     'image' => $event->banner_path ?: '/images/events/tech_hero.webp',
@@ -241,6 +286,7 @@ class UserDashboardController extends Controller
                 'title' => $event->title,
                 'status' => $event->status,
                 'startsAtFormatted' => Carbon::parse($event->starts_at)
+                    ->timezone(config('app.timezone'))
                     ->locale('id')
                     ->translatedFormat('d M Y, H:i').' WIB',
             ]);
@@ -261,6 +307,7 @@ class UserDashboardController extends Controller
                 'upcomingEventCount' => $upcomingEventCount,
                 'recentOrders' => $recentOrders,
                 'myTickets' => $myTickets,
+                'incomingTransfers' => $incomingTransfers,
                 'bookmarkedEvents' => $bookmarkedEvents,
                 'staffEvents' => $staffEvents,
             ],

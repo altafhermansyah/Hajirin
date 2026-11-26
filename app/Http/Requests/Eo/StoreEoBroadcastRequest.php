@@ -37,6 +37,7 @@ class StoreEoBroadcastRequest extends FormRequest
             'event_id' => ['required', 'uuid'],
             'title' => ['required', 'string', 'min:4', 'max:150'],
             'message' => ['required', 'string', 'min:10', 'max:1000'],
+            'send_email' => ['nullable', 'boolean'],
         ];
     }
 

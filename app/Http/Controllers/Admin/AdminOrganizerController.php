@@ -4,12 +4,14 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\RejectEoApplicationRequest;
+use App\Mail\EoApplicationStatusMail;
 use App\Models\EoApplication;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -357,6 +359,14 @@ class AdminOrganizerController extends Controller
                 'action_url' => '/eo/dashboard',
                 'created_at' => now(),
             ]);
+
+            Mail::to($applicant->email)->send(
+                (new EoApplicationStatusMail(
+                    applicantName: $applicant->name,
+                    organizationName: $application->organization_name,
+                    approved: true,
+                ))->afterCommit()
+            );
         });
 
         return back()->with('success', 'Pengajuan Event Organizer berhasil disetujui dan pengguna resmi berstatus EO.');
@@ -397,6 +407,18 @@ class AdminOrganizerController extends Controller
                 'action_url' => '/dashboard#pengajuan-eo',
                 'created_at' => now(),
             ]);
+
+            $applicant = User::find($application->user_id);
+            if ($applicant) {
+                Mail::to($applicant->email)->send(
+                    (new EoApplicationStatusMail(
+                        applicantName: $applicant->name,
+                        organizationName: $application->organization_name,
+                        approved: false,
+                        rejectionReason: $validated['rejection_reason'],
+                    ))->afterCommit()
+                );
+            }
         });
 
         return back()->with('success', 'Pengajuan Event Organizer telah ditolak beserta catatan evaluasi untuk pemohon.');

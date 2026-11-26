@@ -392,8 +392,8 @@ class EoAttendeeReportAndCheckInTest extends TestCase
             'city' => 'Jakarta',
             'venue_name' => 'Gedung Serbaguna',
             'address' => 'Jl. Sudirman No. 1, Jakarta',
-            'starts_at' => now()->addDays(5),
-            'ends_at' => now()->addDays(5)->addHours(4),
+            'starts_at' => now()->addHour(),
+            'ends_at' => now()->addHours(5),
             'banner_path' => '/images/events/tech_hero.webp',
         ]);
         $event->forceFill(['status' => $status])->save();

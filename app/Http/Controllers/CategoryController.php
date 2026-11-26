@@ -29,6 +29,10 @@ class CategoryController extends Controller
         $eventRows = DB::table('events')
             ->join('categories', 'events.category_id', '=', 'categories.id')
             ->join('users', 'events.eo_id', '=', 'users.id')
+            ->leftJoin('eo_applications', function ($join): void {
+                $join->on('eo_applications.user_id', '=', 'users.id')
+                    ->where('eo_applications.status', '=', 'APPROVED');
+            })
             ->where('events.status', 'PUBLISHED')
             ->select(
                 'events.id',
@@ -40,7 +44,7 @@ class CategoryController extends Controller
                 'events.banner_path',
                 'categories.name as category_name',
                 'categories.slug as category_slug',
-                'users.name as organizer_name'
+                DB::raw('COALESCE(eo_applications.organization_name, users.name) as organizer_name')
             )
             ->orderBy('events.starts_at')
             ->limit(100)

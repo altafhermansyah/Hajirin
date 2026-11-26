@@ -5,13 +5,17 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\CancelEventRequest;
 use App\Http\Requests\Admin\RejectEventRequest;
+use App\Mail\EventCancelledAttendeeMail;
+use App\Mail\EventModerationMail;
 use App\Models\Category;
 use App\Models\Event;
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -225,6 +229,19 @@ class AdminEventController extends Controller
                 'action_url' => "/event/{$event->slug}",
                 'created_at' => now(),
             ]);
+
+            $eo = User::find($event->eo_id);
+            if ($eo) {
+                Mail::to($eo->email)->send(
+                    (new EventModerationMail(
+                        organizerName: $eo->name,
+                        eventTitle: $event->title,
+                        eventId: $event->id,
+                        eventSlug: $event->slug,
+                        approved: true,
+                    ))->afterCommit()
+                );
+            }
         });
 
         return back()->with('success', 'Event berhasil disetujui dan kini berstatus Published.');
@@ -265,6 +282,20 @@ class AdminEventController extends Controller
                 'action_url' => "/eo/events/{$event->id}/edit",
                 'created_at' => now(),
             ]);
+
+            $eo = User::find($event->eo_id);
+            if ($eo) {
+                Mail::to($eo->email)->send(
+                    (new EventModerationMail(
+                        organizerName: $eo->name,
+                        eventTitle: $event->title,
+                        eventId: $event->id,
+                        eventSlug: $event->slug,
+                        approved: false,
+                        rejectionReason: $validated['rejection_reason'],
+                    ))->afterCommit()
+                );
+            }
         });
 
         return back()->with('success', 'Event telah ditolak beserta catatan revisi untuk EO.');
@@ -303,6 +334,28 @@ class AdminEventController extends Controller
                 'action_url' => '/eo/dashboard',
                 'created_at' => now(),
             ]);
+
+            $eventDate = Carbon::parse($event->starts_at)->locale('id')->translatedFormat('d M Y, H:i').' WIB';
+            $affectedOrders = DB::table('orders')
+                ->join('users', 'users.id', '=', 'orders.user_id')
+                ->join('tickets', 'tickets.order_id', '=', 'orders.id')
+                ->where('orders.event_id', $event->id)
+                ->where('orders.status', 'PAID')
+                ->where('tickets.status', '!=', 'CANCELLED')
+                ->distinct()
+                ->get(['users.name', 'users.email', 'orders.order_reference']);
+
+            foreach ($affectedOrders as $recipient) {
+                Mail::to($recipient->email)->send(
+                    (new EventCancelledAttendeeMail(
+                        recipientName: $recipient->name,
+                        eventTitle: $event->title,
+                        eventDate: $eventDate,
+                        cancellationReason: $validated['cancellation_reason'],
+                        orderReference: $recipient->order_reference,
+                    ))->afterCommit()
+                );
+            }
         });
 
         return back()->with('success', 'Event berhasil ditarik dan dibatalkan dari sistem.');

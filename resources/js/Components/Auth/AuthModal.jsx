@@ -4,7 +4,7 @@ import { Dialog, DialogContent } from '../ui/Dialog';
 import { Button } from '../ui/Button';
 import { InputGroup } from '../ui/Input';
 import { Label } from '../ui/Label';
-import { Mail, Lock, User, Eye, EyeOff, AlertCircle, ArrowRight } from 'lucide-react';
+import { Mail, Lock, User, Phone, Eye, EyeOff, AlertCircle, ArrowRight } from 'lucide-react';
 
 export default function AuthModal({
     isOpen,
@@ -27,6 +27,7 @@ export default function AuthModal({
     const registerForm = useForm({
         name: '',
         email: '',
+        phone: '',
         password: '',
         password_confirmation: '',
     });
@@ -310,6 +311,35 @@ export default function AuthModal({
                                 {registerForm.errors.email && (
                                     <p id="reg-email-error" role="alert" className="text-[11px] text-red-600 mt-1 font-medium">
                                         {registerForm.errors.email}
+                                    </p>
+                                )}
+                            </div>
+
+                            {/* Phone */}
+                            <div>
+                                <Label htmlFor="reg-phone">Nomor WhatsApp / HP</Label>
+                                <InputGroup
+                                    id="reg-phone"
+                                    name="phone"
+                                    icon={Phone}
+                                    type="tel"
+                                    inputMode="numeric"
+                                    autoComplete="tel"
+                                    enterKeyHint="next"
+                                    placeholder="Contoh: 081234567890"
+                                    value={registerForm.data.phone}
+                                    onChange={(e) => {
+                                        registerForm.setData('phone', e.target.value.replace(/\D/g, ''));
+                                        if (registerForm.errors.phone) registerForm.clearErrors('phone');
+                                    }}
+                                    required
+                                    aria-invalid={!!registerForm.errors.phone}
+                                    aria-describedby={registerForm.errors.phone ? 'reg-phone-error' : undefined}
+                                    error={!!registerForm.errors.phone}
+                                />
+                                {registerForm.errors.phone && (
+                                    <p id="reg-phone-error" role="alert" className="text-[11px] text-red-600 mt-1 font-medium">
+                                        {registerForm.errors.phone}
                                     </p>
                                 )}
                             </div>

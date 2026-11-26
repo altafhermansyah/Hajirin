@@ -25,6 +25,10 @@ class UserOrderController extends Controller
         $order = DB::table('orders')
             ->join('events', 'events.id', '=', 'orders.event_id')
             ->join('users as organizers', 'organizers.id', '=', 'events.eo_id')
+            ->leftJoin('eo_applications', function ($join): void {
+                $join->on('eo_applications.user_id', '=', 'organizers.id')
+                    ->where('eo_applications.status', '=', 'APPROVED');
+            })
             ->leftJoin('payments', 'payments.order_id', '=', 'orders.id')
             ->where('orders.order_reference', $orderReference)
             ->where('orders.user_id', $userId)
@@ -33,6 +37,7 @@ class UserOrderController extends Controller
                 'orders.order_reference',
                 'orders.status as order_status',
                 'orders.total_amount',
+                'orders.expires_at',
                 'orders.created_at as order_created_at',
                 'orders.paid_at',
                 'payments.method as payment_method',
@@ -45,7 +50,7 @@ class UserOrderController extends Controller
                 'events.address as event_address',
                 'events.event_type',
                 'events.banner_path as event_banner',
-                'organizers.name as organizer_name'
+                DB::raw('COALESCE(eo_applications.organization_name, organizers.name) as organizer_name')
             )
             ->first();
 
@@ -83,15 +88,24 @@ class UserOrderController extends Controller
         $totalAmount = (float) $order->total_amount;
         $totalTickets = $items->sum('quantity');
 
-        // Cek jumlah tiket dan apakah ada tiket yang sudah digunakan check-in
+        // Cek jumlah tiket, apakah sudah check-in, atau sudah ditransfer ke pengguna lain
         $ticketSummary = DB::table('tickets')
             ->where('order_id', $order->order_id)
             ->selectRaw('COUNT(*) as total')
             ->selectRaw("COUNT(CASE WHEN status = 'USED' THEN 1 END) as used_count")
+            ->selectRaw('COUNT(CASE WHEN holder_user_id IS NOT NULL AND holder_user_id <> ? THEN 1 END) as transferred_count', [$userId])
             ->first();
 
         $ticketCount = (int) ($ticketSummary->total ?? 0);
         $hasUsedTickets = ((int) ($ticketSummary->used_count ?? 0)) > 0;
+        $hasTransferredTickets = ((int) ($ticketSummary->transferred_count ?? 0)) > 0;
+
+        $hasPendingTransfers = DB::table('ticket_transfers')
+            ->join('tickets', 'tickets.id', '=', 'ticket_transfers.ticket_id')
+            ->where('tickets.order_id', $order->order_id)
+            ->where('ticket_transfers.status', 'PENDING')
+            ->where('ticket_transfers.expires_at', '>', now())
+            ->exists();
 
         $latestRefund = Refund::query()
             ->where('order_id', $order->order_id)
@@ -110,6 +124,10 @@ class UserOrderController extends Controller
             $refundBlockedReason = 'Pesanan tiket gratis tidak memerlukan pengembalian dana.';
         } elseif ($hasUsedTickets) {
             $refundBlockedReason = 'Tiket pada pesanan ini sudah digunakan untuk check-in sehingga tidak dapat di-refund.';
+        } elseif ($hasTransferredTickets) {
+            $refundBlockedReason = 'Tiket pada pesanan ini sudah ditransfer ke pengguna lain sehingga tidak dapat di-refund.';
+        } elseif ($hasPendingTransfers) {
+            $refundBlockedReason = 'Pesanan ini memiliki undangan transfer tiket aktif. Batalkan undangan transfer terlebih dahulu sebelum mengajukan refund.';
         }
 
         $canRequestRefund = ! $hasActiveRefund && $refundBlockedReason === null;
@@ -120,20 +138,26 @@ class UserOrderController extends Controller
             'amountFormatted' => 'Rp'.number_format((float) $latestRefund->amount, 0, ',', '.'),
             'reason' => $latestRefund->reason,
             'resolutionNote' => $latestRefund->resolution_note,
-            'requestedAtFormatted' => Carbon::parse($latestRefund->requested_at)->locale('id')->translatedFormat('d M Y, H:i').' WIB',
+            'requestedAtFormatted' => Carbon::parse($latestRefund->requested_at)->timezone(config('app.timezone'))->locale('id')->translatedFormat('d M Y, H:i').' WIB',
             'processedAtFormatted' => $latestRefund->processed_at
-                ? Carbon::parse($latestRefund->processed_at)->locale('id')->translatedFormat('d M Y, H:i').' WIB'
+                ? Carbon::parse($latestRefund->processed_at)->timezone(config('app.timezone'))->locale('id')->translatedFormat('d M Y, H:i').' WIB'
                 : null,
         ] : null;
+
+        $expiresAt = $order->expires_at ? Carbon::parse($order->expires_at)->timezone(config('app.timezone')) : null;
 
         $orderData = [
             'id' => $order->order_id,
             'orderReference' => $order->order_reference,
             'status' => $order->order_status,
+            'isPending' => $order->order_status === 'PENDING' && ($expiresAt === null || $expiresAt->isFuture()),
+            'expiresAtFormatted' => $expiresAt
+                ? $expiresAt->copy()->locale('id')->translatedFormat('d M Y, H:i').' WIB'
+                : null,
             'totalAmount' => $totalAmount,
             'formattedTotalAmount' => $totalAmount > 0 ? 'Rp'.number_format($totalAmount, 0, ',', '.') : 'Gratis',
-            'createdAt' => Carbon::parse($order->order_created_at)->locale('id')->translatedFormat('l, d F Y • H:i').' WIB',
-            'paidAt' => $order->paid_at ? Carbon::parse($order->paid_at)->locale('id')->translatedFormat('l, d F Y • H:i').' WIB' : '-',
+            'createdAt' => Carbon::parse($order->order_created_at)->timezone(config('app.timezone'))->locale('id')->translatedFormat('l, d F Y • H:i').' WIB',
+            'paidAt' => $order->paid_at ? Carbon::parse($order->paid_at)->timezone(config('app.timezone'))->locale('id')->translatedFormat('l, d F Y • H:i').' WIB' : '-',
             'paymentMethod' => $order->payment_method ?: ($totalAmount <= 0 ? 'FREE' : 'QRIS'),
             'paymentReference' => $order->payment_reference ?: '-',
             'totalTickets' => $totalTickets,
@@ -148,7 +172,7 @@ class UserOrderController extends Controller
             'title' => $order->event_title,
             'slug' => $order->event_slug,
             'startsAt' => $order->event_starts_at,
-            'dateFormatted' => Carbon::parse($order->event_starts_at)->locale('id')->translatedFormat('l, d F Y • H:i').' WIB',
+            'dateFormatted' => Carbon::parse($order->event_starts_at)->timezone(config('app.timezone'))->locale('id')->translatedFormat('l, d F Y • H:i').' WIB',
             'location' => $order->venue_name ?: ($order->event_type === 'ONLINE' ? 'Online Event' : 'Lokasi Diumumkan'),
             'address' => $order->event_address ?: '',
             'eventType' => $order->event_type,
@@ -201,6 +225,31 @@ class UserOrderController extends Controller
             if ($hasUsedTicket) {
                 throw ValidationException::withMessages([
                     'refund' => 'Pengembalian dana tidak dapat diajukan karena tiket pada pesanan ini sudah digunakan untuk check-in.',
+                ]);
+            }
+
+            $hasTransferredTicket = DB::table('tickets')
+                ->where('order_id', $order->id)
+                ->whereNotNull('holder_user_id')
+                ->where('holder_user_id', '<>', $user->id)
+                ->exists();
+
+            if ($hasTransferredTicket) {
+                throw ValidationException::withMessages([
+                    'refund' => 'Pengembalian dana tidak dapat diajukan karena tiket pada pesanan ini telah ditransfer ke pengguna lain.',
+                ]);
+            }
+
+            $hasPendingTransfer = DB::table('ticket_transfers')
+                ->join('tickets', 'tickets.id', '=', 'ticket_transfers.ticket_id')
+                ->where('tickets.order_id', $order->id)
+                ->where('ticket_transfers.status', 'PENDING')
+                ->where('ticket_transfers.expires_at', '>', now())
+                ->exists();
+
+            if ($hasPendingTransfer) {
+                throw ValidationException::withMessages([
+                    'refund' => 'Pengembalian dana tidak dapat diajukan saat ada undangan transfer tiket yang masih aktif. Batalkan transfer terlebih dahulu.',
                 ]);
             }
 

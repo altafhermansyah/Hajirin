@@ -20,6 +20,7 @@ class RegisteredUserController extends Controller
         $user = new User([
             'name' => $request->name,
             'email' => mb_strtolower(trim((string) $request->email)),
+            'phone' => $request->validated('phone'),
             'password' => Hash::make($request->password),
         ]);
         $user->role = 'USER';
@@ -31,6 +32,7 @@ class RegisteredUserController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended(url()->previous() ?: '/');
+        return redirect()->intended(url()->previous() ?: '/')
+            ->with('success', 'Akun berhasil dibuat! Silakan verifikasi email Anda sebelum checkout tiket atau mendaftar EO.');
     }
 }

@@ -4,10 +4,15 @@ import { generateQrMatrix } from '../lib/qr';
 /**
  * Renders a scannable SVG QR code for a ticket code or short verification string.
  */
-export default function QrCodeSvg({ value, className = 'size-40', quietZone = 4 }) {
+export default function QrCodeSvg({ value, size, className = 'size-40', quietZone = 4 }) {
     const matrix = useMemo(() => {
         if (!value) return null;
-        return generateQrMatrix(value);
+        const text = String(value);
+        try {
+            return generateQrMatrix(text);
+        } catch {
+            return generateQrMatrix(text.slice(0, 100));
+        }
     }, [value]);
 
     if (!matrix) {
@@ -29,8 +34,9 @@ export default function QrCodeSvg({ value, className = 'size-40', quietZone = 4 
         <svg
             viewBox={`0 0 ${totalSize} ${totalSize}`}
             role="img"
-            aria-label={`QR Code tiket ${value}`}
+            aria-label={`QR Code ${value}`}
             shapeRendering="crispEdges"
+            style={size ? { width: size, height: size } : undefined}
             className={className}
         >
             <rect width={totalSize} height={totalSize} fill="#ffffff" />

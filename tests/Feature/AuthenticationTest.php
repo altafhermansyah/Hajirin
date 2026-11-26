@@ -73,6 +73,7 @@ class AuthenticationTest extends TestCase
         $response = $this->post('/register', [
             'name' => 'John Doe',
             'email' => 'johndoe@example.com',
+            'phone' => '081234567890',
             'password' => 'password123',
             'password_confirmation' => 'password123',
         ]);
@@ -83,6 +84,7 @@ class AuthenticationTest extends TestCase
         $this->assertDatabaseHas('users', [
             'email' => 'johndoe@example.com',
             'name' => 'John Doe',
+            'phone' => '081234567890',
             'role' => 'USER',
         ]);
     }
@@ -92,6 +94,7 @@ class AuthenticationTest extends TestCase
         $response = $this->post('/register', [
             'name' => 'John Doe',
             'email' => 'johndoe@example.com',
+            'phone' => '081234567890',
             'password' => 'password123',
             'password_confirmation' => 'mismatch',
         ]);

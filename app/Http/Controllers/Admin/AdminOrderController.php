@@ -89,7 +89,22 @@ class AdminOrderController extends Controller
 
         $paginated = $query->paginate(10)->withQueryString();
 
-        $orders = $paginated->through(function (Order $order) {
+        $eoIds = $paginated->getCollection()
+            ->pluck('event.eo_id')
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        $eoOrgNames = $eoIds !== []
+            ? DB::table('eo_applications')
+                ->whereIn('user_id', $eoIds)
+                ->where('status', 'APPROVED')
+                ->pluck('organization_name', 'user_id')
+            : collect();
+
+        $orders = $paginated->through(function (Order $order) use ($eoOrgNames) {
+            $eoId = $order->event?->eo_id;
             $totalAmount = (float) $order->total_amount;
             $ticketCount = $order->tickets->count();
             $activeTicketCount = $order->tickets->where('status', 'ACTIVE')->count();
@@ -123,7 +138,7 @@ class AdminOrderController extends Controller
                 'event' => [
                     'id' => $order->event?->id,
                     'title' => $order->event?->title ?? 'Event Tidak Ditemukan',
-                    'organizerName' => $order->event?->eo?->name ?? '-',
+                    'organizerName' => ($eoId ? ($eoOrgNames[$eoId] ?? null) : null) ?? $order->event?->eo?->name ?? '-',
                     'venueName' => $order->event?->venue_name ?? '-',
                     'eventDateFormatted' => $order->event?->starts_at ? Carbon::parse($order->event->starts_at)->locale('id')->translatedFormat('d M Y') : '-',
                 ],
@@ -180,7 +195,7 @@ class AdminOrderController extends Controller
         $admin = $request->user();
 
         DB::transaction(function () use ($id): void {
-            $order = Order::with('tickets', 'payment')->where('id', $id)->lockForUpdate()->firstOrFail();
+            $order = Order::with(['tickets', 'payment', 'items', 'user'])->where('id', $id)->lockForUpdate()->firstOrFail();
 
             if ($order->status === 'PAID') {
                 throw ValidationException::withMessages([
@@ -203,17 +218,41 @@ class AdminOrderController extends Controller
                 Payment::create([
                     'order_id' => $order->id,
                     'payment_reference' => 'ADMIN-CONFIRM-'.strtoupper(Str::random(6)),
-                    'method' => 'MANUAL_VERIFIED',
+                    'method' => 'MOCK',
                     'status' => 'SUCCESS',
                     'amount' => $order->total_amount,
                     'paid_at' => now(),
                 ]);
             }
 
-            // Pastikan tiket berstatus ACTIVE
-            foreach ($order->tickets as $ticket) {
-                if ($ticket->status !== 'USED') {
-                    $ticket->forceFill(['status' => 'ACTIVE'])->save();
+            // Terbitkan tiket jika pesanan PENDING belum memiliki tiket; atau aktifkan tiket yang sudah ada
+            if ($order->tickets->isEmpty()) {
+                $attendeeName = $order->attendee_name ?: ($order->user?->name ?? 'Peserta');
+                $attendeeEmail = $order->attendee_email ?: ($order->user?->email ?? 'peserta@hajirin.local');
+                $attendeePhone = $order->attendee_phone ?: $order->user?->phone;
+
+                foreach ($order->items as $item) {
+                    for ($i = 1; $i <= (int) $item->quantity; $i++) {
+                        Ticket::create([
+                            'order_id' => $order->id,
+                            'order_item_id' => $item->id,
+                            'holder_user_id' => $order->user_id,
+                            'ticket_code' => 'HJR-TKT-'.date('Y').'-'.strtoupper(Str::random(8)),
+                            'attendee_name' => $attendeeName,
+                            'attendee_email' => $attendeeEmail,
+                            'attendee_phone' => $attendeePhone,
+                            'status' => 'ACTIVE',
+                        ]);
+                    }
+                }
+            } else {
+                foreach ($order->tickets as $ticket) {
+                    if ($ticket->status !== 'USED') {
+                        $ticket->forceFill([
+                            'status' => 'ACTIVE',
+                            'holder_user_id' => $ticket->holder_user_id ?: $order->user_id,
+                        ])->save();
+                    }
                 }
             }
 

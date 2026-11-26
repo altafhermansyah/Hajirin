@@ -86,7 +86,23 @@ class AdminTicketController extends Controller
 
         $paginated = $query->paginate(10)->withQueryString();
 
-        $tickets = $paginated->through(function (Ticket $ticket) {
+        $eoIds = $paginated->getCollection()
+            ->pluck('order.event.eo_id')
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        $eoOrgNames = $eoIds !== []
+            ? DB::table('eo_applications')
+                ->whereIn('user_id', $eoIds)
+                ->where('status', 'APPROVED')
+                ->pluck('organization_name', 'user_id')
+            : collect();
+
+        $tickets = $paginated->through(function (Ticket $ticket) use ($eoOrgNames) {
+            $eoId = $ticket->order?->event?->eo_id;
+
             return [
                 'id' => $ticket->id,
                 'ticketCode' => $ticket->ticket_code,
@@ -94,7 +110,7 @@ class AdminTicketController extends Controller
                 'attendeeName' => $ticket->attendee_name,
                 'attendeeEmail' => $ticket->attendee_email,
                 'attendeePhone' => $ticket->attendee_phone ?: '-',
-                'checkedInAtFormatted' => $ticket->checked_in_at ? Carbon::parse($ticket->checked_in_at)->locale('id')->translatedFormat('d M Y, H:i').' WIB' : null,
+                'checkedInAtFormatted' => $ticket->checked_in_at ? Carbon::parse($ticket->checked_in_at)->timezone(config('app.timezone'))->locale('id')->translatedFormat('d M Y, H:i').' WIB' : null,
                 'checkedInBy' => $ticket->checkedInByUser?->name,
                 'ticketTypeName' => $ticket->orderItem?->ticketType?->name ?? 'Tiket Masuk',
                 'orderReference' => $ticket->order?->order_reference,
@@ -102,11 +118,11 @@ class AdminTicketController extends Controller
                 'event' => [
                     'id' => $ticket->order?->event?->id,
                     'title' => $ticket->order?->event?->title ?? '-',
-                    'organizerName' => $ticket->order?->event?->eo?->name ?? '-',
+                    'organizerName' => ($eoId ? ($eoOrgNames[$eoId] ?? null) : null) ?? $ticket->order?->event?->eo?->name ?? '-',
                     'venueName' => $ticket->order?->event?->venue_name ?? '-',
-                    'startsAtFormatted' => $ticket->order?->event?->starts_at ? Carbon::parse($ticket->order->event->starts_at)->locale('id')->translatedFormat('d M Y, H:i').' WIB' : '-',
+                    'startsAtFormatted' => $ticket->order?->event?->starts_at ? Carbon::parse($ticket->order->event->starts_at)->timezone(config('app.timezone'))->locale('id')->translatedFormat('d M Y, H:i').' WIB' : '-',
                 ],
-                'createdAtFormatted' => Carbon::parse($ticket->created_at)->locale('id')->translatedFormat('d M Y, H:i').' WIB',
+                'createdAtFormatted' => Carbon::parse($ticket->created_at)->timezone(config('app.timezone'))->locale('id')->translatedFormat('d M Y, H:i').' WIB',
             ];
         });
 
@@ -154,11 +170,22 @@ class AdminTicketController extends Controller
             ]);
         }
 
-        $ticket->forceFill([
-            'status' => 'USED',
-            'checked_in_at' => now(),
-            'checked_in_by' => $admin->id,
-        ])->save();
+        $now = now();
+        DB::transaction(function () use ($ticket, $admin, $now): void {
+            $ticket->forceFill([
+                'status' => 'USED',
+                'checked_in_at' => $now,
+                'checked_in_by' => $admin->id,
+            ])->save();
+
+            DB::table('ticket_transfers')
+                ->where('ticket_id', $ticket->id)
+                ->where('status', 'PENDING')
+                ->update([
+                    'status' => 'CANCELLED',
+                    'updated_at' => $now,
+                ]);
+        });
 
         return back()->with('success', "Tiket {$ticket->ticket_code} ({$ticket->attendee_name}) berhasil di-check-in.");
     }

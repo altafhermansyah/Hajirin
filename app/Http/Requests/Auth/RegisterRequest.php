@@ -16,6 +16,19 @@ class RegisterRequest extends FormRequest
     }
 
     /**
+     * Normalisasi spasi, tanda hubung, dan awalan + pada nomor telepon sebelum validasi.
+     */
+    protected function prepareForValidation(): void
+    {
+        if (is_string($this->phone)) {
+            $normalizedPhone = preg_replace('/[\s\-\.\(\)\+]+/', '', trim($this->phone));
+            $this->merge([
+                'phone' => $normalizedPhone,
+            ]);
+        }
+    }
+
+    /**
      * Get the validation rules that apply to the request.
      *
      * @return array<string, ValidationRule|array<mixed>|string>
@@ -25,6 +38,7 @@ class RegisterRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:100'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
+            'phone' => ['required', 'string', 'regex:/^[0-9]{9,15}$/'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
         ];
     }
@@ -42,6 +56,8 @@ class RegisterRequest extends FormRequest
             'email.required' => 'Alamat email wajib diisi.',
             'email.email' => 'Format email tidak valid.',
             'email.unique' => 'Email ini sudah terdaftar.',
+            'phone.required' => 'Nomor WhatsApp / HP wajib diisi untuk kelengkapan data diri.',
+            'phone.regex' => 'Nomor WhatsApp / HP harus berupa 9 sampai 15 digit angka.',
             'password.required' => 'Kata sandi wajib diisi.',
             'password.min' => 'Kata sandi minimal 8 karakter.',
             'password.confirmed' => 'Konfirmasi kata sandi tidak cocok.',

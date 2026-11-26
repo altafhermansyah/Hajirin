@@ -65,6 +65,12 @@ class EoApplicationController extends Controller
         $user = $request->user();
         $validated = $request->validated();
 
+        if (! $user->hasVerifiedEmail()) {
+            throw ValidationException::withMessages([
+                'email_verification' => 'Silakan verifikasi alamat email akun Anda dengan kode OTP 6 digit terlebih dahulu sebelum mengajukan akun Event Organizer.',
+            ]);
+        }
+
         $hasActiveOrApprovedApplication = EoApplication::where('user_id', $user->id)
             ->whereIn('status', ['PENDING', 'APPROVED'])
             ->exists();

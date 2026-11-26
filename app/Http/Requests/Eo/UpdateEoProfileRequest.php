@@ -21,6 +21,7 @@ class UpdateEoProfileRequest extends FormRequest
             'organization_name' => ['required', 'string', 'max:150'],
             'contact_phone' => ['required', 'string', 'max:25'],
             'portfolio_url' => ['nullable', 'url', 'max:255'],
+            'avatar' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
         ];
     }
 
@@ -36,6 +37,9 @@ class UpdateEoProfileRequest extends FormRequest
             'contact_phone.max' => 'Kontak PIC maksimal 25 karakter.',
             'portfolio_url.url' => 'Tautan portofolio harus berupa URL yang valid (mis. https://instagram.com/...).',
             'portfolio_url.max' => 'Tautan portofolio maksimal 255 karakter.',
+            'avatar.image' => 'Foto profil atau logo organisasi harus berupa file gambar.',
+            'avatar.mimes' => 'Format logo/foto profil harus JPG, PNG, atau WEBP.',
+            'avatar.max' => 'Ukuran file logo/foto profil maksimal 5MB.',
         ];
     }
 }

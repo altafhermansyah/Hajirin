@@ -11,10 +11,12 @@ import {
     CheckCircle2,
     Ticket,
     CalendarDays,
+    MailWarning,
     MapPin,
     Copy,
     Check,
 } from 'lucide-react';
+import EmailVerificationModal from '../../Components/Auth/EmailVerificationModal';
 import { Card } from '../../Components/ui/Card';
 import { StatusBadge, NeutralTag } from '../../Components/ui/StatusBadge';
 import { FlashBanner } from '../../Components/ui/FlashBanner';
@@ -30,9 +32,24 @@ export default function Checkout({
     ticketTypes = [],
     initialQuantity = 1,
     formatted_total_amount = 'Rp0',
+    idempotencyKey = '',
     orderSuccess = null,
 }) {
     const [copiedCode, setCopiedCode] = useState(null);
+    const [isVerifyModalOpen, setIsVerifyModalOpen] = useState(false);
+    const isEmailVerified = Boolean(auth?.user?.email_verified_at);
+
+    const [clientIdempotencyKey] = useState(() => {
+        if (idempotencyKey) return idempotencyKey;
+        if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+            return crypto.randomUUID();
+        }
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+            const r = (Math.random() * 16) | 0;
+            const v = c === 'x' ? r : (r & 0x3) | 0x8;
+            return v.toString(16);
+        });
+    });
 
     const activeItems = (ticketTypes || []).filter((t) => (t.selected_quantity || 0) > 0);
     const defaultItems =
@@ -70,6 +87,7 @@ export default function Checkout({
         attendee_name: auth?.user?.name || '',
         attendee_email: auth?.user?.email || '',
         attendee_phone: auth?.user?.phone || '',
+        idempotency_key: clientIdempotencyKey,
     });
 
     const handleCopyCode = (code) => {
@@ -82,6 +100,10 @@ export default function Checkout({
 
     const handleSubmit = (e) => {
         e.preventDefault();
+        if (!isEmailVerified) {
+            setIsVerifyModalOpen(true);
+            return;
+        }
         post('/checkout', {
             preserveScroll: true,
         });
@@ -324,6 +346,35 @@ export default function Checkout({
                         </p>
                     </div>
 
+                    {!isEmailVerified && (
+                        <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50/90 px-4 py-3.5 text-sm text-amber-950">
+                            <div className="flex items-start gap-3">
+                                <MailWarning
+                                    className="mt-0.5 size-5 shrink-0 text-amber-600"
+                                    aria-hidden="true"
+                                />
+                                <div>
+                                    <p className="font-semibold text-amber-950">
+                                        Verifikasi email diperlukan sebelum checkout
+                                    </p>
+                                    <p className="mt-0.5 text-xs text-amber-900/80 leading-relaxed">
+                                        Pastikan email akunmu ({auth?.user?.email}) sudah
+                                        terverifikasi OTP 6 digit agar invoice dan e-tiket terkirim
+                                        dengan aman.
+                                    </p>
+                                </div>
+                            </div>
+                            <Button
+                                variant="primary"
+                                size="sm"
+                                className="shrink-0 self-start sm:self-center"
+                                onClick={() => setIsVerifyModalOpen(true)}
+                            >
+                                Verifikasi Email Sekarang
+                            </Button>
+                        </div>
+                    )}
+
                     {Object.keys(errors).length > 0 && (
                         <div className="mb-6">
                             <FlashBanner
@@ -395,6 +446,9 @@ export default function Checkout({
                                                 required
                                                 className={INPUT_CLASS}
                                             />
+                                            <p className="mt-1 text-xs text-slate-500">
+                                                Bisa diubah ke email orang lain jika tiket dibelikan untuk rekan; e-tiket akan dikirim ke alamat ini.
+                                            </p>
                                             {errors.attendee_email && (
                                                 <p role="alert" className="text-xs text-rose-600 mt-1">
                                                     {errors.attendee_email}
@@ -442,7 +496,9 @@ export default function Checkout({
                                     Pilih Metode Pembayaran
                                 </h2>
                                 <p className="text-xs text-slate-500 mt-1 mb-5">
-                                    Seluruh transaksi disimulasikan dan terverifikasi secara instan.
+                                    {computedTotalAmount > 0
+                                        ? 'Setelah klik lanjutkan, pesanan akan menahan kuota tiket selama 15 menit hingga pembayaran simulasi diselesaikan.'
+                                        : 'Tiket gratis langsung diterbitkan secara instan setelah konfirmasi pemesanan.'}
                                 </p>
 
                                 <div className="space-y-3">
@@ -582,7 +638,9 @@ export default function Checkout({
                                 >
                                     {processing
                                         ? 'Memproses Transaksi...'
-                                        : 'Bayar & Terbitkan Tiket'}
+                                        : computedTotalAmount > 0
+                                          ? 'Lanjutkan ke Pembayaran'
+                                          : 'Dapatkan Tiket Gratis'}
                                 </Button>
 
                                 <div className="mt-4 flex items-center justify-center gap-1.5 text-xs text-slate-500">
@@ -596,6 +654,12 @@ export default function Checkout({
                         </div>
                     </form>
                 </main>
+
+                <EmailVerificationModal
+                    open={isVerifyModalOpen}
+                    onClose={() => setIsVerifyModalOpen(false)}
+                    email={auth?.user?.email || ''}
+                />
             </div>
         </>
     );

@@ -76,16 +76,25 @@ class TicketCheckoutTest extends TestCase
         $response = $this->actingAs($user)->post('/checkout', $orderPayload);
 
         $response->assertSessionHasNoErrors();
-        $response->assertSessionHas('order_success');
-
-        // 1. Verifikasi Order tersimpan di tabel orders
-        $this->assertDatabaseHas('orders', [
-            'user_id' => $user->id,
-            'event_id' => $event->id,
-            'status' => 'PAID',
-        ]);
 
         $order = Order::where('user_id', $user->id)->firstOrFail();
+        $response->assertRedirect(route('orders.pay', $order->order_reference));
+
+        // 1. Order berbayar awalnya berstatus PENDING dengan kuota sudah ditahan 15 menit
+        $this->assertDatabaseHas('orders', [
+            'id' => $order->id,
+            'user_id' => $user->id,
+            'event_id' => $event->id,
+            'status' => 'PENDING',
+        ]);
+        $this->assertSame(0, Ticket::where('order_id', $order->id)->count());
+
+        // 1b. Simulasi tombol "Selesaikan Pembayaran (Demo)"
+        $confirmResponse = $this->actingAs($user)->post("/orders/{$order->order_reference}/confirm-payment");
+        $confirmResponse->assertRedirect(route('my-tickets.show', $order->order_reference));
+
+        $order->refresh();
+        $this->assertSame('PAID', $order->status);
         $this->assertNotNull($order->order_reference);
         $this->assertNotNull($order->paid_at);
 
@@ -194,9 +203,14 @@ class TicketCheckoutTest extends TestCase
         ]);
 
         $response->assertSessionHasNoErrors();
-        $response->assertSessionHas('order_success');
 
         $order = Order::where('user_id', $user->id)->firstOrFail();
+        $response->assertRedirect(route('orders.pay', $order->order_reference));
+
+        $this->actingAs($user)
+            ->post("/orders/{$order->order_reference}/confirm-payment")
+            ->assertRedirect(route('my-tickets.show', $order->order_reference));
+
         $this->assertEquals(2, $order->items()->count());
         $this->assertEquals(3, Ticket::where('order_id', $order->id)->count());
 
@@ -265,6 +279,10 @@ class TicketCheckoutTest extends TestCase
         ]);
 
         $order = Order::where('user_id', $user->id)->latest('created_at')->firstOrFail();
+
+        $this->actingAs($user)
+            ->post("/orders/{$order->order_reference}/confirm-payment")
+            ->assertRedirect(route('my-tickets.show', $order->order_reference));
 
         $response = $this->actingAs($user)->get("/my-tickets/{$order->order_reference}");
 

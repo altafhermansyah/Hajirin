@@ -2,8 +2,10 @@
 
 namespace App\Providers;
 
+use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
@@ -49,6 +51,34 @@ class AppServiceProvider extends ServiceProvider
 
         RateLimiter::for('user-actions', function (Request $request): Limit {
             return Limit::perMinute(30)->by((string) ($request->user()?->id ?: $request->ip()));
+        });
+
+        RateLimiter::for('otp-send', function (Request $request): Limit {
+            return Limit::perMinute(3)->by((string) ($request->user()?->id ?: $request->ip()));
+        });
+
+        RateLimiter::for('otp-verify', function (Request $request): Limit {
+            return Limit::perMinute(10)->by((string) ($request->user()?->id ?: $request->ip()));
+        });
+
+        ResetPassword::toMailUsing(function (object $notifiable, string $token): MailMessage {
+            $resetUrl = url(route('password.reset', [
+                'token' => $token,
+                'email' => $notifiable->getEmailForPasswordReset(),
+            ], false));
+
+            $expireMinutes = (int) config(
+                'auth.passwords.'.config('auth.defaults.passwords', 'users').'.expire',
+                60
+            );
+
+            return (new MailMessage)
+                ->subject('Atur Ulang Kata Sandi Akun Hajirin Anda')
+                ->view('emails.auth.reset-password', [
+                    'userName' => $notifiable->name ?? 'Pengguna',
+                    'resetUrl' => $resetUrl,
+                    'expireMinutes' => $expireMinutes,
+                ]);
         });
     }
 }

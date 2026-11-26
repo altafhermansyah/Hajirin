@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StaffCheckInTicketRequest;
+use App\Models\Event;
 use App\Models\Ticket;
 use Carbon\Carbon;
 use Illuminate\Database\Query\Builder;
@@ -26,21 +27,32 @@ class StaffCheckInController extends Controller
             abort(403, 'Akun Anda tidak aktif.');
         }
 
+        $now = now()->timezone(config('app.timezone'));
         $events = DB::table('event_staff')
             ->join('events', 'events.id', '=', 'event_staff.event_id')
             ->where('event_staff.user_id', $user->id)
             ->where('event_staff.role', 'CHECKIN')
             ->whereIn('events.status', ['PUBLISHED', 'ONGOING', 'COMPLETED'])
             ->orderByDesc('events.starts_at')
-            ->get(['events.id', 'events.title', 'events.status', 'events.starts_at'])
-            ->map(fn ($event): array => [
-                'id' => $event->id,
-                'title' => $event->title,
-                'status' => $event->status,
-                'startsAtFormatted' => Carbon::parse($event->starts_at)
-                    ->locale('id')
-                    ->translatedFormat('d M Y, H:i').' WIB',
-            ]);
+            ->get(['events.id', 'events.title', 'events.status', 'events.starts_at', 'events.ends_at'])
+            ->map(function ($event) use ($now): array {
+                $startsAt = Carbon::parse($event->starts_at)->timezone(config('app.timezone'));
+                $endsAt = Carbon::parse($event->ends_at)->timezone(config('app.timezone'));
+                $opensAt = $startsAt->copy()->subHours(Event::CHECKIN_OPEN_HOURS_BEFORE);
+
+                return [
+                    'id' => $event->id,
+                    'title' => $event->title,
+                    'status' => $event->status,
+                    'startsAtFormatted' => $startsAt->copy()->locale('id')->translatedFormat('d M Y, H:i').' WIB',
+                    'startsAtIso' => $startsAt->toIso8601String(),
+                    'endsAtIso' => $endsAt->toIso8601String(),
+                    'checkInOpensAtIso' => $opensAt->toIso8601String(),
+                    'checkInOpensAtFormatted' => $opensAt->copy()->locale('id')->translatedFormat('d M Y, H:i').' WIB',
+                    'isCheckInOpen' => $now->greaterThanOrEqualTo($opensAt) && $now->lessThanOrEqualTo($endsAt),
+                    'isCheckInClosed' => $now->greaterThan($endsAt),
+                ];
+            });
 
         if ($events->isEmpty()) {
             abort(403, 'Anda tidak terdaftar sebagai staff check-in pada event aktif mana pun.');
@@ -286,6 +298,16 @@ class StaffCheckInController extends Controller
                 ];
             }
 
+            $windowError = $event->checkInWindowError();
+            if ($windowError !== null) {
+                return [
+                    'outcome' => 'invalid',
+                    'message' => $windowError,
+                    'ticket' => $ticketPayload,
+                    'eventTimestamp' => $eventTimestamp,
+                ];
+            }
+
             $now = now();
             $ticket->update([
                 'status' => 'USED',
@@ -293,7 +315,15 @@ class StaffCheckInController extends Controller
                 'checked_in_by' => $user->id,
             ]);
 
-            $checkedInAt = Carbon::parse($now)->locale('id')->translatedFormat('d M Y, H:i').' WIB';
+            DB::table('ticket_transfers')
+                ->where('ticket_id', $ticket->id)
+                ->where('status', 'PENDING')
+                ->update([
+                    'status' => 'CANCELLED',
+                    'updated_at' => $now,
+                ]);
+
+            $checkedInAt = Carbon::parse($now)->timezone(config('app.timezone'))->locale('id')->translatedFormat('d M Y, H:i').' WIB';
 
             return [
                 'outcome' => 'success',

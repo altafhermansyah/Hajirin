@@ -37,14 +37,26 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $user = $request->user();
+
         return [
             ...parent::share($request),
             'auth' => [
-                'user' => $request->user()?->only('id', 'name', 'email', 'phone', 'avatar_path', 'role'),
+                'user' => $user ? [
+                    ...$user->only('id', 'name', 'email', 'phone', 'avatar_path', 'role', 'email_verified_at'),
+                    'password_changed_at' => $user->password_changed_at
+                        ? $user->password_changed_at->copy()->timezone(config('app.timezone'))->toIso8601String()
+                        : null,
+                    'password_changed_at_formatted' => $user->password_changed_at
+                        ? $user->password_changed_at->copy()->timezone(config('app.timezone'))->locale('id')->translatedFormat('d F Y, H:i').' WIB'
+                        : null,
+                ] : null,
             ],
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
                 'error' => fn () => $request->session()->get('error'),
+                'password_reset_status' => fn () => $request->session()->get('password_reset_status'),
+                'password_reset_completed' => fn () => $request->session()->get('password_reset_completed'),
             ],
             'adminCounts' => fn () => $this->resolveAdminCounts($request),
             'notifications' => fn () => $this->resolveNotifications($request),

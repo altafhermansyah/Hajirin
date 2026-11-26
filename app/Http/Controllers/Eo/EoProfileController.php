@@ -9,6 +9,8 @@ use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -34,6 +36,7 @@ class EoProfileController extends Controller
                 'organizationName' => $organizationName,
                 'contactPhone' => $approvedApplication->contact_phone ?? $user->phone ?? '',
                 'portfolioUrl' => $approvedApplication->portfolio_url ?? '',
+                'avatarPath' => $user->avatar_path,
                 'reason' => $approvedApplication->reason ?? null,
                 'hasApprovedApplication' => $approvedApplication !== null,
                 'verifiedAt' => $approvedApplication?->reviewed_at
@@ -46,23 +49,32 @@ class EoProfileController extends Controller
     }
 
     /**
-     * Perbarui identitas resmi organisasi dan kontak PIC Event Organizer.
+     * Perbarui identitas resmi organisasi, logo/foto profil, dan kontak PIC Event Organizer.
      */
     public function update(UpdateEoProfileRequest $request): RedirectResponse
     {
         $user = $request->user();
         $validated = $request->validated();
 
-        DB::transaction(function () use ($user, $validated): void {
+        $oldAvatarPath = $user->avatar_path;
+        $avatarPath = null;
+        if ($request->hasFile('avatar')) {
+            $storedPath = $this->storeOptimizedImage($request->file('avatar'), 'avatars', 'public', 512, 82);
+            $avatarPath = '/storage/'.$storedPath;
+        }
+
+        DB::transaction(function () use ($user, $validated, $avatarPath): void {
             $approvedApplication = EoApplication::where('user_id', $user->id)
                 ->where('status', 'APPROVED')
                 ->lockForUpdate()
                 ->latest('reviewed_at')
                 ->first();
 
+            $organizationName = trim($validated['organization_name']);
+
             if ($approvedApplication) {
                 $approvedApplication->update([
-                    'organization_name' => trim($validated['organization_name']),
+                    'organization_name' => $organizationName,
                     'contact_phone' => trim($validated['contact_phone']),
                     'portfolio_url' => ! empty($validated['portfolio_url'])
                         ? trim($validated['portfolio_url'])
@@ -70,10 +82,26 @@ class EoProfileController extends Controller
                 ]);
             }
 
-            $user->update([
+            $userUpdate = [
                 'phone' => trim($validated['contact_phone']),
-            ]);
+            ];
+
+            if (! $approvedApplication) {
+                $userUpdate['name'] = $organizationName;
+            }
+
+            if ($avatarPath !== null) {
+                $userUpdate['avatar_path'] = $avatarPath;
+            }
+
+            $user->update($userUpdate);
         });
+
+        // Hapus berkas avatar lama setelah transaksi berhasil commit
+        if ($avatarPath !== null && $oldAvatarPath && Str::startsWith($oldAvatarPath, '/storage/avatars/')) {
+            $oldPath = str_replace('/storage/', '', $oldAvatarPath);
+            Storage::disk('public')->delete($oldPath);
+        }
 
         return redirect()
             ->route('eo.profile.show')

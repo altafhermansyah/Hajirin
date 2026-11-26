@@ -260,7 +260,7 @@ export default function EoLayout({ title, organizerName, children }) {
                                     aria-haspopup="menu"
                                     className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-slate-100 transition-colors text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue cursor-pointer"
                                 >
-                                    <Avatar name={displayOrgName} size="sm" />
+                                    <Avatar name={displayOrgName} src={user.avatar_path} size="sm" />
                                     <div className="hidden sm:block leading-tight">
                                         <p className="text-sm font-medium text-slate-900 max-w-44 truncate">
                                             {displayOrgName}

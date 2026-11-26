@@ -25,7 +25,8 @@ class EventController extends Controller
                 'categories.name as category_name',
                 'categories.slug as category_slug',
                 DB::raw('COALESCE(eo_applications.organization_name, users.name) as organizer'),
-                'users.email as organizer_email'
+                'users.email as organizer_email',
+                'users.avatar_path as organizer_avatar'
             )
             ->where('events.slug', $slug)
             ->where('events.status', 'PUBLISHED')
@@ -105,6 +106,10 @@ class EventController extends Controller
         $relatedEvents = DB::table('events')
             ->join('categories', 'events.category_id', '=', 'categories.id')
             ->join('users', 'events.eo_id', '=', 'users.id')
+            ->leftJoin('eo_applications', function ($join): void {
+                $join->on('eo_applications.user_id', '=', 'users.id')
+                    ->where('eo_applications.status', '=', 'APPROVED');
+            })
             ->where('events.id', '!=', $event->id)
             ->where('events.status', 'PUBLISHED')
             ->select(
@@ -115,7 +120,7 @@ class EventController extends Controller
                 'events.starts_at',
                 'events.venue_name as place',
                 'categories.name as category',
-                'users.name as organizer'
+                DB::raw('COALESCE(eo_applications.organization_name, users.name) as organizer')
             )
             ->addSelect(['min_price' => $minPriceSubquery])
             ->limit(4)
@@ -159,6 +164,7 @@ class EventController extends Controller
             'online_url' => $event->online_url,
             'organizer' => $event->organizer,
             'organizer_email' => $event->organizer_email,
+            'organizer_avatar' => $event->organizer_avatar,
             'price' => $minPrice,
             'raw_min_price' => $minPriceVal,
             'image' => $event->banner_path ?: '/images/events/tech_hero.webp',
@@ -198,6 +204,10 @@ class EventController extends Controller
         $query = DB::table('events')
             ->join('categories', 'events.category_id', '=', 'categories.id')
             ->join('users', 'events.eo_id', '=', 'users.id')
+            ->leftJoin('eo_applications', function ($join): void {
+                $join->on('eo_applications.user_id', '=', 'users.id')
+                    ->where('eo_applications.status', '=', 'APPROVED');
+            })
             ->where('events.status', 'PUBLISHED');
 
         if ($selectedCity && $selectedCity !== 'Semua Kota') {
@@ -224,7 +234,7 @@ class EventController extends Controller
             'events.event_type',
             'events.banner_path',
             'categories.name as category_name',
-            'users.name as organizer_name'
+            DB::raw('COALESCE(eo_applications.organization_name, users.name) as organizer_name')
         )
             ->orderBy('events.starts_at')
             ->get()
@@ -252,7 +262,16 @@ class EventController extends Controller
             ? DB::table('bookmarks')->where('user_id', auth()->id())->pluck('event_id')->toArray()
             : [];
 
-        $availableCities = [
+        $dynamicCities = DB::table('events')
+            ->where('status', 'PUBLISHED')
+            ->whereNotNull('city')
+            ->where('city', '!=', '')
+            ->distinct()
+            ->orderBy('city')
+            ->pluck('city')
+            ->all();
+
+        $availableCities = collect([
             'Semua Kota',
             'Jakarta',
             'Tangerang',
@@ -260,7 +279,11 @@ class EventController extends Controller
             'Surabaya',
             'Yogyakarta',
             'Bali',
-        ];
+        ])
+            ->merge($dynamicCities)
+            ->unique(fn (string $city): string => mb_strtolower(trim($city)))
+            ->values()
+            ->all();
 
         return Inertia::render('Event/Nearby', [
             'events' => $events,

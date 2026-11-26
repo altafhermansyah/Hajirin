@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Eo;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Eo\CheckInTicketRequest;
+use App\Models\Event;
 use App\Models\Ticket;
 use Carbon\Carbon;
 use Illuminate\Database\Query\Builder;
@@ -29,19 +30,30 @@ class EoCheckInController extends Controller
             ->where('status', 'APPROVED')
             ->first();
 
+        $now = now()->timezone(config('app.timezone'));
         $events = DB::table('events')
             ->where('eo_id', $eoId)
             ->whereIn('status', ['PUBLISHED', 'ONGOING', 'COMPLETED'])
             ->orderByDesc('starts_at')
-            ->get(['id', 'title', 'status', 'starts_at'])
-            ->map(fn ($event) => [
-                'id' => $event->id,
-                'title' => $event->title,
-                'status' => $event->status,
-                'startsAtFormatted' => Carbon::parse($event->starts_at)
-                    ->locale('id')
-                    ->translatedFormat('d M Y, H:i').' WIB',
-            ]);
+            ->get(['id', 'title', 'status', 'starts_at', 'ends_at'])
+            ->map(function ($event) use ($now): array {
+                $startsAt = Carbon::parse($event->starts_at)->timezone(config('app.timezone'));
+                $endsAt = Carbon::parse($event->ends_at)->timezone(config('app.timezone'));
+                $opensAt = $startsAt->copy()->subHours(Event::CHECKIN_OPEN_HOURS_BEFORE);
+
+                return [
+                    'id' => $event->id,
+                    'title' => $event->title,
+                    'status' => $event->status,
+                    'startsAtFormatted' => $startsAt->copy()->locale('id')->translatedFormat('d M Y, H:i').' WIB',
+                    'startsAtIso' => $startsAt->toIso8601String(),
+                    'endsAtIso' => $endsAt->toIso8601String(),
+                    'checkInOpensAtIso' => $opensAt->toIso8601String(),
+                    'checkInOpensAtFormatted' => $opensAt->copy()->locale('id')->translatedFormat('d M Y, H:i').' WIB',
+                    'isCheckInOpen' => $now->greaterThanOrEqualTo($opensAt) && $now->lessThanOrEqualTo($endsAt),
+                    'isCheckInClosed' => $now->greaterThan($endsAt),
+                ];
+            });
 
         $rawEventId = trim((string) $request->query('event_id', ''));
         $selectedEventId = ($rawEventId !== '' && Str::isUuid($rawEventId) && $events->contains('id', $rawEventId))
@@ -258,6 +270,15 @@ class EoCheckInController extends Controller
                 ];
             }
 
+            $windowError = $event->checkInWindowError();
+            if ($windowError !== null) {
+                return [
+                    'outcome' => 'invalid',
+                    'message' => $windowError,
+                    'ticket' => $ticketPayload,
+                ];
+            }
+
             $now = now();
             $ticket->update([
                 'status' => 'USED',
@@ -265,7 +286,15 @@ class EoCheckInController extends Controller
                 'checked_in_by' => $user->id,
             ]);
 
-            $checkedInAt = Carbon::parse($now)->locale('id')->translatedFormat('d M Y, H:i').' WIB';
+            DB::table('ticket_transfers')
+                ->where('ticket_id', $ticket->id)
+                ->where('status', 'PENDING')
+                ->update([
+                    'status' => 'CANCELLED',
+                    'updated_at' => $now,
+                ]);
+
+            $checkedInAt = Carbon::parse($now)->timezone(config('app.timezone'))->locale('id')->translatedFormat('d M Y, H:i').' WIB';
 
             return [
                 'outcome' => 'success',

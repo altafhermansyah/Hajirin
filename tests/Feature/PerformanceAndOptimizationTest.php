@@ -62,6 +62,7 @@ class PerformanceAndOptimizationTest extends TestCase
         $this->actingAs($user)
             ->post('/profile', [
                 'name' => $user->name,
+                'phone' => '081234567890',
                 'avatar' => $avatar,
             ])
             ->assertSessionHasNoErrors();

@@ -11,13 +11,29 @@ import { playCheckInFeedback } from '../lib/checkinFeedback';
 import {
     Camera,
     CheckCircle2,
+    Clock,
     Keyboard,
+    Lock,
     QrCode,
     Search,
     Ticket,
     Volume2,
     VolumeX,
 } from 'lucide-react';
+
+function formatCountdown(remainingMs) {
+    const totalSeconds = Math.max(0, Math.floor(remainingMs / 1000));
+    const days = Math.floor(totalSeconds / 86400);
+    const hours = Math.floor((totalSeconds % 86400) / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    const pad = (n) => String(n).padStart(2, '0');
+
+    if (days > 0) {
+        return `${days} hari ${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+    }
+    return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+}
 
 const RESULT_TONES = {
     success: { dot: 'success', heading: 'Check-in berhasil' },
@@ -46,6 +62,7 @@ export default function CheckInWorkspace({
     const [isScanningSubmitting, setIsScanningSubmitting] = useState(false);
     const [submittingCode, setSubmittingCode] = useState(null);
     const [attendeeSearch, setAttendeeSearch] = useState(searchQuery || '');
+    const [nowMs, setNowMs] = useState(() => Date.now());
     const [isMuted, setIsMuted] = useState(() => {
         if (typeof window === 'undefined') return false;
         try {
@@ -54,6 +71,23 @@ export default function CheckInWorkspace({
             return false;
         }
     });
+
+    const selectedEvent = events.find((ev) => ev.id === selectedEventId) || null;
+    const opensAtMs = selectedEvent?.checkInOpensAtIso
+        ? Date.parse(selectedEvent.checkInOpensAtIso)
+        : null;
+    const endsAtMs = selectedEvent?.endsAtIso ? Date.parse(selectedEvent.endsAtIso) : null;
+    const isBeforeGateOpen = Boolean(opensAtMs && nowMs < opensAtMs);
+    const isAfterGateClosed = Boolean(endsAtMs && nowMs > endsAtMs);
+    const isSelectedEventLocked = Boolean(selectedEvent && (isBeforeGateOpen || isAfterGateClosed));
+    const isSelectedEventLockedRef = useRef(isSelectedEventLocked);
+    isSelectedEventLockedRef.current = isSelectedEventLocked;
+
+    useEffect(() => {
+        if (!selectedEvent || !opensAtMs) return undefined;
+        const interval = setInterval(() => setNowMs(Date.now()), 1000);
+        return () => clearInterval(interval);
+    }, [selectedEvent?.id, opensAtMs]);
 
     const inputRef = useRef(null);
     const searchInputRef = useRef(null);
@@ -179,7 +213,8 @@ export default function CheckInWorkspace({
 
                     if (
                         videoRef.current.readyState >= 2 &&
-                        !isScanningSubmittingRef.current
+                        !isScanningSubmittingRef.current &&
+                        !isSelectedEventLockedRef.current
                     ) {
                         try {
                             const codes = await detector.detect(videoRef.current);
@@ -353,6 +388,64 @@ export default function CheckInWorkspace({
                 </div>
             </div>
 
+            {/* Status Gerbang & Countdown Validasi Check-in */}
+            {selectedEvent && (
+                <Card
+                    className={`p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                        isBeforeGateOpen
+                            ? 'border-amber-200 bg-amber-50/70'
+                            : isAfterGateClosed
+                              ? 'border-rose-200 bg-rose-50/70'
+                              : 'border-emerald-200 bg-emerald-50/60'
+                    }`}
+                >
+                    <div className="flex items-start gap-3">
+                        <div
+                            className={`mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg border ${
+                                isBeforeGateOpen
+                                    ? 'border-amber-200 bg-white text-amber-600'
+                                    : isAfterGateClosed
+                                      ? 'border-rose-200 bg-white text-rose-600'
+                                      : 'border-emerald-200 bg-white text-emerald-600'
+                            }`}
+                        >
+                            {isSelectedEventLocked ? (
+                                <Lock className="size-4" aria-hidden="true" />
+                            ) : (
+                                <Clock className="size-4" aria-hidden="true" />
+                            )}
+                        </div>
+                        <div className="space-y-0.5">
+                            <p className="text-sm font-semibold text-gray-900">
+                                {isBeforeGateOpen
+                                    ? 'Gerbang Check-in Belum Dibuka'
+                                    : isAfterGateClosed
+                                      ? 'Waktu Check-in Event Telah Berakhir'
+                                      : 'Gerbang Check-in Sedang Dibuka'}
+                            </p>
+                            <p className="text-xs text-gray-600">
+                                {isBeforeGateOpen
+                                    ? `Validasi tiket untuk "${selectedEvent.title}" dibuka mulai ${selectedEvent.checkInOpensAtFormatted} (3 jam sebelum acara dimulai).`
+                                    : isAfterGateClosed
+                                      ? `Jadwal pelaksanaan "${selectedEvent.title}" telah selesai sehingga pemindaian check-in ditutup.`
+                                      : `Acara "${selectedEvent.title}" sudah memasuki jendela check-in (dimulai ${selectedEvent.startsAtFormatted}).`}
+                            </p>
+                        </div>
+                    </div>
+
+                    {isBeforeGateOpen && opensAtMs && (
+                        <div className="shrink-0 rounded-lg border border-amber-200 bg-white px-3.5 py-2 text-left sm:text-right">
+                            <p className="text-[11px] font-medium text-amber-700">
+                                Dibuka dalam
+                            </p>
+                            <p className="font-mono text-sm font-bold text-gray-900 tabular-nums">
+                                {formatCountdown(opensAtMs - nowMs)}
+                            </p>
+                        </div>
+                    )}
+                </Card>
+            )}
+
             {/* 3 KPI Summary Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <StatCard
@@ -458,10 +551,16 @@ export default function CheckInWorkspace({
                                                 type="submit"
                                                 variant="primary"
                                                 size="md"
-                                                disabled={processing}
+                                                disabled={processing || isSelectedEventLocked}
                                                 className="h-10 px-4"
                                             >
-                                                {processing ? 'Memverifikasi...' : 'Verifikasi Check-in'}
+                                                {processing
+                                                    ? 'Memverifikasi...'
+                                                    : isAfterGateClosed
+                                                      ? 'Check-in Ditutup'
+                                                      : isBeforeGateOpen
+                                                        ? 'Gerbang Belum Dibuka'
+                                                        : 'Verifikasi Check-in'}
                                             </EoButton>
                                         </div>
                                         <p id="ticket-code-help" className="mt-1.5 text-xs text-gray-500">
@@ -489,11 +588,15 @@ export default function CheckInWorkspace({
                                                 />
                                             </div>
                                             <p className="text-xs text-gray-600">
-                                                {cameraStatus === 'starting'
-                                                    ? 'Mengaktifkan kamera perangkat...'
-                                                    : isScanningSubmitting
-                                                    ? 'Memverifikasi tiket terdeteksi...'
-                                                    : 'Arahkan QR Code e-tiket peserta ke tengah kamera.'}
+                                                {isAfterGateClosed
+                                                    ? 'Pemindaian dinonaktifkan karena waktu check-in acara telah berakhir.'
+                                                    : isBeforeGateOpen
+                                                      ? 'Pemindaian otomatis dijeda hingga gerbang check-in dibuka (3 jam sebelum acara dimulai).'
+                                                      : cameraStatus === 'starting'
+                                                        ? 'Mengaktifkan kamera perangkat...'
+                                                        : isScanningSubmitting
+                                                          ? 'Memverifikasi tiket terdeteksi...'
+                                                          : 'Arahkan QR Code e-tiket peserta ke tengah kamera.'}
                                             </p>
                                         </div>
                                     ) : (
@@ -593,12 +696,19 @@ export default function CheckInWorkspace({
                                                                 <EoButton
                                                                     variant="primary"
                                                                     size="sm"
-                                                                    disabled={submittingCode === item.ticketCode}
+                                                                    disabled={
+                                                                        submittingCode === item.ticketCode ||
+                                                                        isSelectedEventLocked
+                                                                    }
                                                                     onClick={() => handleQuickCheckIn(item.ticketCode)}
                                                                 >
                                                                     {submittingCode === item.ticketCode
                                                                         ? 'Memproses...'
-                                                                        : 'Check-in'}
+                                                                        : isAfterGateClosed
+                                                                          ? 'Ditutup'
+                                                                          : isBeforeGateOpen
+                                                                            ? 'Belum Dibuka'
+                                                                            : 'Check-in'}
                                                                 </EoButton>
                                                             ) : (
                                                                 <div className="text-right">

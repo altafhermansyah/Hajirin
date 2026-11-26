@@ -41,6 +41,7 @@ export default function OrderDetail({
 
     const isPaid = order.status === 'PAID';
     const isCancelled = order.status === 'CANCELLED';
+    const isExpired = order.status === 'EXPIRED';
     const refundMeta = refund
         ? REFUND_STATUS_META[refund.status] || REFUND_STATUS_META.PENDING
         : null;
@@ -49,7 +50,9 @@ export default function OrderDetail({
         ? { tone: 'success', label: 'Pembayaran Berhasil (Lunas)' }
         : isCancelled
           ? { tone: 'danger', label: 'Pesanan Dibatalkan / Refund' }
-          : { tone: 'warning', label: order.status || 'Menunggu Pembayaran' };
+          : isExpired
+            ? { tone: 'danger', label: 'Pembayaran Kedaluwarsa' }
+            : { tone: 'warning', label: 'Menunggu Pembayaran' };
 
     const handlePrint = () => {
         if (typeof window !== 'undefined') {
@@ -99,6 +102,16 @@ export default function OrderDetail({
                         </Link>
 
                         <div className="flex flex-wrap items-center gap-2">
+                            {order.isPending && (
+                                <Link
+                                    href={`/orders/${order.orderReference}/pay`}
+                                    className={buttonClass('primary', 'sm')}
+                                >
+                                    <span>Lanjutkan Pembayaran</span>
+                                    <ArrowRight className="size-3.5" aria-hidden="true" />
+                                </Link>
+                            )}
+
                             {order.hasTickets && isPaid && (
                                 <Link
                                     href={`/my-tickets/${order.orderReference}`}

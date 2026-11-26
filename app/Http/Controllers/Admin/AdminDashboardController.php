@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\RejectEoApplicationRequest;
 use App\Http\Requests\Admin\RejectEventRequest;
+use App\Mail\EoApplicationStatusMail;
+use App\Mail\EventModerationMail;
 use App\Models\EoApplication;
 use App\Models\Event;
 use App\Models\User;
@@ -12,6 +14,7 @@ use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -236,6 +239,14 @@ class AdminDashboardController extends Controller
                 'action_url' => '/eo/dashboard',
                 'created_at' => now(),
             ]);
+
+            Mail::to($applicant->email)->send(
+                (new EoApplicationStatusMail(
+                    applicantName: $applicant->name,
+                    organizationName: $application->organization_name,
+                    approved: true,
+                ))->afterCommit()
+            );
         });
 
         return back()->with('success', 'Pengajuan Event Organizer berhasil disetujui dan role pengguna telah diperbarui menjadi EO.');
@@ -276,6 +287,18 @@ class AdminDashboardController extends Controller
                 'action_url' => '/eo-applications/create',
                 'created_at' => now(),
             ]);
+
+            $applicant = User::find($application->user_id);
+            if ($applicant) {
+                Mail::to($applicant->email)->send(
+                    (new EoApplicationStatusMail(
+                        applicantName: $applicant->name,
+                        organizationName: $application->organization_name,
+                        approved: false,
+                        rejectionReason: $validated['rejection_reason'],
+                    ))->afterCommit()
+                );
+            }
         });
 
         return back()->with('success', 'Pengajuan Event Organizer telah ditolak beserta catatan evaluasi untuk pemohon.');
@@ -315,6 +338,19 @@ class AdminDashboardController extends Controller
                 'action_url' => "/event/{$event->slug}",
                 'created_at' => now(),
             ]);
+
+            $eo = User::find($event->eo_id);
+            if ($eo) {
+                Mail::to($eo->email)->send(
+                    (new EventModerationMail(
+                        organizerName: $eo->name,
+                        eventTitle: $event->title,
+                        eventId: $event->id,
+                        eventSlug: $event->slug,
+                        approved: true,
+                    ))->afterCommit()
+                );
+            }
         });
 
         return back()->with('success', 'Event berhasil disetujui dan kini resmi tayang di katalog publik.');
@@ -355,6 +391,20 @@ class AdminDashboardController extends Controller
                 'action_url' => "/eo/events/{$event->id}/edit",
                 'created_at' => now(),
             ]);
+
+            $eo = User::find($event->eo_id);
+            if ($eo) {
+                Mail::to($eo->email)->send(
+                    (new EventModerationMail(
+                        organizerName: $eo->name,
+                        eventTitle: $event->title,
+                        eventId: $event->id,
+                        eventSlug: $event->slug,
+                        approved: false,
+                        rejectionReason: $validated['rejection_reason'],
+                    ))->afterCommit()
+                );
+            }
         });
 
         return back()->with('success', 'Event telah dikembalikan ke EO beserta catatan revisi.');

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Eo;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Eo\StoreEventStaffRequest;
+use App\Mail\StaffAssignedMail;
 use App\Models\Event;
 use App\Models\EventStaff;
 use App\Models\User;
@@ -12,6 +13,7 @@ use Illuminate\Database\Query\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -164,7 +166,12 @@ class EoStaffController extends Controller
             ]);
         }
 
-        DB::transaction(function () use ($event, $targetUser): void {
+        $organizerName = DB::table('eo_applications')
+            ->where('user_id', $eoUser->id)
+            ->where('status', 'APPROVED')
+            ->value('organization_name') ?: $eoUser->name;
+
+        DB::transaction(function () use ($event, $targetUser, $organizerName): void {
             $staff = new EventStaff([
                 'event_id' => $event->id,
                 'user_id' => $targetUser->id,
@@ -180,6 +187,16 @@ class EoStaffController extends Controller
                 'action_url' => "/staff/check-in?event_id={$event->id}",
                 'created_at' => now(),
             ]);
+
+            Mail::to($targetUser->email)->send(
+                (new StaffAssignedMail(
+                    staffName: $targetUser->name,
+                    organizerName: $organizerName,
+                    eventTitle: $event->title,
+                    eventDate: Carbon::parse($event->starts_at)->locale('id')->translatedFormat('d M Y, H:i').' WIB',
+                    eventId: $event->id,
+                ))->afterCommit()
+            );
         });
 
         return redirect()
