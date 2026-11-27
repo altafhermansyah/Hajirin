@@ -13,6 +13,8 @@ use App\Models\Ticket;
 use App\Models\TicketPrice;
 use App\Models\TicketType;
 use App\Models\User;
+use App\Support\InAppNotification;
+use App\Support\OrderQuota;
 use Carbon\Carbon;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\RedirectResponse;
@@ -36,10 +38,10 @@ class CheckoutController extends Controller
         $priceId = $request->query('price_id');
         $requestedQty = (int) $request->query('qty', 1);
 
-        // 1. Cari data event yang berstatus PUBLISHED dari database
+        // 1. Cari data event yang berstatus PUBLISHED atau ONGOING dari database
         $event = Event::with('category')
             ->where('slug', $eventSlug)
-            ->where('status', 'PUBLISHED')
+            ->whereIn('status', ['PUBLISHED', 'ONGOING'])
             ->firstOrFail();
 
         // 2. Ambil semua tipe tiket aktif untuk event ini
@@ -217,12 +219,18 @@ class CheckoutController extends Controller
                 }
 
                 $event = Event::where('id', $validated['event_id'])
-                    ->where('status', 'PUBLISHED')
+                    ->whereIn('status', ['PUBLISHED', 'ONGOING'])
                     ->firstOrFail();
 
                 $totalAmount = 0;
                 $totalQuantity = 0;
                 $processedItems = [];
+
+                // Urutkan item berdasarkan ticket_type_id sebelum lockForUpdate untuk mencegah deadlock
+                usort(
+                    $itemsToProcess,
+                    fn (array $a, array $b): int => strcmp((string) ($a['ticket_type_id'] ?? ''), (string) ($b['ticket_type_id'] ?? ''))
+                );
 
                 // Kunci dan validasi kuota setiap jenis tiket
                 foreach ($itemsToProcess as $item) {
@@ -239,6 +247,12 @@ class CheckoutController extends Controller
                         ->lockForUpdate()
                         ->firstOrFail();
 
+                    if ($ticketType->max_per_order > 0 && $qty > (int) $ticketType->max_per_order) {
+                        throw ValidationException::withMessages([
+                            'quantity' => "Maksimal pembelian tiket '{$ticketType->name}' adalah {$ticketType->max_per_order} tiket per transaksi.",
+                        ]);
+                    }
+
                     if ($ticketType->quota < $qty) {
                         throw ValidationException::withMessages([
                             'quantity' => "Maaf, sisa kuota tiket '{$ticketType->name}' tidak mencukupi (tersisa {$ticketType->quota}).",
@@ -252,9 +266,15 @@ class CheckoutController extends Controller
 
                     $ticketPrice = ! empty($item['ticket_price_id'])
                         ? $ticketPriceQuery->where('id', $item['ticket_price_id'])->firstOrFail()
-                        : $ticketPriceQuery->first();
+                        : $ticketPriceQuery->orderBy('price', 'asc')->first();
 
-                    $unitPrice = (float) ($ticketPrice?->price ?? 0);
+                    if (! $ticketPrice) {
+                        throw ValidationException::withMessages([
+                            'quantity' => "Harga aktif untuk tiket '{$ticketType->name}' saat ini tidak tersedia.",
+                        ]);
+                    }
+
+                    $unitPrice = (float) $ticketPrice->price;
                     $subtotal = $unitPrice * $qty;
 
                     // Tahan kuota segera untuk mencegah overselling selama jendela 15 menit
@@ -776,17 +796,15 @@ class CheckoutController extends Controller
                 'updated_at' => now(),
             ]);
 
-        $this->restoreQuotasForOrder($order);
+        OrderQuota::restoreForOrder($order);
 
-        DB::table('notifications')->insert([
-            'id' => Str::uuid()->toString(),
-            'user_id' => $order->user_id,
-            'type' => 'PAYMENT_FAILED',
-            'title' => 'Pesanan Tiket Kedaluwarsa',
-            'message' => "Batas waktu pembayaran pesanan {$order->order_reference} untuk event \"{$order->event?->title}\" telah berakhir. Kuota tiket telah dikembalikan.",
-            'action_url' => '/dashboard#pesanan',
-            'created_at' => now(),
-        ]);
+        InAppNotification::send(
+            userId: $order->user_id,
+            type: 'PAYMENT_FAILED',
+            title: 'Pesanan Tiket Kedaluwarsa',
+            message: "Batas waktu pembayaran pesanan {$order->order_reference} untuk event \"{$order->event?->title}\" telah berakhir. Kuota tiket telah dikembalikan.",
+            actionUrl: '/dashboard#pesanan',
+        );
     }
 
     /**
@@ -794,22 +812,6 @@ class CheckoutController extends Controller
      */
     private function restoreQuotasForOrder(Order $order): void
     {
-        foreach ($order->items as $item) {
-            if (! $item->ticketType) {
-                continue;
-            }
-
-            $ticketType = $item->ticketType()->lockForUpdate()->first();
-            if (! $ticketType) {
-                continue;
-            }
-
-            $restoredQuota = min(
-                (int) $ticketType->initial_quota,
-                (int) $ticketType->quota + (int) $item->quantity
-            );
-
-            $ticketType->forceFill(['quota' => $restoredQuota])->save();
-        }
+        OrderQuota::restoreForOrder($order);
     }
 }

@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Role;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -12,6 +13,7 @@ class EventSeeder extends Seeder
     public function run(): void
     {
         $now = Carbon::now();
+        $eoRoleId = Role::idForCode(Role::EO);
 
         // 1. Akun EO (Event Organizer)
         $eo = DB::table('users')->where('email', 'eo@techinnovation.com')->first();
@@ -24,11 +26,20 @@ class EventSeeder extends Seeder
                 'phone' => '081210001001',
                 'password' => bcrypt('password'),
                 'role' => 'EO',
+                'role_id' => $eoRoleId,
+                'email_verified_at' => $now,
                 'created_at' => $now,
                 'updated_at' => $now,
             ]);
         } else {
             $eoId = $eo->id;
+            if ($eoRoleId !== null && ($eo->role_id !== $eoRoleId || $eo->email_verified_at === null)) {
+                DB::table('users')->where('id', $eoId)->update([
+                    'role_id' => $eoRoleId,
+                    'email_verified_at' => $eo->email_verified_at ?? $now,
+                    'updated_at' => $now,
+                ]);
+            }
         }
 
         $eoKreator = DB::table('users')->where('email', 'eo@kreatornusantara.com')->first();
@@ -41,11 +52,20 @@ class EventSeeder extends Seeder
                 'phone' => '081220002002',
                 'password' => bcrypt('password'),
                 'role' => 'EO',
+                'role_id' => $eoRoleId,
+                'email_verified_at' => $now,
                 'created_at' => $now,
                 'updated_at' => $now,
             ]);
         } else {
             $eoKreatorId = $eoKreator->id;
+            if ($eoRoleId !== null && ($eoKreator->role_id !== $eoRoleId || $eoKreator->email_verified_at === null)) {
+                DB::table('users')->where('id', $eoKreatorId)->update([
+                    'role_id' => $eoRoleId,
+                    'email_verified_at' => $eoKreator->email_verified_at ?? $now,
+                    'updated_at' => $now,
+                ]);
+            }
         }
 
         foreach ([

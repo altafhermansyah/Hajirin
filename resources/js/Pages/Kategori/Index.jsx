@@ -24,7 +24,7 @@ import {
     Volleyball,
 } from 'lucide-react';
 import AuthModal from '../../Components/Auth/AuthModal';
-import Navbar from '../../Components/Navbar';
+import UserLayout from '../../Layouts/UserLayout';
 import { buttonClass } from '../../Components/ui/Button';
 
 const CATEGORY_ICON_MAP = {
@@ -152,8 +152,12 @@ export default function CategoryIndex({
         <>
             <Head title={`Kategori ${activeCategory} - Hajirin`} />
 
-            <div className="bg-slate-50/40 text-slate-900 font-sans antialiased min-h-screen flex flex-col">
-                <Navbar auth={auth} onOpenAuthModal={openAuthModal} activeLink="kategori" />
+            <UserLayout
+                auth={auth}
+                onOpenAuthModal={openAuthModal}
+                activeLink="kategori"
+                className="bg-slate-50/40 text-slate-900 antialiased"
+            >
 
                 <main id="main-content" tabIndex={-1} className="flex-1">
                     {/* Header Dinamis */}
@@ -351,7 +355,7 @@ export default function CategoryIndex({
                         © 2026 Hajirin - Platform E-ticketing &amp; Management Event Indonesia
                     </div>
                 </footer>
-            </div>
+            </UserLayout>
 
             <AuthModal
                 isOpen={isAuthModalOpen}

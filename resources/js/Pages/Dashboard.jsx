@@ -1,6 +1,6 @@
 import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import { useState, useEffect, useRef } from 'react';
-import Navbar from '../Components/Navbar';
+import UserLayout from '../Layouts/UserLayout';
 import AccountSecurityAndPrivacy from '../Components/AccountSecurityAndPrivacy';
 import {
     ArrowRight,
@@ -27,7 +27,7 @@ import { FlashBanner } from '../Components/ui/FlashBanner';
 import { Button, buttonClass } from '../Components/ui/Button';
 
 const INPUT_CLASS =
-    'w-full h-10 px-3.5 rounded-lg border border-slate-200 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-blue focus:outline-none focus:ring-2 focus:ring-brand-blue/15 transition';
+    'w-full h-11 sm:h-10 px-3.5 rounded-lg border border-slate-200 bg-white text-base sm:text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-blue focus:outline-none focus:ring-2 focus:ring-brand-blue/15 transition';
 
 const ORDER_STATUS_META = {
     PAID: { tone: 'success', label: 'Lunas' },
@@ -147,18 +147,17 @@ export default function Dashboard({ auth, dashboard }) {
     };
 
     const tabs = [
-        ['tiket', 'Tiket Saya', myTickets.length],
-        ['bookmark', 'Event Disimpan', bookmarkedEvents.length],
-        ['pesanan', 'Riwayat Pesanan', dashboard.orderCount || 0],
-        ['profil', 'Pengaturan Profil', null],
+        { key: 'tiket', label: 'Tiket Saya', shortLabel: 'Tiket', count: myTickets.length },
+        { key: 'bookmark', label: 'Event Disimpan', shortLabel: 'Simpan', count: bookmarkedEvents.length },
+        { key: 'pesanan', label: 'Riwayat Pesanan', shortLabel: 'Pesanan', count: dashboard.orderCount || 0 },
+        { key: 'profil', label: 'Pengaturan Profil', shortLabel: 'Profil', count: null },
     ];
 
     return (
         <>
             <Head title="Akun Saya - Hajirin" />
 
-            <div className="min-h-screen bg-slate-50 text-slate-900 font-sans flex flex-col">
-                <Navbar auth={auth} />
+            <UserLayout auth={auth} className="bg-slate-50 text-slate-900">
 
                 <main
                     id="main-content"
@@ -249,12 +248,13 @@ export default function Dashboard({ auth, dashboard }) {
                     </div>
 
                     {/* Tab Navigation */}
-                    <div className="border-b border-slate-200 -mx-4 px-4 sm:mx-0 sm:px-0">
+                    <div className="border-b border-slate-200">
                         <UnderlineTabs
                             items={tabs}
                             activeKey={activeTab}
                             onChange={handleTabChange}
-                            className="border-b-0 px-0"
+                            mobileGrid
+                            className="border-b-0 sm:px-0"
                         />
                     </div>
 
@@ -817,7 +817,7 @@ export default function Dashboard({ auth, dashboard }) {
                     onClose={() => setIsVerifyModalOpen(false)}
                     email={user.email}
                 />
-            </div>
+            </UserLayout>
         </>
     );
 }

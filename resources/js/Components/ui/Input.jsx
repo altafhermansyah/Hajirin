@@ -31,7 +31,7 @@ export const InputGroup = React.forwardRef(({
                 ref={ref}
                 type={type}
                 className={cn(
-                    'w-full h-full bg-transparent text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50',
+                    'w-full h-full bg-transparent text-base sm:text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50',
                     className
                 )}
                 {...props}

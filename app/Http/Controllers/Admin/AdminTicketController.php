@@ -5,11 +5,11 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Event;
 use App\Models\Ticket;
+use App\Support\TicketCheckIn;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -154,39 +154,8 @@ class AdminTicketController extends Controller
      */
     public function checkIn(Request $request, string $id): RedirectResponse
     {
-        $admin = $request->user();
+        $checkedTicket = TicketCheckIn::verifyById($request->user(), $id);
 
-        $ticket = Ticket::where('id', $id)->firstOrFail();
-
-        if ($ticket->status === 'USED') {
-            throw ValidationException::withMessages([
-                'ticket' => 'Tiket ini sudah pernah digunakan untuk check-in sebelumnya.',
-            ]);
-        }
-
-        if ($ticket->status === 'CANCELLED') {
-            throw ValidationException::withMessages([
-                'ticket' => 'Tiket ini telah dibatalkan (CANCELLED) dan tidak dapat digunakan untuk check-in.',
-            ]);
-        }
-
-        $now = now();
-        DB::transaction(function () use ($ticket, $admin, $now): void {
-            $ticket->forceFill([
-                'status' => 'USED',
-                'checked_in_at' => $now,
-                'checked_in_by' => $admin->id,
-            ])->save();
-
-            DB::table('ticket_transfers')
-                ->where('ticket_id', $ticket->id)
-                ->where('status', 'PENDING')
-                ->update([
-                    'status' => 'CANCELLED',
-                    'updated_at' => $now,
-                ]);
-        });
-
-        return back()->with('success', "Tiket {$ticket->ticket_code} ({$ticket->attendee_name}) berhasil di-check-in.");
+        return back()->with('success', "Tiket {$checkedTicket->ticket_code} ({$checkedTicket->attendee_name}) berhasil di-check-in.");
     }
 }

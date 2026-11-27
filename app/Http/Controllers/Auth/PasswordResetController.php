@@ -10,6 +10,7 @@ use App\Models\User;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Password;
@@ -72,15 +73,26 @@ class PasswordResetController extends Controller
             ]);
         }
 
+        $currentSessionId = $request->hasSession() ? $request->session()->getId() : null;
+
         $status = Password::reset(
             $request->only('email', 'password', 'password_confirmation', 'token'),
-            function (User $user, string $password): void {
+            function (User $user, string $password) use ($loggedInUser, $currentSessionId): void {
                 $changedAt = now();
                 $user->forceFill([
                     'password' => Hash::make($password),
                     'password_changed_at' => $changedAt,
                     'remember_token' => Str::random(60),
                 ])->save();
+
+                // Cabut seluruh sesi perangkat lain agar kredensial lama tidak dapat terus digunakan
+                DB::table('sessions')
+                    ->where('user_id', $user->id)
+                    ->when(
+                        $loggedInUser && $loggedInUser->id === $user->id && $currentSessionId !== null,
+                        fn ($query) => $query->where('id', '!=', $currentSessionId)
+                    )
+                    ->delete();
 
                 event(new PasswordReset($user));
 

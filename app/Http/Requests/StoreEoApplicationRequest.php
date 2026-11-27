@@ -25,7 +25,7 @@ class StoreEoApplicationRequest extends FormRequest
         return [
             'organization_name' => ['required', 'string', 'max:150'],
             'contact_phone' => ['required', 'string', 'max:25'],
-            'portfolio_url' => ['nullable', 'url', 'max:255'],
+            'portfolio_url' => ['nullable', 'url:http,https', 'max:255'],
             'document' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png,webp', 'max:5120'],
             'reason' => ['required', 'string', 'min:20', 'max:2000'],
         ];

@@ -38,8 +38,8 @@ use App\Http\Controllers\UserTicketController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-// Route Checkout & Pengajuan EO & Bookmark & Profil (Membutuhkan Login)
-Route::middleware('auth')->group(function () {
+// Route Checkout & Pengajuan EO & Bookmark & Profil (Membutuhkan Login & Akun Aktif)
+Route::middleware(['auth', 'active'])->group(function () {
     Route::get('/checkout', [CheckoutController::class, 'show'])->name('checkout');
     Route::post('/checkout', [CheckoutController::class, 'store'])
         ->middleware('throttle:checkout')
@@ -55,8 +55,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/events/{event}/bookmark', [BookmarkController::class, 'toggle'])
         ->middleware('throttle:user-actions')
         ->name('events.bookmark');
-    Route::get('/bookmarks', fn () => redirect()->to(route('dashboard').'#bookmark'))
-        ->name('bookmarks');
+    Route::get('/bookmarks', fn () => redirect('/dashboard#bookmark'))->name('bookmarks.index');
 
     // Route Verifikasi Email (OTP 6-Digit)
     Route::post('/email/otp/send', [EmailVerificationOtpController::class, 'send'])
@@ -126,9 +125,9 @@ Route::middleware('auth')->group(function () {
 // Route Home (100% dinamis dari database)
 Route::get('/', HomeController::class)->name('home');
 
-// Route Dashboard (Membutuhkan Login)
+// Route Dashboard (Membutuhkan Login & Akun Aktif)
 Route::get('/dashboard', UserDashboardController::class)
-    ->middleware('auth')
+    ->middleware(['auth', 'active'])
     ->name('dashboard');
 
 // Route Kategori Dinamis
@@ -145,7 +144,7 @@ Route::get('/syarat-ketentuan', fn () => Inertia::render('Legal/Terms'))->name('
 Route::get('/kebijakan-privasi', fn () => Inertia::render('Legal/Privacy'))->name('legal.privacy');
 
 // Route Event Organizer (EO) Dashboard & Manajemen Event/Tiket
-Route::middleware(['auth', 'eo'])->prefix('eo')->name('eo.')->group(function () {
+Route::middleware(['auth', 'active', 'eo'])->prefix('eo')->name('eo.')->group(function () {
     Route::get('/', fn () => redirect()->route('eo.dashboard'));
     Route::get('/dashboard', [EoDashboardController::class, 'index'])->name('dashboard');
 
@@ -183,7 +182,7 @@ Route::middleware(['auth', 'eo'])->prefix('eo')->name('eo.')->group(function () 
 });
 
 // Route Admin Dashboard & Moderasi EO + Event
-Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'active', 'admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', fn () => redirect()->route('admin.dashboard'));
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
     Route::post('/eo-applications/{id}/approve', [AdminDashboardController::class, 'approveEoApplication'])
@@ -201,7 +200,6 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     // Manajemen Organizer (EO) & Verifikasi Dokumen
     Route::get('/organizers', [AdminOrganizerController::class, 'index'])->name('organizers.index');
     Route::get('/organizers/applications', [AdminOrganizerController::class, 'applications'])->name('organizers.applications');
-    Route::get('/verifikasi-eo', fn () => redirect()->route('admin.organizers.applications'))->name('verifikasi-eo');
     Route::get('/organizers/applications/{id}/document', [AdminOrganizerController::class, 'showDocument'])->name('organizers.document');
     Route::post('/organizers/applications/{id}/approve', [AdminOrganizerController::class, 'approveApplication'])->name('organizers.approve');
     Route::post('/organizers/applications/{id}/reject', [AdminOrganizerController::class, 'rejectApplication'])->name('organizers.reject');
@@ -237,7 +235,6 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/scanner', [AdminCheckInController::class, 'store'])
         ->middleware('throttle:60,1')
         ->name('scanner.store');
-    Route::get('/check-in', fn () => redirect()->route('admin.scanner.index'))->name('check-in');
 
     // Pencarian Cepat Global Topbar Admin
 

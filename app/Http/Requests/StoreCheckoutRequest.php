@@ -27,7 +27,7 @@ class StoreCheckoutRequest extends FormRequest
 
             // Mendukung pemilihan banyak jenis tiket yang berbeda (multi-ticket items)
             'items' => ['nullable', 'array', 'min:1'],
-            'items.*.ticket_type_id' => ['required_with:items', 'string', 'exists:ticket_types,id'],
+            'items.*.ticket_type_id' => ['required_with:items', 'string', 'distinct', 'exists:ticket_types,id'],
             'items.*.ticket_price_id' => ['nullable', 'string', 'exists:ticket_prices,id'],
             'items.*.quantity' => ['required_with:items', 'integer', 'min:1', 'max:100'],
 
@@ -61,6 +61,7 @@ class StoreCheckoutRequest extends FormRequest
             'quantity.max' => 'Jumlah pemesanan melebihi batas maksimal per transaksi.',
             'items.min' => 'Pilih minimal satu tiket untuk melanjutkan pemesanan.',
             'items.*.ticket_type_id.required_with' => 'Jenis tiket wajib dipilih.',
+            'items.*.ticket_type_id.distinct' => 'Jenis tiket yang sama tidak boleh dipilih lebih dari satu kali dalam satu transaksi.',
             'items.*.ticket_type_id.exists' => 'Salah satu jenis tiket yang dipilih tidak valid.',
             'items.*.quantity.min' => 'Jumlah tiket minimal 1 per jenis tiket.',
             'payment_method.required' => 'Metode pembayaran wajib dipilih.',

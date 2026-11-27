@@ -20,7 +20,7 @@ class UpdateEoProfileRequest extends FormRequest
         return [
             'organization_name' => ['required', 'string', 'max:150'],
             'contact_phone' => ['required', 'string', 'max:25'],
-            'portfolio_url' => ['nullable', 'url', 'max:255'],
+            'portfolio_url' => ['nullable', 'url:http,https', 'max:255'],
             'avatar' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
         ];
     }

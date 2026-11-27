@@ -29,7 +29,7 @@ class EventController extends Controller
                 'users.avatar_path as organizer_avatar'
             )
             ->where('events.slug', $slug)
-            ->where('events.status', 'PUBLISHED')
+            ->whereIn('events.status', ['PUBLISHED', 'ONGOING'])
             ->first();
 
         abort_if(! $event, 404);
@@ -47,6 +47,7 @@ class EventController extends Controller
                 'ticket_types.name as name',
                 'ticket_types.description as desc',
                 'ticket_types.quota',
+                'ticket_types.max_per_order',
                 'ticket_prices.id as price_id',
                 'ticket_prices.price'
             )
@@ -63,6 +64,7 @@ class EventController extends Controller
                     'name' => $t->name,
                     'desc' => $t->desc ?: 'Akses penuh ke acara dan seluruh sesi terkait.',
                     'quota' => (int) $t->quota,
+                    'maxPerOrder' => max(1, (int) ($t->max_per_order ?? 10)),
                     'rawPrice' => $numericPrice,
                     'price' => $numericPrice > 0 ? 'Rp'.number_format($numericPrice, 0, ',', '.') : 'Gratis',
                     'status' => (int) $t->quota > 0 ? 'Tersedia' : 'Habis',
@@ -111,7 +113,7 @@ class EventController extends Controller
                     ->where('eo_applications.status', '=', 'APPROVED');
             })
             ->where('events.id', '!=', $event->id)
-            ->where('events.status', 'PUBLISHED')
+            ->whereIn('events.status', ['PUBLISHED', 'ONGOING'])
             ->select(
                 'events.id',
                 'events.title',
@@ -161,9 +163,7 @@ class EventController extends Controller
             'ends_at' => $event->ends_at,
             'location' => $event->venue_name ?: ($event->event_type === 'ONLINE' ? 'Online Event' : 'Lokasi Segera Diumumkan'),
             'fullAddress' => $event->address ?: ($event->event_type === 'ONLINE' ? 'Diselenggarakan secara daring. Tautan meeting akan dikirim via email dan e-tiket.' : '-'),
-            'online_url' => $event->online_url,
             'organizer' => $event->organizer,
-            'organizer_email' => $event->organizer_email,
             'organizer_avatar' => $event->organizer_avatar,
             'price' => $minPrice,
             'raw_min_price' => $minPriceVal,
@@ -190,16 +190,10 @@ class EventController extends Controller
      */
     public function nearby(Request $request): Response
     {
-        $selectedCity = $request->query('city', 'Semua Kota');
-        $search = $request->query('q', '');
+        $selectedCity = trim((string) $request->query('city', 'Semua Kota'));
+        $search = trim((string) $request->query('q', ''));
 
-        $minPrices = DB::table('ticket_prices')
-            ->join('ticket_types', 'ticket_types.id', '=', 'ticket_prices.ticket_type_id')
-            ->where('ticket_types.status', 'ACTIVE')
-            ->where('ticket_prices.status', 'ACTIVE')
-            ->groupBy('ticket_types.event_id')
-            ->selectRaw('ticket_types.event_id, MIN(ticket_prices.price) as min_price')
-            ->pluck('min_price', 'ticket_types.event_id');
+        $escapeLike = static fn (string $value): string => str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $value);
 
         $query = DB::table('events')
             ->join('categories', 'events.category_id', '=', 'categories.id')
@@ -208,21 +202,22 @@ class EventController extends Controller
                 $join->on('eo_applications.user_id', '=', 'users.id')
                     ->where('eo_applications.status', '=', 'APPROVED');
             })
-            ->where('events.status', 'PUBLISHED');
+            ->whereIn('events.status', ['PUBLISHED', 'ONGOING']);
 
-        if ($selectedCity && $selectedCity !== 'Semua Kota') {
-            $query->where(function ($q) use ($selectedCity) {
-                $q->where('events.city', 'ILIKE', "%{$selectedCity}%")
-                    ->orWhere('events.venue_name', 'ILIKE', "%{$selectedCity}%")
-                    ->orWhere('events.address', 'ILIKE', "%{$selectedCity}%");
+        if ($selectedCity !== '' && $selectedCity !== 'Semua Kota') {
+            $cityPattern = '%'.$escapeLike($selectedCity).'%';
+            $query->where(function ($q) use ($cityPattern): void {
+                $q->where('events.city', 'ILIKE', $cityPattern)
+                    ->orWhere('events.venue_name', 'ILIKE', $cityPattern)
+                    ->orWhere('events.address', 'ILIKE', $cityPattern);
             });
         }
 
-        if ($search) {
-            $query->where('events.title', 'ILIKE', "%{$search}%");
+        if ($search !== '') {
+            $query->where('events.title', 'ILIKE', '%'.$escapeLike($search).'%');
         }
 
-        $events = $query->select(
+        $eventRows = $query->select(
             'events.id',
             'events.title',
             'events.slug',
@@ -237,7 +232,23 @@ class EventController extends Controller
             DB::raw('COALESCE(eo_applications.organization_name, users.name) as organizer_name')
         )
             ->orderBy('events.starts_at')
-            ->get()
+            ->limit(60)
+            ->get();
+
+        $eventIds = $eventRows->pluck('id')->all();
+
+        $minPrices = $eventIds !== []
+            ? DB::table('ticket_prices')
+                ->join('ticket_types', 'ticket_types.id', '=', 'ticket_prices.ticket_type_id')
+                ->whereIn('ticket_types.event_id', $eventIds)
+                ->where('ticket_types.status', 'ACTIVE')
+                ->where('ticket_prices.status', 'ACTIVE')
+                ->groupBy('ticket_types.event_id')
+                ->selectRaw('ticket_types.event_id, MIN(ticket_prices.price) as min_price')
+                ->pluck('min_price', 'ticket_types.event_id')
+            : collect();
+
+        $events = $eventRows
             ->map(function ($event) use ($minPrices) {
                 $minPrice = $minPrices[$event->id] ?? null;
                 $numericPrice = $minPrice !== null ? (float) $minPrice : 0;

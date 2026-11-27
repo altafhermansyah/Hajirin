@@ -174,17 +174,6 @@ class UserDashboardController extends Controller
                 'eventLocation' => $first->venue_name ?: ($first->event_type === 'ONLINE' ? 'Online Event' : 'Lokasi Diumumkan'),
                 'eventAddress' => $first->address,
                 'banner' => $first->banner_path ?: '/images/events/tech_hero.webp',
-                'allTickets' => $orderTickets->map(function ($t, $idx) {
-                    return [
-                        'id' => $t->id,
-                        'ticketNumber' => $idx + 1,
-                        'code' => $t->ticket_code,
-                        'attendeeName' => $t->attendee_name,
-                        'attendeeEmail' => $t->attendee_email,
-                        'type' => $t->ticket_type_name,
-                        'status' => $t->ticket_status,
-                    ];
-                })->values()->all(),
             ];
         })->values();
 

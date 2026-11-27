@@ -33,7 +33,8 @@ class CategoryController extends Controller
                 $join->on('eo_applications.user_id', '=', 'users.id')
                     ->where('eo_applications.status', '=', 'APPROVED');
             })
-            ->where('events.status', 'PUBLISHED')
+            ->whereIn('events.status', ['PUBLISHED', 'ONGOING'])
+            ->when($matchedCategory !== null, fn ($query) => $query->where('events.category_id', $matchedCategory->id))
             ->select(
                 'events.id',
                 'events.title',

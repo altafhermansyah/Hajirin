@@ -95,14 +95,14 @@ class EmailSystemTest extends TestCase
 
         $user = User::where('email', 'nadia@example.com')->firstOrFail();
         $this->assertNull($user->email_verified_at);
-        Mail::assertNotSent(EmailOtpMail::class);
+        Mail::assertNotQueued(EmailOtpMail::class);
 
         $this->actingAs($user)
             ->post('/email/otp/send')
             ->assertSessionHas('success');
 
         $capturedCode = null;
-        Mail::assertSent(EmailOtpMail::class, function (EmailOtpMail $mail) use (&$capturedCode): bool {
+        Mail::assertQueued(EmailOtpMail::class, function (EmailOtpMail $mail) use (&$capturedCode): bool {
             $capturedCode = $mail->code;
 
             return $mail->hasTo('nadia@example.com') && preg_match('/^\d{6}$/', $mail->code) === 1;
@@ -158,7 +158,7 @@ class EmailSystemTest extends TestCase
             ->post('/email/otp/send')
             ->assertSessionHas('success');
 
-        Mail::assertSent(EmailOtpMail::class, 1);
+        Mail::assertQueued(EmailOtpMail::class, 1);
 
         $this->actingAs($unverified)
             ->post('/email/otp/send')

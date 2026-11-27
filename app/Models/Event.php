@@ -52,11 +52,6 @@ class Event extends Model
         ];
     }
 
-    public function organizer(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'eo_id');
-    }
-
     public function eo(): BelongsTo
     {
         return $this->belongsTo(User::class, 'eo_id');

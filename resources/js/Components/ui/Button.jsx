@@ -17,12 +17,12 @@ const BUTTON_VARIANTS = {
 };
 
 const BUTTON_SIZES = {
-    xs: 'h-7 px-2.5 text-xs',
-    sm: 'h-8 px-3 text-xs',
-    md: 'h-9 px-3.5 text-sm',
-    default: 'h-10 px-4 text-sm',
-    lg: 'h-11 px-5 text-sm',
-    icon: 'size-8 p-0',
+    xs: 'h-8 sm:h-7 px-2.5 text-xs',
+    sm: 'h-9 sm:h-8 px-3 text-xs',
+    md: 'h-11 sm:h-9 px-3.5 text-sm',
+    default: 'h-11 sm:h-10 px-4 text-sm',
+    lg: 'h-12 sm:h-11 px-5 text-sm',
+    icon: 'size-11 sm:size-8 p-0',
 };
 
 /**

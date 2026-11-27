@@ -58,6 +58,7 @@ class UserTicketController extends Controller
                 'events.venue_name',
                 'events.city as event_city',
                 'events.address as event_address',
+                'events.online_url as event_online_url',
                 'events.event_type',
                 'events.banner_path as event_banner',
                 DB::raw('COALESCE(eo_applications.organization_name, organizers.name) as organizer_name'),
@@ -214,6 +215,9 @@ class UserTicketController extends Controller
             'location' => $order->venue_name ?: ($order->event_type === 'ONLINE' ? 'Online Event' : 'Lokasi Diumumkan'),
             'city' => $order->event_city ?: '',
             'address' => $order->event_address ?: '',
+            'onlineUrl' => $order->order_status === 'PAID' && $order->event_type === 'ONLINE'
+                ? $order->event_online_url
+                : null,
             'eventType' => $order->event_type,
             'banner' => $order->event_banner ?: '/images/events/tech_hero.webp',
             'organizer' => $order->organizer_name,

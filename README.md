@@ -188,7 +188,7 @@ erDiagram
 - PHP >= 8.3 (dengan ekstensi `pdo_pgsql`, `pgsql`)
 - Composer >= 2.x
 - Node.js >= 20 & NPM
-- PostgreSQL >= 15
+- PostgreSQL >= 18 (memerlukan fungsi bawaan `uuidv7()`)
 
 ### Langkah Instalasi
 

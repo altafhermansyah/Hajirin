@@ -51,7 +51,11 @@ export default function NotificationBell() {
     const unreadCount = notifications?.unreadCount ?? 0;
     const items = notifications?.items ?? [];
 
-    usePoll(60000, { only: ['notifications'] }, { autoStart: Boolean(notifications) });
+    usePoll(
+        60000,
+        { only: ['notifications'] },
+        { autoStart: Boolean(notifications), keepAlive: false }
+    );
 
     useEffect(() => {
         if (!isOpen) return;
@@ -119,13 +123,12 @@ export default function NotificationBell() {
                 onClick={() => setIsOpen((prev) => !prev)}
                 aria-expanded={isOpen}
                 aria-controls={panelId}
-                aria-haspopup="true"
                 aria-label={
                     unreadCount > 0
                         ? `Notifikasi (${unreadCount} belum dibaca)`
                         : 'Notifikasi'
                 }
-                className="relative flex size-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 transition cursor-pointer"
+                className="relative flex size-10 sm:size-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 transition cursor-pointer"
                 title="Notifikasi"
             >
                 <Bell className="size-4.5" aria-hidden="true" />
@@ -141,7 +144,7 @@ export default function NotificationBell() {
                     id={panelId}
                     role="region"
                     aria-label="Daftar notifikasi"
-                    className="absolute right-0 mt-2 w-80 sm:w-96 max-w-[calc(100vw-1.5rem)] rounded-2xl border border-slate-200 bg-white shadow-xl z-50 overflow-hidden"
+                    className="fixed inset-x-3 top-18 sm:absolute sm:inset-auto sm:right-0 sm:top-full sm:mt-2 sm:w-96 rounded-2xl border border-slate-200 bg-white shadow-xl z-50 overflow-hidden"
                 >
                     <div className="flex items-center justify-between gap-2 border-b border-slate-100 px-4 py-3">
                         <div className="flex items-center gap-2">

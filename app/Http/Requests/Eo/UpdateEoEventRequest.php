@@ -25,7 +25,7 @@ class UpdateEoEventRequest extends FormRequest
             'city' => ['nullable', 'required_if:event_type,OFFLINE', 'string', 'max:100'],
             'venue_name' => ['nullable', 'required_if:event_type,OFFLINE', 'string', 'max:200'],
             'address' => ['nullable', 'required_if:event_type,OFFLINE', 'string', 'max:1000'],
-            'online_url' => ['nullable', 'required_if:event_type,ONLINE', 'url', 'max:500'],
+            'online_url' => ['nullable', 'required_if:event_type,ONLINE', 'url:http,https', 'max:500'],
             'starts_at' => ['required', 'date'],
             'ends_at' => ['required', 'date', 'after:starts_at'],
             'banner' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],

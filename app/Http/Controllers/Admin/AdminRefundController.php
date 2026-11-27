@@ -3,12 +3,19 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Requests\Admin\ProcessRefundRequest;
 use App\Mail\RefundStatusMail;
+use App\Models\Order;
 use App\Models\Refund;
+use App\Models\Ticket;
+use App\Support\Format;
+use App\Support\InAppNotification;
+use App\Support\OrderQuota;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
@@ -155,6 +162,21 @@ class AdminRefundController extends Controller
                 ]);
             }
 
+            // Kunci order & seluruh tiketnya secara atomik sebelum memproses refund
+            $order = $refund->order_id
+                ? Order::with(['items', 'event'])->where('id', $refund->order_id)->lockForUpdate()->first()
+                : null;
+
+            $tickets = $order
+                ? Ticket::where('order_id', $order->id)->lockForUpdate()->get()
+                : collect();
+
+            if ($tickets->contains(fn (Ticket $ticket): bool => $ticket->status === 'USED')) {
+                throw ValidationException::withMessages([
+                    'refund' => 'Pengembalian dana tidak dapat disetujui karena salah satu tiket pada pesanan ini sudah digunakan untuk check-in.',
+                ]);
+            }
+
             $refund->forceFill([
                 'status' => 'APPROVED',
                 'resolution_note' => $resolutionNote,
@@ -162,38 +184,29 @@ class AdminRefundController extends Controller
                 'processed_at' => now(),
             ])->save();
 
-            // Batalkan tiket pada order
-            if ($refund->order) {
-                foreach ($refund->order->tickets as $ticket) {
+            // Batalkan tiket pada order & kembalikan kuota secara terkunci
+            if ($order) {
+                foreach ($tickets as $ticket) {
                     $ticket->forceFill(['status' => 'CANCELLED'])->save();
                 }
 
-                // Kembalikan kuota tiket
-                foreach ($refund->order->items as $item) {
-                    if ($item->ticketType) {
-                        $newQuota = min((int) $item->ticketType->initial_quota, (int) ($item->ticketType->quota + $item->quantity));
-                        $item->ticketType->forceFill(['quota' => $newQuota])->save();
-                    }
-                }
+                OrderQuota::restoreForOrder($order);
 
                 // Tandai order CANCELLED jika refund penuh
-                if ((float) $refund->amount >= (float) $refund->order->total_amount) {
-                    $refund->order->forceFill(['status' => 'CANCELLED'])->save();
+                if ((float) $refund->amount >= (float) $order->total_amount) {
+                    $order->forceFill(['status' => 'CANCELLED'])->save();
                 }
             }
 
-            $amountFormatted = 'Rp'.number_format((float) $refund->amount, 0, ',', '.');
+            $amountFormatted = Format::rupiah((float) $refund->amount);
 
-            // Kirim notifikasi ke pemohon
-            DB::table('notifications')->insert([
-                'id' => Str::uuid()->toString(),
-                'user_id' => $refund->requested_by,
-                'type' => 'REFUND_UPDATED',
-                'title' => 'Pengembalian Dana Disetujui!',
-                'message' => "Permohonan pengembalian dana sebesar {$amountFormatted} untuk pesanan #{$refund->order?->order_reference} telah disetujui. Catatan: {$resolutionNote}",
-                'action_url' => '/dashboard',
-                'created_at' => now(),
-            ]);
+            InAppNotification::send(
+                userId: $refund->requested_by,
+                type: 'REFUND_UPDATED',
+                title: 'Pengembalian Dana Disetujui!',
+                message: "Permohonan pengembalian dana sebesar {$amountFormatted} untuk pesanan #{$refund->order?->order_reference} telah disetujui. Catatan: {$resolutionNote}",
+                actionUrl: '/dashboard',
+            );
 
             if ($refund->requestedByUser) {
                 Mail::to($refund->requestedByUser->email)->send(
@@ -208,6 +221,8 @@ class AdminRefundController extends Controller
                 );
             }
         });
+
+        Cache::forget(HandleInertiaRequests::ADMIN_COUNTS_CACHE_KEY);
 
         return back()->with('success', 'Permohonan pengembalian dana berhasil disetujui dan tiket terkait telah dibatalkan.');
     }
@@ -269,6 +284,8 @@ class AdminRefundController extends Controller
                 );
             }
         });
+
+        Cache::forget(HandleInertiaRequests::ADMIN_COUNTS_CACHE_KEY);
 
         return back()->with('success', 'Permohonan pengembalian dana telah ditolak dengan catatan evaluasi.');
     }

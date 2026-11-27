@@ -3,17 +3,21 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Requests\Admin\CancelEventRequest;
 use App\Http\Requests\Admin\RejectEventRequest;
-use App\Mail\EventCancelledAttendeeMail;
+use App\Jobs\SendEventCancelledNotificationsJob;
 use App\Mail\EventModerationMail;
 use App\Models\Category;
 use App\Models\Event;
 use App\Models\User;
+use App\Support\Format;
+use App\Support\InAppNotification;
 use Carbon\Carbon;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
@@ -244,6 +248,8 @@ class AdminEventController extends Controller
             }
         });
 
+        Cache::forget(HandleInertiaRequests::ADMIN_COUNTS_CACHE_KEY);
+
         return back()->with('success', 'Event berhasil disetujui dan kini berstatus Published.');
     }
 
@@ -298,6 +304,8 @@ class AdminEventController extends Controller
             }
         });
 
+        Cache::forget(HandleInertiaRequests::ADMIN_COUNTS_CACHE_KEY);
+
         return back()->with('success', 'Event telah ditolak beserta catatan revisi untuk EO.');
     }
 
@@ -325,38 +333,23 @@ class AdminEventController extends Controller
                 'cancellation_reason' => $validated['cancellation_reason'],
             ])->save();
 
-            DB::table('notifications')->insert([
-                'id' => Str::uuid()->toString(),
-                'user_id' => $event->eo_id,
-                'type' => 'EVENT_CANCELLED',
-                'title' => 'Event Ditarik / Dibatalkan oleh Admin',
-                'message' => "Event \"{$event->title}\" telah diturunkan dari publikasi oleh Administrator. Alasan: {$validated['cancellation_reason']}",
-                'action_url' => '/eo/dashboard',
-                'created_at' => now(),
-            ]);
+            InAppNotification::send(
+                userId: $event->eo_id,
+                type: 'EVENT_CANCELLED',
+                title: 'Event Ditarik / Dibatalkan oleh Admin',
+                message: "Event \"{$event->title}\" telah diturunkan dari publikasi oleh Administrator. Alasan: {$validated['cancellation_reason']}",
+                actionUrl: '/eo/dashboard',
+            );
 
-            $eventDate = Carbon::parse($event->starts_at)->locale('id')->translatedFormat('d M Y, H:i').' WIB';
-            $affectedOrders = DB::table('orders')
-                ->join('users', 'users.id', '=', 'orders.user_id')
-                ->join('tickets', 'tickets.order_id', '=', 'orders.id')
-                ->where('orders.event_id', $event->id)
-                ->where('orders.status', 'PAID')
-                ->where('tickets.status', '!=', 'CANCELLED')
-                ->distinct()
-                ->get(['users.name', 'users.email', 'orders.order_reference']);
-
-            foreach ($affectedOrders as $recipient) {
-                Mail::to($recipient->email)->send(
-                    (new EventCancelledAttendeeMail(
-                        recipientName: $recipient->name,
-                        eventTitle: $event->title,
-                        eventDate: $eventDate,
-                        cancellationReason: $validated['cancellation_reason'],
-                        orderReference: $recipient->order_reference,
-                    ))->afterCommit()
-                );
-            }
+            SendEventCancelledNotificationsJob::dispatch(
+                eventId: $event->id,
+                eventTitle: $event->title,
+                eventDate: Format::wib($event->starts_at),
+                cancellationReason: $validated['cancellation_reason'],
+            )->afterCommit();
         });
+
+        Cache::forget(HandleInertiaRequests::ADMIN_COUNTS_CACHE_KEY);
 
         return back()->with('success', 'Event berhasil ditarik dan dibatalkan dari sistem.');
     }

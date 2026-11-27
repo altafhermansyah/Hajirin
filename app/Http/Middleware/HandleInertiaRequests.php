@@ -4,11 +4,14 @@ namespace App\Http\Middleware;
 
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
 {
+    public const ADMIN_COUNTS_CACHE_KEY = 'admin:pending_counts';
+
     /**
      * The root template that's loaded on the first page visit.
      *
@@ -74,18 +77,24 @@ class HandleInertiaRequests extends Middleware
             return null;
         }
 
-        $row = DB::selectOne("
-            SELECT
-                (SELECT COUNT(*) FROM eo_applications WHERE status = 'PENDING') AS pending_applications,
-                (SELECT COUNT(*) FROM events WHERE status = 'PENDING_REVIEW') AS pending_events,
-                (SELECT COUNT(*) FROM refunds WHERE status = 'PENDING') AS pending_refunds
-        ");
+        return Cache::remember(
+            self::ADMIN_COUNTS_CACHE_KEY,
+            now()->addSeconds(45),
+            function (): array {
+                $row = DB::selectOne("
+                    SELECT
+                        (SELECT COUNT(*) FROM eo_applications WHERE status = 'PENDING') AS pending_applications,
+                        (SELECT COUNT(*) FROM events WHERE status = 'PENDING_REVIEW') AS pending_events,
+                        (SELECT COUNT(*) FROM refunds WHERE status = 'PENDING') AS pending_refunds
+                ");
 
-        return [
-            'pendingApplications' => (int) ($row->pending_applications ?? 0),
-            'pendingEvents' => (int) ($row->pending_events ?? 0),
-            'pendingRefunds' => (int) ($row->pending_refunds ?? 0),
-        ];
+                return [
+                    'pendingApplications' => (int) ($row->pending_applications ?? 0),
+                    'pendingEvents' => (int) ($row->pending_events ?? 0),
+                    'pendingRefunds' => (int) ($row->pending_refunds ?? 0),
+                ];
+            }
+        );
     }
 
     /**

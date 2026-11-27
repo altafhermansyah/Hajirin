@@ -13,6 +13,37 @@
     --color-lightgray: #F8FAFC;
 }
 
+@layer base {
+    html {
+        scroll-padding-top: 4.5rem;
+    }
+
+    @media (max-width: 639px) {
+        html {
+            scroll-padding-bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px));
+        }
+    }
+
+    body {
+        overflow-wrap: break-word;
+    }
+}
+
+@layer utilities {
+    .no-scrollbar {
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+
+    .no-scrollbar::-webkit-scrollbar {
+        display: none;
+    }
+
+    .pb-safe {
+        padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));
+    }
+}
+
 @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }

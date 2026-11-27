@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Requests\Admin\RejectEoApplicationRequest;
 use App\Mail\EoApplicationStatusMail;
 use App\Models\EoApplication;
@@ -10,6 +11,7 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
@@ -369,6 +371,8 @@ class AdminOrganizerController extends Controller
             );
         });
 
+        Cache::forget(HandleInertiaRequests::ADMIN_COUNTS_CACHE_KEY);
+
         return back()->with('success', 'Pengajuan Event Organizer berhasil disetujui dan pengguna resmi berstatus EO.');
     }
 
@@ -421,6 +425,8 @@ class AdminOrganizerController extends Controller
             }
         });
 
+        Cache::forget(HandleInertiaRequests::ADMIN_COUNTS_CACHE_KEY);
+
         return back()->with('success', 'Pengajuan Event Organizer telah ditolak beserta catatan evaluasi untuk pemohon.');
     }
 
@@ -433,9 +439,16 @@ class AdminOrganizerController extends Controller
 
         $newStatus = $user->status === 'SUSPENDED' ? 'ACTIVE' : 'SUSPENDED';
 
-        $user->forceFill([
-            'status' => $newStatus,
-        ])->save();
+        $payload = ['status' => $newStatus];
+        if ($newStatus === 'SUSPENDED') {
+            $payload['remember_token'] = Str::random(60);
+        }
+
+        $user->forceFill($payload)->save();
+
+        if ($newStatus === 'SUSPENDED') {
+            DB::table('sessions')->where('user_id', $user->id)->delete();
+        }
 
         $label = $newStatus === 'ACTIVE' ? 'diaktifkan kembali' : 'ditangguhkan (suspended)';
 

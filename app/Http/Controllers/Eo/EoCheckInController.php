@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Eo;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Eo\CheckInTicketRequest;
 use App\Models\Event;
-use App\Models\Ticket;
+use App\Support\TicketCheckIn;
 use Carbon\Carbon;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -185,128 +185,16 @@ class EoCheckInController extends Controller
     {
         $user = $request->user();
         $validated = $request->validated();
-        $ticketCode = strtoupper(trim($validated['ticket_code']));
         $selectedEventId = $validated['event_id'] ?? null;
 
-        $result = DB::transaction(function () use ($user, $ticketCode, $selectedEventId): array {
-            $ticket = Ticket::with(['order.event', 'orderItem.ticketType', 'checkedInByUser'])
-                ->where('ticket_code', $ticketCode)
-                ->lockForUpdate()
-                ->first();
-
-            if (! $ticket || ! $ticket->order || ! $ticket->order->event) {
-                return [
-                    'outcome' => 'invalid',
-                    'message' => "Kode e-tiket {$ticketCode} tidak ditemukan di sistem.",
-                    'ticket' => null,
-                ];
-            }
-
-            $order = $ticket->order;
-            $event = $order->event;
-
-            if ($event->eo_id !== $user->id) {
-                return [
-                    'outcome' => 'invalid',
-                    'message' => 'E-tiket ini bukan milik event yang diselenggarakan organisasi Anda.',
-                    'ticket' => null,
-                ];
-            }
-
-            $ticketPayload = [
-                'ticketCode' => $ticket->ticket_code,
-                'attendeeName' => $ticket->attendee_name,
-                'attendeeEmail' => $ticket->attendee_email,
-                'eventTitle' => $event->title,
-                'ticketTypeName' => $ticket->orderItem?->ticketType?->name ?? '-',
-                'orderReference' => $order->order_reference,
-            ];
-
-            if (! empty($selectedEventId) && $event->id !== $selectedEventId) {
-                return [
-                    'outcome' => 'invalid',
-                    'message' => "Tiket ini terdaftar untuk event \"{$event->title}\", bukan event yang sedang dipilih.",
-                    'ticket' => $ticketPayload,
-                ];
-            }
-
-            if ($order->status !== 'PAID') {
-                return [
-                    'outcome' => 'invalid',
-                    'message' => 'Pesanan untuk e-tiket ini belum lunas atau telah dibatalkan.',
-                    'ticket' => $ticketPayload,
-                ];
-            }
-
-            if (! in_array($event->status, ['PUBLISHED', 'ONGOING'], true)) {
-                return [
-                    'outcome' => 'invalid',
-                    'message' => "Check-in tidak tersedia karena status event saat ini adalah {$event->status}.",
-                    'ticket' => $ticketPayload,
-                ];
-            }
-
-            if ($ticket->status === 'CANCELLED') {
-                return [
-                    'outcome' => 'invalid',
-                    'message' => 'E-tiket ini sudah dibatalkan dan tidak berlaku lagi.',
-                    'ticket' => $ticketPayload,
-                ];
-            }
-
-            if ($ticket->status === 'USED') {
-                $checkedInAt = $ticket->checked_in_at
-                    ? Carbon::parse($ticket->checked_in_at)->locale('id')->translatedFormat('d M Y, H:i').' WIB'
-                    : '-';
-                $checkerName = $ticket->checkedInByUser?->name ?? 'Petugas';
-
-                return [
-                    'outcome' => 'already_used',
-                    'message' => "E-tiket sudah pernah check-in pada {$checkedInAt} oleh {$checkerName}.",
-                    'ticket' => array_merge($ticketPayload, [
-                        'checkedInAtFormatted' => $checkedInAt,
-                        'checkedInByName' => $checkerName,
-                    ]),
-                ];
-            }
-
-            $windowError = $event->checkInWindowError();
-            if ($windowError !== null) {
-                return [
-                    'outcome' => 'invalid',
-                    'message' => $windowError,
-                    'ticket' => $ticketPayload,
-                ];
-            }
-
-            $now = now();
-            $ticket->update([
-                'status' => 'USED',
-                'checked_in_at' => $now,
-                'checked_in_by' => $user->id,
-            ]);
-
-            DB::table('ticket_transfers')
-                ->where('ticket_id', $ticket->id)
-                ->where('status', 'PENDING')
-                ->update([
-                    'status' => 'CANCELLED',
-                    'updated_at' => $now,
-                ]);
-
-            $checkedInAt = Carbon::parse($now)->timezone(config('app.timezone'))->locale('id')->translatedFormat('d M Y, H:i').' WIB';
-
-            return [
-                'outcome' => 'success',
-                'message' => 'Check-in berhasil diverifikasi. Peserta dipersilakan masuk.',
-                'ticket' => array_merge($ticketPayload, [
-                    'checkedInAtFormatted' => $checkedInAt,
-                    'checkedInByName' => $user->name,
-                ]),
-            ];
-        });
-
-        $result['eventTimestamp'] = now()->getPreciseTimestamp(3);
+        $result = TicketCheckIn::verifyByCode(
+            actor: $user,
+            rawTicketCode: $validated['ticket_code'],
+            selectedEventId: $selectedEventId,
+            authorizeEvent: fn (Event $event): ?string => $event->eo_id === $user->id
+                ? null
+                : 'E-tiket ini bukan milik event yang diselenggarakan organisasi Anda.',
+        );
 
         return redirect()
             ->route('eo.check-in.index', array_filter([

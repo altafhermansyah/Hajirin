@@ -111,6 +111,10 @@ export default function CheckInWorkspace({
     }, [searchQuery]);
 
     useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const canAutoFocus = window.matchMedia('(min-width: 768px) and (pointer: fine)').matches;
+        if (!canAutoFocus) return;
+
         if (mode === 'manual') {
             inputRef.current?.focus();
         } else if (mode === 'search') {
@@ -173,14 +177,6 @@ export default function CheckInWorkspace({
             return;
         }
 
-        if (!('BarcodeDetector' in window)) {
-            setCameraStatus('unsupported');
-            setCameraError(
-                'Pemindaian QR kamera otomatis belum didukung di browser ini. Gunakan Input Kode / Scanner USB atau Cari Peserta.'
-            );
-            return;
-        }
-
         let cancelled = false;
         let stream = null;
         let timerId = null;
@@ -205,7 +201,40 @@ export default function CheckInWorkspace({
                     await videoRef.current.play();
                 }
 
-                const detector = new window.BarcodeDetector({ formats: ['qr_code'] });
+                let detectQr = null;
+
+                if ('BarcodeDetector' in window) {
+                    const detector = new window.BarcodeDetector({ formats: ['qr_code'] });
+                    detectQr = async (videoEl) => {
+                        const codes = await detector.detect(videoEl);
+                        return codes[0]?.rawValue?.trim() || '';
+                    };
+                } else {
+                    const { default: jsQR } = await import('jsqr');
+                    if (cancelled) return;
+
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+                    detectQr = async (videoEl) => {
+                        if (!ctx || !videoEl.videoWidth || !videoEl.videoHeight) return '';
+                        const maxDim = 640;
+                        const scale = Math.min(1, maxDim / Math.max(videoEl.videoWidth, videoEl.videoHeight));
+                        const w = Math.max(1, Math.round(videoEl.videoWidth * scale));
+                        const h = Math.max(1, Math.round(videoEl.videoHeight * scale));
+                        if (canvas.width !== w || canvas.height !== h) {
+                            canvas.width = w;
+                            canvas.height = h;
+                        }
+                        ctx.drawImage(videoEl, 0, 0, w, h);
+                        const imageData = ctx.getImageData(0, 0, w, h);
+                        const decoded = jsQR(imageData.data, w, h, {
+                            inversionAttempts: 'dontInvert',
+                        });
+                        return decoded?.data?.trim() || '';
+                    };
+                }
+
                 setCameraStatus('active');
 
                 const tick = async () => {
@@ -217,8 +246,7 @@ export default function CheckInWorkspace({
                         !isSelectedEventLockedRef.current
                     ) {
                         try {
-                            const codes = await detector.detect(videoRef.current);
-                            const rawValue = codes[0]?.rawValue?.trim();
+                            const rawValue = await detectQr(videoRef.current);
 
                             if (rawValue) {
                                 const now = Date.now();
@@ -474,49 +502,51 @@ export default function CheckInWorkspace({
             </div>
 
             {/* Main Grid: Scanner Panel + Recent Check-ins */}
-            <div className="grid gap-6 lg:grid-cols-[1.25fr_1fr] items-start">
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.25fr_1fr] items-start">
                 {/* Scanner & Verification Panel */}
-                <div className="space-y-4">
+                <div className="min-w-0 space-y-4">
                     <Card className="overflow-hidden">
-                        <div className="flex items-center gap-6 border-b border-gray-200 px-5 overflow-x-auto">
+                        <div className="grid grid-cols-3 border-b border-gray-200 sm:flex sm:items-center sm:gap-6 sm:px-5">
                             <button
                                 type="button"
                                 aria-pressed={mode === 'manual'}
                                 onClick={() => setMode('manual')}
-                                className={`py-3 border-b-2 text-sm font-medium whitespace-nowrap inline-flex items-center gap-2 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 cursor-pointer ${
+                                className={`min-h-11 px-2 sm:px-0 py-3 border-b-2 text-xs sm:text-sm font-medium whitespace-nowrap inline-flex items-center justify-center gap-1.5 sm:gap-2 transition-colors focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-blue-600 cursor-pointer ${
                                     mode === 'manual'
                                         ? 'border-blue-600 text-blue-600'
                                         : 'border-transparent text-gray-600 hover:text-gray-900'
                                 }`}
                             >
-                                <Keyboard className="size-4" strokeWidth={1.75} aria-hidden="true" />
-                                Input Kode / Scanner USB
+                                <Keyboard className="size-4 shrink-0" strokeWidth={1.75} aria-hidden="true" />
+                                <span>
+                                    Input Kode<span className="hidden sm:inline"> / Scanner USB</span>
+                                </span>
                             </button>
                             <button
                                 type="button"
                                 aria-pressed={mode === 'camera'}
                                 onClick={() => setMode('camera')}
-                                className={`py-3 border-b-2 text-sm font-medium whitespace-nowrap inline-flex items-center gap-2 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 cursor-pointer ${
+                                className={`min-h-11 px-2 sm:px-0 py-3 border-b-2 text-xs sm:text-sm font-medium whitespace-nowrap inline-flex items-center justify-center gap-1.5 sm:gap-2 transition-colors focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-blue-600 cursor-pointer ${
                                     mode === 'camera'
                                         ? 'border-blue-600 text-blue-600'
                                         : 'border-transparent text-gray-600 hover:text-gray-900'
                                 }`}
                             >
-                                <Camera className="size-4" strokeWidth={1.75} aria-hidden="true" />
-                                Kamera QR
+                                <Camera className="size-4 shrink-0" strokeWidth={1.75} aria-hidden="true" />
+                                <span>Kamera QR</span>
                             </button>
                             <button
                                 type="button"
                                 aria-pressed={mode === 'search'}
                                 onClick={() => setMode('search')}
-                                className={`py-3 border-b-2 text-sm font-medium whitespace-nowrap inline-flex items-center gap-2 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 cursor-pointer ${
+                                className={`min-h-11 px-2 sm:px-0 py-3 border-b-2 text-xs sm:text-sm font-medium whitespace-nowrap inline-flex items-center justify-center gap-1.5 sm:gap-2 transition-colors focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-blue-600 cursor-pointer ${
                                     mode === 'search'
                                         ? 'border-blue-600 text-blue-600'
                                         : 'border-transparent text-gray-600 hover:text-gray-900'
                                 }`}
                             >
-                                <Search className="size-4" strokeWidth={1.75} aria-hidden="true" />
-                                Cari Peserta
+                                <Search className="size-4 shrink-0" strokeWidth={1.75} aria-hidden="true" />
+                                <span>Cari Peserta</span>
                             </button>
                         </div>
 
@@ -545,14 +575,14 @@ export default function CheckInWorkspace({
                                                 onChange={(e) => setData('ticket_code', e.target.value)}
                                                 aria-describedby="ticket-code-help"
                                                 placeholder="Contoh: HJR-TKT-2026-AB12CD34"
-                                                className="flex-1 h-10 px-3 rounded-md border border-gray-200 bg-white font-mono text-sm text-gray-900 uppercase placeholder:normal-case placeholder:font-sans placeholder:text-gray-400 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/15"
+                                                className="flex-1 h-11 sm:h-10 px-3 rounded-md border border-gray-200 bg-white font-mono text-base sm:text-sm text-gray-900 uppercase placeholder:normal-case placeholder:font-sans placeholder:text-gray-400 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/15"
                                             />
                                             <EoButton
                                                 type="submit"
                                                 variant="primary"
                                                 size="md"
                                                 disabled={processing || isSelectedEventLocked}
-                                                className="h-10 px-4"
+                                                className="h-11 sm:h-10 px-4"
                                             >
                                                 {processing
                                                     ? 'Memverifikasi...'
@@ -582,6 +612,7 @@ export default function CheckInWorkspace({
                                             <div className="relative aspect-video w-full overflow-hidden rounded-md border border-gray-200 bg-gray-900">
                                                 <video
                                                     ref={videoRef}
+                                                    autoPlay
                                                     muted
                                                     playsInline
                                                     className="size-full object-cover"
@@ -660,7 +691,7 @@ export default function CheckInWorkspace({
                                                 onChange={(e) => setAttendeeSearch(e.target.value)}
                                                 aria-describedby="checkin-search-help"
                                                 placeholder="Ketik minimal 2 karakter nama atau email peserta..."
-                                                className="w-full h-10 pl-9 pr-3 rounded-md border border-gray-200 bg-white text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/15"
+                                                className="w-full h-11 sm:h-10 pl-9 pr-3 rounded-md border border-gray-200 bg-white text-base sm:text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/15"
                                             />
                                         </div>
                                         <p id="checkin-search-help" className="mt-1.5 text-xs text-gray-500">
@@ -810,7 +841,7 @@ export default function CheckInWorkspace({
                 </div>
 
                 {/* Recent Check-ins Log */}
-                <Card as="section" className="overflow-hidden">
+                <Card as="section" className="min-w-0 overflow-hidden">
                     <CardHeader
                         title="Riwayat Check-in Terbaru"
                         description="Peserta yang baru saja diverifikasi masuk."

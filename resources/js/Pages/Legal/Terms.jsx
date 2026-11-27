@@ -1,6 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 import { ArrowLeft, CalendarDays, FileText, Mail, ShieldCheck } from 'lucide-react';
-import Navbar from '../../Components/Navbar';
+import UserLayout from '../../Layouts/UserLayout';
 
 const TERMS_SECTIONS = [
     { id: 'definisi', title: '1. Definisi & Ruang Lingkup' },
@@ -20,8 +20,7 @@ export default function Terms({ auth }) {
         <>
             <Head title="Ketentuan Layanan - Hajirin" />
 
-            <div className="min-h-screen bg-[#F8FAFC] text-slate-800 font-sans flex flex-col">
-                <Navbar auth={auth} />
+            <UserLayout auth={auth} className="bg-[#F8FAFC] text-slate-800">
 
                 <header className="border-b border-slate-200 bg-white">
                     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-8">
@@ -224,7 +223,7 @@ export default function Terms({ auth }) {
                 <footer className="border-t border-slate-200 bg-white px-4 py-6 text-center text-xs text-slate-500">
                     © 2026 Hajirin - Platform Manajemen Event &amp; E-Ticketing Indonesia.
                 </footer>
-            </div>
+            </UserLayout>
         </>
     );
 }

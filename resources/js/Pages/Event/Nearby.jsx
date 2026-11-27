@@ -15,7 +15,7 @@ import {
     Loader2,
 } from 'lucide-react';
 import AuthModal from '../../Components/Auth/AuthModal';
-import Navbar from '../../Components/Navbar';
+import UserLayout from '../../Layouts/UserLayout';
 import { Button, buttonClass } from '../../Components/ui/Button';
 import { findNearestCity } from '../../lib/cityGeolocation';
 
@@ -191,8 +191,12 @@ export default function Nearby({
         <>
             <Head title={`Event Terdekat di ${selectedCity} - Hajirin`} />
 
-            <div className="min-h-screen bg-slate-50/40 text-slate-900 font-sans antialiased flex flex-col">
-                <Navbar auth={auth} onOpenAuthModal={openAuthModal} />
+            <UserLayout
+                auth={auth}
+                onOpenAuthModal={openAuthModal}
+                activeLink="jelajah"
+                className="bg-slate-50/40 text-slate-900 antialiased"
+            >
 
                 <main id="main-content" tabIndex={-1} className="flex-1">
                     {/* Header Banner */}
@@ -518,7 +522,7 @@ export default function Nearby({
                     onClose={() => setIsAuthModalOpen(false)}
                     initialView={authView}
                 />
-            </div>
+            </UserLayout>
         </>
     );
 }

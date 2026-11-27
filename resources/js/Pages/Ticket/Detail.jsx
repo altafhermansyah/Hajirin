@@ -1,6 +1,6 @@
 import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import { useState } from 'react';
-import Navbar from '../../Components/Navbar';
+import UserLayout from '../../Layouts/UserLayout';
 import QrCodeSvg from '../../Components/QrCodeSvg';
 import {
     ArrowLeft,
@@ -26,7 +26,7 @@ import { Button, buttonClass } from '../../Components/ui/Button';
 import { Modal } from '../../Components/ui/Dialog';
 
 const INPUT_CLASS =
-    'w-full h-10 rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-blue focus:outline-none focus:ring-2 focus:ring-brand-blue/15 transition';
+    'w-full h-11 sm:h-10 rounded-lg border border-slate-200 bg-white px-3.5 text-base sm:text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-blue focus:outline-none focus:ring-2 focus:ring-brand-blue/15 transition';
 
 export default function TicketDetail({ auth, order = {}, event = {}, tickets = [] }) {
     const { flash, errors: pageErrors } = usePage().props;
@@ -84,10 +84,10 @@ export default function TicketDetail({ auth, order = {}, event = {}, tickets = [
         <>
             <Head title={`E-Tiket: ${event.title || 'Tiket Saya'} - Hajirin`} />
 
-            <div className="min-h-screen bg-slate-50 text-slate-900 font-sans flex flex-col print:bg-white">
-                <div className="print:hidden">
-                    <Navbar auth={auth} />
-                </div>
+            <UserLayout
+                auth={auth}
+                className="bg-slate-50 text-slate-900 print:bg-white"
+            >
 
                 <main
                     id="main-content"
@@ -178,6 +178,29 @@ export default function TicketDetail({ auth, order = {}, event = {}, tickets = [
                             )}
                         </div>
                     </section>
+
+                    {/* Tautan Akses Event Online (Hanya untuk pemegang tiket pesanan PAID) */}
+                    {event.eventType === 'ONLINE' && event.onlineUrl && (
+                        <Card className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div className="min-w-0">
+                                <p className="text-sm font-semibold text-slate-900">
+                                    Tautan Akses Event Online
+                                </p>
+                                <p className="mt-0.5 text-xs text-slate-600 truncate">
+                                    {event.onlineUrl}
+                                </p>
+                            </div>
+                            <a
+                                href={event.onlineUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={buttonClass('primary', 'md', 'shrink-0')}
+                            >
+                                <ExternalLink className="size-4" aria-hidden="true" />
+                                <span>Buka Link Event</span>
+                            </a>
+                        </Card>
+                    )}
 
                     {/* Instruksi Check-in */}
                     <div className="print:hidden">
@@ -449,7 +472,7 @@ export default function TicketDetail({ auth, order = {}, event = {}, tickets = [
                         </ul>
                     </Card>
                 </main>
-            </div>
+            </UserLayout>
 
             {/* Modal Transfer Tiket */}
             <Modal

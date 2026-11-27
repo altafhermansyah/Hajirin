@@ -3,15 +3,12 @@
 namespace Database\Seeders;
 
 use App\Models\User;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class DatabaseSeeder extends Seeder
 {
-    use WithoutModelEvents;
-
     /**
      * Seed the application's database.
      */
@@ -19,7 +16,9 @@ class DatabaseSeeder extends Seeder
     {
         $this->call(RoleSeeder::class);
 
-        User::unguarded(function (): void {
+        $verifiedAt = now();
+
+        User::unguarded(function () use ($verifiedAt): void {
             // Admin Account
             $admin = User::updateOrCreate(
                 ['email' => 'admin@hajirin.com'],
@@ -28,6 +27,7 @@ class DatabaseSeeder extends Seeder
                     'phone' => '081110001001',
                     'password' => 'password',
                     'role' => 'ADMIN',
+                    'email_verified_at' => $verifiedAt,
                 ]
             );
 
@@ -39,6 +39,7 @@ class DatabaseSeeder extends Seeder
                     'phone' => '081110002002',
                     'password' => 'password',
                     'role' => 'EO',
+                    'email_verified_at' => $verifiedAt,
                 ]
             );
 
@@ -72,6 +73,7 @@ class DatabaseSeeder extends Seeder
                     'phone' => '081110003003',
                     'password' => 'password',
                     'role' => 'USER',
+                    'email_verified_at' => $verifiedAt,
                 ]
             );
         });

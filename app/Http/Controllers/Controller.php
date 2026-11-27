@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 abstract class Controller
 {
@@ -21,14 +22,41 @@ abstract class Controller
     ): string {
         $mimeType = $file->getMimeType() ?? '';
 
-        if (! str_starts_with($mimeType, 'image/') || ! function_exists('imagecreatefromstring') || ! function_exists('imagewebp')) {
+        if (! str_starts_with($mimeType, 'image/')) {
             return $file->store($directory, $disk);
+        }
+
+        $realPath = $file->getRealPath();
+        $dimensions = $realPath ? @getimagesize($realPath) : false;
+
+        if ($dimensions === false || $dimensions[0] <= 0 || $dimensions[1] <= 0) {
+            throw ValidationException::withMessages([
+                'image' => 'Berkas gambar tidak valid atau rusak. Unggah ulang berkas JPG, PNG, atau WebP yang valid.',
+            ]);
+        }
+
+        $rawWidth = (int) $dimensions[0];
+        $rawHeight = (int) $dimensions[1];
+
+        // Cegah pixel flood sebelum GD mengalokasikan bitmap di memori
+        if ($rawWidth > 10000 || $rawHeight > 10000 || ($rawWidth * $rawHeight) > 40_000_000) {
+            throw ValidationException::withMessages([
+                'image' => 'Dimensi gambar terlalu besar. Gunakan gambar maksimal 10.000×10.000 piksel.',
+            ]);
+        }
+
+        if (! function_exists('imagecreatefromstring') || ! function_exists('imagewebp')) {
+            throw ValidationException::withMessages([
+                'image' => 'Pemrosesan gambar tidak tersedia di server saat ini.',
+            ]);
         }
 
         $source = @imagecreatefromstring($file->get());
 
         if ($source === false) {
-            return $file->store($directory, $disk);
+            throw ValidationException::withMessages([
+                'image' => 'Berkas gambar gagal dibaca atau rusak. Gunakan berkas JPG, PNG, atau WebP yang valid.',
+            ]);
         }
 
         if ($mimeType === 'image/jpeg' && function_exists('exif_read_data') && $file->getRealPath()) {
@@ -77,7 +105,9 @@ abstract class Controller
         $webpBytes = ob_get_clean();
 
         if (! $encoded || $webpBytes === false || $webpBytes === '') {
-            return $file->store($directory, $disk);
+            throw ValidationException::withMessages([
+                'image' => 'Berkas gambar gagal diproses. Silakan unggah ulang gambar yang valid.',
+            ]);
         }
 
         $path = trim($directory, '/').'/'.Str::random(40).'.webp';

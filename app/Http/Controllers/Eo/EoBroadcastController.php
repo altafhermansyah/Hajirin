@@ -4,12 +4,10 @@ namespace App\Http\Controllers\Eo;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Eo\StoreEoBroadcastRequest;
-use App\Mail\EventBroadcastMail;
+use App\Jobs\SendEventBroadcastNotificationsJob;
 use App\Models\Event;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class EoBroadcastController extends Controller
@@ -28,24 +26,20 @@ class EoBroadcastController extends Controller
             ->where('eo_id', $user->id)
             ->firstOrFail();
 
-        $recipients = DB::table('orders')
+        $recipientCount = (int) DB::table('orders')
             ->join('tickets', 'tickets.order_id', '=', 'orders.id')
-            ->join('users', 'users.id', '=', 'orders.user_id')
             ->where('orders.event_id', $event->id)
             ->where('orders.status', 'PAID')
             ->where('tickets.status', '!=', 'CANCELLED')
-            ->distinct()
-            ->get(['users.id', 'users.name', 'users.email']);
+            ->selectRaw('COUNT(DISTINCT COALESCE(tickets.holder_user_id, orders.user_id)) as total')
+            ->value('total');
 
-        if ($recipients->isEmpty()) {
+        if ($recipientCount === 0) {
             throw ValidationException::withMessages([
                 'event_id' => 'Belum ada peserta dengan tiket aktif pada event ini untuk dikirimi pengumuman.',
             ]);
         }
 
-        $now = now();
-        $title = Str::limit("[{$event->title}] {$validated['title']}", 195, '...');
-        $actionUrl = "/event/{$event->slug}";
         $organizerName = $sendEmail
             ? (DB::table('eo_applications')
                 ->where('user_id', $user->id)
@@ -53,42 +47,21 @@ class EoBroadcastController extends Controller
                 ->value('organization_name') ?: $user->name)
             : $user->name;
 
-        DB::transaction(function () use ($recipients, $title, $validated, $actionUrl, $now, $sendEmail, $event, $organizerName): void {
-            foreach ($recipients->chunk(200) as $chunk) {
-                $rows = $chunk->map(fn (object $recipient): array => [
-                    'id' => Str::uuid()->toString(),
-                    'user_id' => $recipient->id,
-                    'type' => 'EVENT_UPDATED',
-                    'title' => $title,
-                    'message' => $validated['message'],
-                    'action_url' => $actionUrl,
-                    'created_at' => $now,
-                ])->all();
-
-                DB::table('notifications')->insert($rows);
-
-                if ($sendEmail) {
-                    foreach ($chunk as $recipient) {
-                        Mail::to($recipient->email)->send(
-                            (new EventBroadcastMail(
-                                recipientName: $recipient->name,
-                                eventTitle: $event->title,
-                                eventSlug: $event->slug,
-                                announcementTitle: $validated['title'],
-                                announcementMessage: $validated['message'],
-                                organizerName: $organizerName,
-                            ))->afterCommit()
-                        );
-                    }
-                }
-            }
-        });
+        SendEventBroadcastNotificationsJob::dispatch(
+            eventId: $event->id,
+            eventTitle: $event->title,
+            eventSlug: $event->slug,
+            announcementTitle: $validated['title'],
+            announcementMessage: $validated['message'],
+            organizerName: $organizerName,
+            sendEmail: $sendEmail,
+        )->afterCommit();
 
         $suffix = $sendEmail ? ' beserta salinan email.' : '.';
 
         return back()->with(
             'success',
-            "Pengumuman berhasil dikirim ke {$recipients->count()} peserta event \"{$event->title}\"{$suffix}"
+            "Pengumuman berhasil dikirim ke {$recipientCount} peserta event \"{$event->title}\"{$suffix}"
         );
     }
 }

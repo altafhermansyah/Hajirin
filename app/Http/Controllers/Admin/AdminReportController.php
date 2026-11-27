@@ -75,11 +75,14 @@ class AdminReportController extends Controller
         };
 
         // 1. Ringkasan Keseluruhan (KPI Global)
+        // Gross Revenue mencakup semua pesanan yang pernah lunas (termasuk yang kemudian dibatalkan karena refund penuh)
+        // agar pengurangan totalRefunds di bawah tidak memotong nilai refund dua kali.
         $globalOrderStats = DB::table('orders')
-            ->where('status', 'PAID')
+            ->whereIn('status', ['PAID', 'CANCELLED'])
+            ->whereNotNull('paid_at')
             ->when($period !== 'all', fn (Builder $q) => $dateFilterCallback($q, 'orders.paid_at'))
             ->selectRaw('COALESCE(SUM(total_amount), 0) as gross_revenue')
-            ->selectRaw('COUNT(id) as total_paid_orders')
+            ->selectRaw("COUNT(CASE WHEN status = 'PAID' THEN 1 END) as total_paid_orders")
             ->first();
 
         $grossRevenue = (float) ($globalOrderStats->gross_revenue ?? 0);
@@ -93,9 +96,9 @@ class AdminReportController extends Controller
             ->when($period !== 'all', fn (Builder $q) => $dateFilterCallback($q, 'orders.paid_at'))
             ->count('tickets.id');
 
-        // Total Pengembalian Dana (Refund) yang Disetujui
+        // Total Pengembalian Dana (Refund) yang Disetujui atau Selesai
         $refundStats = DB::table('refunds')
-            ->where('status', 'APPROVED')
+            ->whereIn('status', ['APPROVED', 'COMPLETED'])
             ->when($period !== 'all', fn (Builder $q) => $dateFilterCallback($q, 'refunds.processed_at'))
             ->selectRaw('COALESCE(SUM(amount), 0) as total_refunds')
             ->selectRaw('COUNT(id) as total_refund_count')
@@ -126,14 +129,15 @@ class AdminReportController extends Controller
                 });
             });
 
-        // Subquery agregasi pesanan lunas per event
+        // Subquery agregasi pesanan yang pernah lunas per event (selaras dengan KPI global)
         $eventSales = DB::table('orders')
-            ->where('orders.status', 'PAID')
+            ->whereIn('orders.status', ['PAID', 'CANCELLED'])
+            ->whereNotNull('orders.paid_at')
             ->when($period !== 'all', fn (Builder $q) => $dateFilterCallback($q, 'orders.paid_at'))
             ->groupBy('orders.event_id')
             ->selectRaw('orders.event_id')
             ->selectRaw('COALESCE(SUM(orders.total_amount), 0) as event_gross_amount')
-            ->selectRaw('COUNT(orders.id) as event_orders_count')
+            ->selectRaw("COUNT(CASE WHEN orders.status = 'PAID' THEN 1 END) as event_orders_count")
             ->get()
             ->keyBy('event_id');
 
@@ -150,11 +154,11 @@ class AdminReportController extends Controller
         // Subquery refund per event
         $eventRefunds = DB::table('refunds')
             ->join('orders', 'orders.id', '=', 'refunds.order_id')
-            ->where('refunds.status', 'APPROVED')
+            ->whereIn('refunds.status', ['APPROVED', 'COMPLETED'])
             ->when($period !== 'all', fn (Builder $q) => $dateFilterCallback($q, 'refunds.processed_at'))
             ->groupBy('orders.event_id')
             ->selectRaw('orders.event_id, COALESCE(SUM(refunds.amount), 0) as event_refund_amount')
-            ->pluck('event_refund_amount', 'event_id');
+            ->pluck('event_refund_amount', 'orders.event_id');
 
         $eventsList = $eventsQuery
             ->select(

@@ -22,7 +22,7 @@ class HomeController extends Controller
                 $join->on('eo_applications.user_id', '=', 'users.id')
                     ->where('eo_applications.status', '=', 'APPROVED');
             })
-            ->where('events.status', 'PUBLISHED')
+            ->whereIn('events.status', ['PUBLISHED', 'ONGOING'])
             ->select(
                 'events.id',
                 'events.title',

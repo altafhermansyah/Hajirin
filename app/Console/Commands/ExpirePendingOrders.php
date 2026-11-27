@@ -3,9 +3,10 @@
 namespace App\Console\Commands;
 
 use App\Models\Order;
+use App\Support\InAppNotification;
+use App\Support\OrderQuota;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 class ExpirePendingOrders extends Command
 {
@@ -59,33 +60,15 @@ class ExpirePendingOrders extends Command
                         'updated_at' => now(),
                     ]);
 
-                foreach ($order->items as $item) {
-                    if (! $item->ticketType) {
-                        continue;
-                    }
+                OrderQuota::restoreForOrder($order);
 
-                    $ticketType = $item->ticketType()->lockForUpdate()->first();
-                    if (! $ticketType) {
-                        continue;
-                    }
-
-                    $restoredQuota = min(
-                        (int) $ticketType->initial_quota,
-                        (int) $ticketType->quota + (int) $item->quantity
-                    );
-
-                    $ticketType->forceFill(['quota' => $restoredQuota])->save();
-                }
-
-                DB::table('notifications')->insert([
-                    'id' => Str::uuid()->toString(),
-                    'user_id' => $order->user_id,
-                    'type' => 'PAYMENT_FAILED',
-                    'title' => 'Pesanan Tiket Kedaluwarsa',
-                    'message' => "Batas waktu pembayaran pesanan {$order->order_reference} untuk event \"{$order->event?->title}\" telah berakhir. Kuota tiket telah dikembalikan.",
-                    'action_url' => '/dashboard#pesanan',
-                    'created_at' => now(),
-                ]);
+                InAppNotification::send(
+                    userId: $order->user_id,
+                    type: 'PAYMENT_FAILED',
+                    title: 'Pesanan Tiket Kedaluwarsa',
+                    message: "Batas waktu pembayaran pesanan {$order->order_reference} untuk event \"{$order->event?->title}\" telah berakhir. Kuota tiket telah dikembalikan.",
+                    actionUrl: '/dashboard#pesanan',
+                );
 
                 $processedCount++;
             });

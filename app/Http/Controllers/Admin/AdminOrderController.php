@@ -195,11 +195,29 @@ class AdminOrderController extends Controller
         $admin = $request->user();
 
         DB::transaction(function () use ($id): void {
-            $order = Order::with(['tickets', 'payment', 'items', 'user'])->where('id', $id)->lockForUpdate()->firstOrFail();
+            $order = Order::with(['tickets', 'payment', 'items', 'user', 'event'])->where('id', $id)->lockForUpdate()->firstOrFail();
 
             if ($order->status === 'PAID') {
                 throw ValidationException::withMessages([
                     'order' => 'Pesanan ini sudah berstatus LUNAS (PAID).',
+                ]);
+            }
+
+            if ($order->status !== 'PENDING') {
+                throw ValidationException::withMessages([
+                    'order' => "Hanya pesanan berstatus PENDING yang dapat dikonfirmasi lunas (status saat ini: {$order->status}).",
+                ]);
+            }
+
+            if ($order->expires_at !== null && $order->expires_at->isPast()) {
+                throw ValidationException::withMessages([
+                    'order' => 'Pesanan ini telah melewati batas waktu pembayaran sehingga tidak dapat ditandai lunas.',
+                ]);
+            }
+
+            if ($order->event?->status === 'CANCELLED') {
+                throw ValidationException::withMessages([
+                    'order' => 'Pesanan tidak dapat ditandai lunas karena event terkait sudah dibatalkan.',
                 ]);
             }
 

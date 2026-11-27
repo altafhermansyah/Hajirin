@@ -23,7 +23,7 @@ import {
     CheckCircle,
 } from 'lucide-react';
 import AuthModal from '../../Components/Auth/AuthModal';
-import Navbar from '../../Components/Navbar';
+import UserLayout from '../../Layouts/UserLayout';
 import { Card } from '../../Components/ui/Card';
 import { Avatar } from '../../Components/ui/Avatar';
 import { StatusBadge, NeutralTag } from '../../Components/ui/StatusBadge';
@@ -87,14 +87,14 @@ export default function EventDetail({
 
     if (!eventData) {
         return (
-            <div className="min-h-screen bg-white text-slate-900 font-sans flex flex-col">
-                <Navbar
-                    auth={auth}
-                    onOpenAuthModal={(view) => {
-                        setAuthView(view);
-                        setIsAuthModalOpen(true);
-                    }}
-                />
+            <UserLayout
+                auth={auth}
+                onOpenAuthModal={(view) => {
+                    setAuthView(view);
+                    setIsAuthModalOpen(true);
+                }}
+                className="bg-white text-slate-900"
+            >
                 <main
                     id="main-content"
                     tabIndex={-1}
@@ -117,7 +117,7 @@ export default function EventDetail({
                         </div>
                     </div>
                 </main>
-            </div>
+            </UserLayout>
         );
     }
 
@@ -143,7 +143,8 @@ export default function EventDetail({
 
     const handleSetTicketQuantity = (ticket, qty) => {
         if (ticket.status === 'Habis') return;
-        const maxQuota = Math.min(ticket.quota || 10, 10);
+        const limitPerOrder = ticket.maxPerOrder || 10;
+        const maxQuota = Math.min(ticket.quota || limitPerOrder, limitPerOrder);
         const validQty = Math.max(0, Math.min(qty, maxQuota));
         setSelectedTickets((prev) => {
             const next = { ...prev };
@@ -229,21 +230,22 @@ export default function EventDetail({
                 <div
                     role="status"
                     aria-live="polite"
-                    className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 rounded-lg bg-navy text-white px-4 py-3 shadow-lg border border-slate-700"
+                    className="fixed bottom-24 right-4 left-4 sm:left-auto sm:right-6 lg:bottom-6 z-50 flex items-center gap-2.5 rounded-lg bg-navy text-white px-4 py-3 shadow-lg border border-slate-700"
                 >
                     <CheckCircle className="size-4 text-emerald-400 shrink-0" aria-hidden="true" />
                     <span className="text-xs font-medium">{toastMessage}</span>
                 </div>
             )}
 
-            <div className="bg-slate-50 text-slate-900 font-sans min-h-screen flex flex-col">
-                <Navbar
-                    auth={auth}
-                    onOpenAuthModal={(view) => {
-                        setAuthView(view);
-                        setIsAuthModalOpen(true);
-                    }}
-                />
+            <UserLayout
+                auth={auth}
+                showBottomNav={false}
+                onOpenAuthModal={(view) => {
+                    setAuthView(view);
+                    setIsAuthModalOpen(true);
+                }}
+                className="bg-slate-50 text-slate-900"
+            >
 
                 <main
                     id="main-content"
@@ -578,7 +580,11 @@ export default function EventDetail({
                                             const isHabis = ticket.status === 'Habis';
                                             const currentQty = selectedTickets[ticket.id] || 0;
                                             const isSelected = currentQty > 0;
-                                            const maxQuota = Math.min(ticket.quota || 10, 10);
+                                            const limitPerOrder = ticket.maxPerOrder || 10;
+                                            const maxQuota = Math.min(
+                                                ticket.quota || limitPerOrder,
+                                                limitPerOrder
+                                            );
 
                                             return (
                                                 <div
@@ -639,11 +645,11 @@ export default function EventDetail({
                                                                                 currentQty - 1
                                                                             );
                                                                         }}
-                                                                        className="flex size-7 items-center justify-center rounded-md bg-slate-100 hover:bg-slate-200 text-slate-800 transition cursor-pointer"
+                                                                        className="flex size-11 sm:size-8 items-center justify-center rounded-md bg-slate-100 hover:bg-slate-200 text-slate-800 transition cursor-pointer"
                                                                     >
-                                                                        <Minus className="size-3.5" aria-hidden="true" />
+                                                                        <Minus className="size-4 sm:size-3.5" aria-hidden="true" />
                                                                     </button>
-                                                                    <span className="w-6 text-center text-sm font-semibold text-slate-900 tabular-nums">
+                                                                    <span className="w-7 text-center text-sm font-semibold text-slate-900 tabular-nums">
                                                                         {currentQty}
                                                                     </span>
                                                                     <button
@@ -657,9 +663,9 @@ export default function EventDetail({
                                                                             );
                                                                         }}
                                                                         disabled={currentQty >= maxQuota}
-                                                                        className="flex size-7 items-center justify-center rounded-md bg-brand-blue text-white hover:bg-blue-800 disabled:opacity-40 transition cursor-pointer"
+                                                                        className="flex size-11 sm:size-8 items-center justify-center rounded-md bg-brand-blue text-white hover:bg-blue-800 disabled:opacity-40 transition cursor-pointer"
                                                                     >
-                                                                        <Plus className="size-3.5" aria-hidden="true" />
+                                                                        <Plus className="size-4 sm:size-3.5" aria-hidden="true" />
                                                                     </button>
                                                                 </div>
                                                             ) : (
@@ -707,8 +713,8 @@ export default function EventDetail({
                             </Card>
                         </div>
 
-                        {/* Right Column (4 cols): Sticky Checkout Summary */}
-                        <div className="lg:col-span-4 lg:sticky lg:top-24">
+                        {/* Right Column (4 cols): Sticky Checkout Summary (Desktop only; mobile uses sticky bottom bar) */}
+                        <div className="hidden lg:block lg:col-span-4 lg:sticky lg:top-24">
                             <Card className="p-6">
                                 <p className="text-xs font-medium text-slate-500 mb-1">
                                     Ringkasan Pemesanan
@@ -892,7 +898,7 @@ export default function EventDetail({
                 </main>
 
                 {/* Mobile Sticky Bottom Bar */}
-                <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200 px-4 py-3 flex items-center justify-between gap-3">
+                <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur border-t border-slate-200 px-4 pt-3 pb-safe flex items-center justify-between gap-3">
                     <div>
                         <p className="text-xs text-slate-500">
                             {totalSelectedTicketsCount > 0
@@ -925,7 +931,7 @@ export default function EventDetail({
                     )}
                 </div>
 
-                <footer className="border-t border-slate-200 bg-white py-6 px-4 sm:px-8 text-xs text-slate-400">
+                <footer className="border-t border-slate-200 bg-white pt-6 pb-24 lg:py-6 px-4 sm:px-8 text-xs text-slate-400">
                     <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
                         <div className="flex items-center gap-2">
                             <img
@@ -941,7 +947,7 @@ export default function EventDetail({
                         <p>© 2026 Hajirin Indonesia. Seluruh hak cipta dilindungi.</p>
                     </div>
                 </footer>
-            </div>
+            </UserLayout>
 
             <AuthModal
                 isOpen={isAuthModalOpen}

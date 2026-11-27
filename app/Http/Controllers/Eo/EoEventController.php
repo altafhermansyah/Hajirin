@@ -3,19 +3,21 @@
 namespace App\Http\Controllers\Eo;
 
 use App\Http\Controllers\Controller;
+use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Requests\Eo\CancelEoEventRequest;
 use App\Http\Requests\Eo\StoreEoEventRequest;
 use App\Http\Requests\Eo\UpdateEoEventRequest;
-use App\Mail\EventCancelledAttendeeMail;
+use App\Jobs\SendEventCancelledNotificationsJob;
 use App\Models\Category;
 use App\Models\Event;
 use App\Models\TicketPrice;
 use App\Models\TicketType;
+use App\Support\Format;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -306,7 +308,10 @@ class EoEventController extends Controller
         $user = $request->user();
         $validated = $request->validated();
 
-        DB::transaction(function () use ($request, $user, $validated, $id): void {
+        $oldBannerToDelete = null;
+        $forcedPendingReview = false;
+
+        DB::transaction(function () use ($request, $user, $validated, $id, &$oldBannerToDelete, &$forcedPendingReview): void {
             $event = Event::where('id', $id)->lockForUpdate()->firstOrFail();
 
             if ($event->eo_id !== $user->id) {
@@ -319,10 +324,14 @@ class EoEventController extends Controller
                 ]);
             }
 
+            $wasPublished = $event->status === 'PUBLISHED';
+            $isActiveLiveOrDone = in_array($event->status, ['ONGOING', 'COMPLETED'], true);
+            $hasNewBanner = $request->hasFile('banner');
+
             $bannerPath = $event->banner_path;
-            if ($request->hasFile('banner')) {
+            if ($hasNewBanner) {
                 if ($event->banner_path && Str::startsWith($event->banner_path, '/storage/banners/')) {
-                    Storage::disk('public')->delete(str_replace('/storage/', '', $event->banner_path));
+                    $oldBannerToDelete = str_replace('/storage/', '', $event->banner_path);
                 }
 
                 $storedPath = $this->storeOptimizedImage($request->file('banner'), 'banners', 'public', 1600, 80);
@@ -330,6 +339,25 @@ class EoEventController extends Controller
             }
 
             $isOffline = $validated['event_type'] === 'OFFLINE';
+            $nextCity = $isOffline ? $validated['city'] : null;
+            $nextVenue = $isOffline ? $validated['venue_name'] : null;
+            $nextAddress = $isOffline ? $validated['address'] : null;
+            $nextOnlineUrl = ! $isOffline ? $validated['online_url'] : null;
+
+            $startsAtChanged = ! $event->starts_at || ! Carbon::parse($event->starts_at)->equalTo(Carbon::parse($validated['starts_at']));
+            $endsAtChanged = ! $event->ends_at || ! Carbon::parse($event->ends_at)->equalTo(Carbon::parse($validated['ends_at']));
+
+            $sensitiveChanged = $hasNewBanner
+                || $event->title !== $validated['title']
+                || $event->description !== $validated['description']
+                || (int) $event->category_id !== (int) $validated['category_id']
+                || $event->event_type !== $validated['event_type']
+                || $event->city !== $nextCity
+                || $event->venue_name !== $nextVenue
+                || $event->address !== $nextAddress
+                || $event->online_url !== $nextOnlineUrl
+                || $startsAtChanged
+                || $endsAtChanged;
 
             $event->fill([
                 'category_id' => (int) $validated['category_id'],
@@ -337,29 +365,14 @@ class EoEventController extends Controller
                 'description' => $validated['description'],
                 'terms_and_conditions' => $validated['terms_and_conditions'] ?? null,
                 'event_type' => $validated['event_type'],
-                'city' => $isOffline ? $validated['city'] : null,
-                'venue_name' => $isOffline ? $validated['venue_name'] : null,
-                'address' => $isOffline ? $validated['address'] : null,
-                'online_url' => ! $isOffline ? $validated['online_url'] : null,
+                'city' => $nextCity,
+                'venue_name' => $nextVenue,
+                'address' => $nextAddress,
+                'online_url' => $nextOnlineUrl,
                 'starts_at' => $validated['starts_at'],
                 'ends_at' => $validated['ends_at'],
                 'banner_path' => $bannerPath,
             ]);
-
-            $newStatus = $event->status;
-            $rejectionReason = $event->rejection_reason;
-
-            if ($validated['submit_action'] === 'PENDING_REVIEW') {
-                $newStatus = 'PENDING_REVIEW';
-                $rejectionReason = null;
-            } elseif ($validated['submit_action'] === 'DRAFT' && $event->status !== 'PUBLISHED') {
-                $newStatus = 'DRAFT';
-            }
-
-            $event->forceFill([
-                'status' => $newStatus,
-                'rejection_reason' => $rejectionReason,
-            ])->save();
 
             $existingTickets = TicketType::where('event_id', $event->id)
                 ->lockForUpdate()
@@ -404,12 +417,17 @@ class EoEventController extends Controller
                         ->first();
 
                     if ($activePrice) {
+                        if (abs((float) $activePrice->price - (float) $tick['price']) > 0.001) {
+                            $sensitiveChanged = true;
+                        }
+
                         $activePrice->fill([
                             'name' => $tierName,
                             'price' => (float) $tick['price'],
                         ]);
                         $activePrice->forceFill(['status' => 'ACTIVE'])->save();
                     } else {
+                        $sensitiveChanged = true;
                         $newPrice = new TicketPrice([
                             'ticket_type_id' => $matchedTicket->id,
                             'name' => $tierName,
@@ -420,6 +438,7 @@ class EoEventController extends Controller
 
                     $keptTicketIds[] = $matchedTicket->id;
                 } else {
+                    $sensitiveChanged = true;
                     $ticketType = new TicketType([
                         'event_id' => $event->id,
                         'name' => $tick['name'],
@@ -445,6 +464,7 @@ class EoEventController extends Controller
 
             foreach ($existingTickets as $oldTicket) {
                 if (! in_array($oldTicket->id, $keptTicketIds, true)) {
+                    $sensitiveChanged = true;
                     $hasOrders = DB::table('order_items')
                         ->where('ticket_type_id', $oldTicket->id)
                         ->exists();
@@ -456,9 +476,32 @@ class EoEventController extends Controller
                     }
                 }
             }
+
+            $newStatus = $event->status;
+            $rejectionReason = $event->rejection_reason;
+
+            if ($wasPublished && $sensitiveChanged) {
+                $newStatus = 'PENDING_REVIEW';
+                $rejectionReason = null;
+                $forcedPendingReview = true;
+            } elseif ($validated['submit_action'] === 'PENDING_REVIEW' && ! $isActiveLiveOrDone) {
+                $newStatus = 'PENDING_REVIEW';
+                $rejectionReason = null;
+            } elseif ($validated['submit_action'] === 'DRAFT' && ! $wasPublished && ! $isActiveLiveOrDone) {
+                $newStatus = 'DRAFT';
+            }
+
+            $event->forceFill([
+                'status' => $newStatus,
+                'rejection_reason' => $rejectionReason,
+            ])->save();
         });
 
-        $message = $validated['submit_action'] === 'PENDING_REVIEW'
+        if ($oldBannerToDelete !== null) {
+            Storage::disk('public')->delete($oldBannerToDelete);
+        }
+
+        $message = ($validated['submit_action'] === 'PENDING_REVIEW' || $forcedPendingReview)
             ? 'Perubahan event & tiket berhasil disimpan dan diajukan ke Admin untuk ditinjau.'
             : 'Perubahan data event dan jenis tiket berhasil diperbarui.';
 
@@ -531,28 +574,15 @@ class EoEventController extends Controller
                 'cancellation_reason' => $validated['cancellation_reason'],
             ])->save();
 
-            $eventDate = Carbon::parse($event->starts_at)->locale('id')->translatedFormat('d M Y, H:i').' WIB';
-            $affectedOrders = DB::table('orders')
-                ->join('users', 'users.id', '=', 'orders.user_id')
-                ->join('tickets', 'tickets.order_id', '=', 'orders.id')
-                ->where('orders.event_id', $event->id)
-                ->where('orders.status', 'PAID')
-                ->where('tickets.status', '!=', 'CANCELLED')
-                ->distinct()
-                ->get(['users.name', 'users.email', 'orders.order_reference']);
-
-            foreach ($affectedOrders as $recipient) {
-                Mail::to($recipient->email)->send(
-                    (new EventCancelledAttendeeMail(
-                        recipientName: $recipient->name,
-                        eventTitle: $event->title,
-                        eventDate: $eventDate,
-                        cancellationReason: $validated['cancellation_reason'],
-                        orderReference: $recipient->order_reference,
-                    ))->afterCommit()
-                );
-            }
+            SendEventCancelledNotificationsJob::dispatch(
+                eventId: $event->id,
+                eventTitle: $event->title,
+                eventDate: Format::wib($event->starts_at),
+                cancellationReason: $validated['cancellation_reason'],
+            )->afterCommit();
         });
+
+        Cache::forget(HandleInertiaRequests::ADMIN_COUNTS_CACHE_KEY);
 
         return back()->with('success', 'Penyelenggaraan event telah resmi dibatalkan.');
     }

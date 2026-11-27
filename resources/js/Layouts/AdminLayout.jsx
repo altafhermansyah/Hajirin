@@ -156,7 +156,7 @@ export default function AdminLayout({ title, children }) {
     ];
 
     return (
-        <div className="min-h-screen bg-slate-50 text-slate-900 font-sans flex flex-col">
+        <div className="min-h-dvh bg-slate-50 text-slate-900 font-sans flex flex-col">
             <Head title={`${title ? `${title} - ` : ''}Admin Hajirin`} />
             <a
                 href="#admin-main-content"
@@ -164,30 +164,6 @@ export default function AdminLayout({ title, children }) {
             >
                 Lewati ke konten utama
             </a>
-
-            {/* Mobile Header Bar */}
-            <div className="lg:hidden flex items-center justify-between bg-white border-b border-slate-200 px-4 py-3 sticky top-0 z-30">
-                <Link href="/admin/dashboard" className="flex items-center gap-2.5">
-                    <img src="/hajirin_icon.svg" alt="Hajirin" className="h-7 w-auto" />
-                    <div className="leading-tight">
-                        <span className="text-sm font-semibold text-slate-900 block">Hajirin</span>
-                        <span className="text-xs text-slate-500 block">Platform Admin</span>
-                    </div>
-                </Link>
-                <button
-                    type="button"
-                    onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                    className="inline-flex size-9 items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue cursor-pointer"
-                    aria-expanded={isMobileMenuOpen}
-                    aria-label="Buka menu navigasi"
-                >
-                    {isMobileMenuOpen ? (
-                        <X className="size-5" aria-hidden="true" />
-                    ) : (
-                        <Menu className="size-5" aria-hidden="true" />
-                    )}
-                </button>
-            </div>
 
             <div className="flex flex-1">
                 {/* Sidebar */}
@@ -272,9 +248,24 @@ export default function AdminLayout({ title, children }) {
 
                 {/* Main Content Area */}
                 <div className="flex-1 lg:pl-64 flex flex-col min-w-0">
-                    {/* Topbar Header */}
-                    <header className="sticky top-0 z-20 h-16 bg-white border-b border-slate-200 px-4 sm:px-8 flex items-center justify-between gap-4">
-                        <AdminGlobalSearch />
+                    {/* Single Unified Topbar Header (no double sticky bar on mobile) */}
+                    <header className="sticky top-0 z-30 h-16 bg-white border-b border-slate-200 px-3 sm:px-8 flex items-center justify-between gap-2 sm:gap-4">
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <button
+                                type="button"
+                                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                                className="lg:hidden inline-flex size-10 shrink-0 items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue cursor-pointer"
+                                aria-expanded={isMobileMenuOpen}
+                                aria-label="Buka menu navigasi"
+                            >
+                                {isMobileMenuOpen ? (
+                                    <X className="size-5" aria-hidden="true" />
+                                ) : (
+                                    <Menu className="size-5" aria-hidden="true" />
+                                )}
+                            </button>
+                            <AdminGlobalSearch />
+                        </div>
 
                         <div className="flex items-center gap-2.5">
                             <NotificationBell />

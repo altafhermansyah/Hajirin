@@ -12,6 +12,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -203,9 +204,16 @@ class AdminUserController extends Controller
 
         $newStatus = $targetUser->status === 'SUSPENDED' ? 'ACTIVE' : 'SUSPENDED';
 
-        $targetUser->forceFill([
-            'status' => $newStatus,
-        ])->save();
+        $payload = ['status' => $newStatus];
+        if ($newStatus === 'SUSPENDED') {
+            $payload['remember_token'] = Str::random(60);
+        }
+
+        $targetUser->forceFill($payload)->save();
+
+        if ($newStatus === 'SUSPENDED') {
+            DB::table('sessions')->where('user_id', $targetUser->id)->delete();
+        }
 
         $label = $newStatus === 'ACTIVE' ? 'diaktifkan kembali' : 'ditangguhkan (suspended)';
 

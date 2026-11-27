@@ -32,7 +32,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import AuthModal from '../Components/Auth/AuthModal';
-import Navbar from '../Components/Navbar';
+import UserLayout from '../Layouts/UserLayout';
 import { Button, buttonClass } from '../Components/ui/Button';
 
 const CATEGORY_ICON_MAP = {
@@ -80,9 +80,14 @@ export default function Home({
 }) {
     const [activeSlide, setActiveSlide] = useState(0);
     const [isCarouselPaused, setIsCarouselPaused] = useState(false);
+    const [carouselAnnouncement, setCarouselAnnouncement] = useState('');
     const [authView, setAuthView] = useState('login');
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
     const [logoutToast, setLogoutToast] = useState(null);
+    const heroTrackRef = useRef(null);
+    const activeSlideRef = useRef(0);
+    const settledSlideRef = useRef(0);
+    const pendingTargetSlideRef = useRef(null);
 
     const [bookmarkedSet, setBookmarkedSet] = useState(new Set(bookmarkedEventIds || []));
 
@@ -262,10 +267,107 @@ export default function Home({
         searchInputRef.current?.focus();
     }
 
+    function scrollToSlide(targetIndex, { userInitiated = false } = {}) {
+        const total = heroEvents.length;
+        if (total <= 1) return;
+
+        const nextIndex = ((targetIndex % total) + total) % total;
+        activeSlideRef.current = nextIndex;
+        setActiveSlide(nextIndex);
+
+        const track = heroTrackRef.current;
+        if (!track) return;
+
+        pendingTargetSlideRef.current = nextIndex;
+        const prefersReducedMotion =
+            typeof window !== 'undefined' &&
+            window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        track.scrollTo({
+            left: nextIndex * track.clientWidth,
+            behavior: prefersReducedMotion ? 'auto' : 'smooth',
+        });
+
+        if (userInitiated) {
+            const eventTitle = heroEvents[nextIndex]?.title || '';
+            setCarouselAnnouncement(`Slide ${nextIndex + 1} dari ${total}: ${eventTitle}`);
+            settledSlideRef.current = nextIndex;
+        }
+    }
+
+    useEffect(() => {
+        const track = heroTrackRef.current;
+        if (!track || heroEvents.length <= 1) return undefined;
+
+        let rafId = null;
+        let fallbackTimer = null;
+        const supportsScrollEnd = 'onscrollend' in window;
+
+        const handleSettle = () => {
+            const width = track.clientWidth || 1;
+            const settled = Math.max(
+                0,
+                Math.min(heroEvents.length - 1, Math.round(track.scrollLeft / width))
+            );
+            pendingTargetSlideRef.current = null;
+            if (settled !== activeSlideRef.current) {
+                activeSlideRef.current = settled;
+                setActiveSlide(settled);
+            }
+            if (settled !== settledSlideRef.current) {
+                settledSlideRef.current = settled;
+                const eventTitle = heroEvents[settled]?.title || '';
+                setCarouselAnnouncement(
+                    `Slide ${settled + 1} dari ${heroEvents.length}: ${eventTitle}`
+                );
+            }
+        };
+
+        const handleScroll = () => {
+            if (pendingTargetSlideRef.current === null && rafId === null) {
+                rafId = window.requestAnimationFrame(() => {
+                    rafId = null;
+                    const width = track.clientWidth || 1;
+                    const nearest = Math.max(
+                        0,
+                        Math.min(heroEvents.length - 1, Math.round(track.scrollLeft / width))
+                    );
+                    if (nearest !== activeSlideRef.current) {
+                        activeSlideRef.current = nearest;
+                        setActiveSlide(nearest);
+                    }
+                });
+            }
+
+            if (!supportsScrollEnd) {
+                if (fallbackTimer) window.clearTimeout(fallbackTimer);
+                fallbackTimer = window.setTimeout(handleSettle, 160);
+            }
+        };
+
+        track.addEventListener('scroll', handleScroll, { passive: true });
+        if (supportsScrollEnd) {
+            track.addEventListener('scrollend', handleSettle);
+        }
+
+        return () => {
+            track.removeEventListener('scroll', handleScroll);
+            if (supportsScrollEnd) {
+                track.removeEventListener('scrollend', handleSettle);
+            }
+            if (rafId !== null) window.cancelAnimationFrame(rafId);
+            if (fallbackTimer) window.clearTimeout(fallbackTimer);
+        };
+    }, [heroEvents]);
+
     useEffect(() => {
         if (isCarouselPaused || heroEvents.length <= 1) return undefined;
         const timer = window.setInterval(() => {
-            setActiveSlide((currentSlide) => (currentSlide + 1) % heroEvents.length);
+            const baseIndex =
+                pendingTargetSlideRef.current !== null
+                    ? pendingTargetSlideRef.current
+                    : activeSlideRef.current;
+            scrollToSlide(baseIndex + 1);
         }, 5000);
         return () => window.clearInterval(timer);
     }, [isCarouselPaused, heroEvents.length]);
@@ -293,182 +395,155 @@ export default function Home({
 
     function changeSlide(offset) {
         if (heroEvents.length <= 1) return;
-        setActiveSlide(
-            (currentSlide) => (currentSlide + offset + heroEvents.length) % heroEvents.length
-        );
+        const baseIndex =
+            pendingTargetSlideRef.current !== null
+                ? pendingTargetSlideRef.current
+                : activeSlideRef.current;
+        scrollToSlide(baseIndex + offset, { userInitiated: true });
     }
 
     const getCategoryIcon = (category) =>
         CATEGORY_ICON_MAP[category?.icon] || CATEGORY_ICON_MAP[category?.slug] || Tag;
 
     return (
-        <div className="min-h-screen bg-slate-50/40 text-slate-900 font-sans antialiased">
+        <UserLayout
+            auth={auth}
+            onOpenAuthModal={openAuthModal}
+            initialSearchQuery={searchQuery}
+            className="bg-slate-50/40 text-slate-900 antialiased"
+            onSearch={(q) => {
+                setSearchQuery(q);
+                if (q.trim().length > 0) {
+                    setTimeout(() => {
+                        const resultsEl =
+                            document.getElementById('hasil-pencarian') ||
+                            document.getElementById('search-section');
+                        if (resultsEl) {
+                            resultsEl.scrollIntoView({ behavior: 'smooth' });
+                        }
+                    }, 50);
+                }
+            }}
+        >
             <Head title="Hajirin - Event & Ticketing" />
-
-            <Navbar
-                auth={auth}
-                onOpenAuthModal={openAuthModal}
-                initialSearchQuery={searchQuery}
-                onSearch={(q) => {
-                    setSearchQuery(q);
-                    if (q.trim().length > 0) {
-                        setTimeout(() => {
-                            const resultsEl =
-                                document.getElementById('hasil-pencarian') ||
-                                document.getElementById('search-section');
-                            if (resultsEl) {
-                                resultsEl.scrollIntoView({ behavior: 'smooth' });
-                            }
-                        }, 50);
-                    }
-                }}
-            />
 
             <main id="main-content" tabIndex={-1}>
                 {/* Hero Carousel */}
-                <section className="px-4 py-6 sm:px-8 lg:px-10">
+                <section
+                    className="px-4 pt-4 pb-2 sm:px-8 sm:py-5 lg:px-10"
+                    aria-roledescription="carousel"
+                    aria-label="Event sorotan Hajirin"
+                >
                     {heroEvents.length > 0 ? (
                         <div
-                            className="group relative h-[520px] overflow-hidden rounded-xl bg-navy sm:h-[460px]"
+                            className="group relative overflow-hidden rounded-xl bg-navy"
                             onMouseEnter={() => setIsCarouselPaused(true)}
                             onMouseLeave={() => setIsCarouselPaused(false)}
+                            onTouchStart={() => setIsCarouselPaused(true)}
+                            onTouchEnd={() => setIsCarouselPaused(false)}
+                            onFocusCapture={() => setIsCarouselPaused(true)}
+                            onBlurCapture={() => setIsCarouselPaused(false)}
                         >
-                            {heroEvents.map((event, index) => (
-                                <article
-                                    key={event.id || event.slug}
-                                    className={`absolute inset-0 transition-opacity duration-700 ${
-                                        index === activeSlide
-                                            ? 'z-10 opacity-100'
-                                            : 'pointer-events-none z-0 opacity-0'
-                                    }`}
-                                >
-                                    <img
-                                        src={resolveImageSrc(event.image)}
-                                        alt=""
-                                        decoding="async"
-                                        fetchPriority={index === 0 ? 'high' : 'low'}
-                                        loading={index === 0 ? undefined : 'lazy'}
-                                        className="absolute inset-0 h-full w-full object-cover"
-                                    />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-navy via-navy/75 to-transparent" />
-                                    <div className="absolute inset-x-0 bottom-0 p-6 text-white sm:p-10">
-                                        <div className="max-w-3xl">
-                                            <div className="mb-3 flex flex-wrap items-center gap-2">
-                                                <span className="rounded-md border border-white/25 bg-white/15 px-2.5 py-0.5 text-xs font-medium backdrop-blur-xs">
-                                                    {event.category}
-                                                </span>
-                                                <span className="rounded-md border border-white/20 bg-navy/60 px-2.5 py-0.5 text-xs font-medium text-slate-200 backdrop-blur-xs">
-                                                    {event.status}
-                                                </span>
-                                            </div>
-                                            <h1 className="mb-3 text-2xl sm:text-4xl font-semibold tracking-tight leading-tight">
-                                                {event.title}
-                                            </h1>
-                                            <div className="mb-3 flex flex-col gap-1.5 text-sm text-slate-200 sm:flex-row sm:gap-6">
-                                                <span className="inline-flex items-center gap-1.5">
-                                                    <CalendarDays className="size-4 text-slate-300" aria-hidden="true" />
-                                                    {event.date}
-                                                </span>
-                                                <span className="inline-flex items-center gap-1.5">
-                                                    <MapPin className="size-4 text-slate-300" aria-hidden="true" />
-                                                    {event.place}
-                                                </span>
-                                            </div>
-                                            {event.description && (
-                                                <p className="mb-6 max-w-2xl text-sm text-slate-300 leading-relaxed line-clamp-2">
-                                                    {event.description}
-                                                </p>
-                                            )}
-                                            <div className="flex flex-wrap items-center gap-4 sm:gap-5">
-                                                <div>
-                                                    <p className="text-xs text-slate-300">Harga Tiket Mulai</p>
-                                                    <p className="text-xl font-semibold tabular-nums">
-                                                        {event.price}
-                                                    </p>
+                            {heroEvents.length > 1 && (
+                                <div className="pointer-events-none hidden sm:flex items-center justify-between absolute inset-y-0 inset-x-3 z-20">
+                                    <button
+                                        type="button"
+                                        aria-label="Slide sebelumnya"
+                                        onClick={() => changeSlide(-1)}
+                                        className="pointer-events-auto flex size-10 items-center justify-center rounded-full border border-white/25 bg-navy/60 text-white backdrop-blur-sm hover:bg-navy/85 transition cursor-pointer touch-manipulation focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                                    >
+                                        <ChevronLeft className="size-5" aria-hidden="true" />
+                                    </button>
+                                    <button
+                                        type="button"
+                                        aria-label="Slide selanjutnya"
+                                        onClick={() => changeSlide(1)}
+                                        className="pointer-events-auto flex size-10 items-center justify-center rounded-full border border-white/25 bg-navy/60 text-white backdrop-blur-sm hover:bg-navy/85 transition cursor-pointer touch-manipulation focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                                    >
+                                        <ChevronRight className="size-5" aria-hidden="true" />
+                                    </button>
+                                </div>
+                            )}
+
+                            <div
+                                ref={heroTrackRef}
+                                tabIndex={0}
+                                role="group"
+                                aria-label="Daftar slide sorotan"
+                                className="flex overflow-x-auto snap-x snap-mandatory overscroll-x-contain no-scrollbar motion-safe:scroll-smooth touch-manipulation"
+                            >
+                                {heroEvents.map((event, index) => {
+                                    const HeadingTag = index === 0 ? 'h1' : 'h2';
+
+                                    return (
+                                        <article
+                                            key={event.id || event.slug}
+                                            role="group"
+                                            aria-roledescription="slide"
+                                            aria-label={`${index + 1} dari ${heroEvents.length}`}
+                                            className="relative w-full shrink-0 snap-center aspect-[16/8.5] sm:aspect-[21/7.5] lg:aspect-[24/7] min-h-[180px] max-h-[360px]"
+                                        >
+                                            <Link
+                                                href={`/event/${event.slug}`}
+                                                className="relative block size-full focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-white"
+                                            >
+                                                <img
+                                                    src={resolveImageSrc(event.image)}
+                                                    alt=""
+                                                    decoding="async"
+                                                    fetchPriority={index === 0 ? 'high' : 'low'}
+                                                    loading={index === 0 ? undefined : 'lazy'}
+                                                    className="absolute inset-0 size-full object-cover"
+                                                />
+                                                <div className="absolute inset-0 bg-gradient-to-t from-navy/90 via-navy/35 to-transparent" />
+                                                <div className="absolute inset-x-0 bottom-0 px-4 pb-9 pt-8 text-white sm:px-8 sm:pb-11 lg:px-12">
+                                                    <div className="max-w-2xl">
+                                                        {event.category && (
+                                                            <span className="mb-1.5 inline-block rounded-md border border-white/25 bg-white/15 px-2.5 py-0.5 text-[11px] sm:text-xs font-medium backdrop-blur-xs">
+                                                                {event.category}
+                                                            </span>
+                                                        )}
+                                                        <HeadingTag className="text-base sm:text-2xl lg:text-3xl font-semibold tracking-tight leading-snug line-clamp-2">
+                                                            {event.title}
+                                                        </HeadingTag>
+                                                    </div>
                                                 </div>
+                                            </Link>
+                                        </article>
+                                    );
+                                })}
+                            </div>
 
-                                                <Link
-                                                    href={`/event/${event.slug}`}
-                                                    className={buttonClass('primary', 'lg')}
-                                                >
-                                                    Lihat Event
-                                                </Link>
-
-                                                <button
-                                                    type="button"
-                                                    onClick={(e) =>
-                                                        handleToggleBookmark(
-                                                            event.id,
-                                                            event.slug,
-                                                            event.title,
-                                                            e
-                                                        )
-                                                    }
-                                                    aria-label={
-                                                        bookmarkedSet.has(event.id) ||
-                                                        bookmarkedSet.has(event.slug)
-                                                            ? `Hapus simpanan ${event.title}`
-                                                            : `Simpan ${event.title}`
-                                                    }
-                                                    className={`flex size-11 items-center justify-center rounded-lg border transition cursor-pointer ${
-                                                        bookmarkedSet.has(event.id) ||
-                                                        bookmarkedSet.has(event.slug)
-                                                            ? 'border-brand-blue bg-brand-blue text-white'
-                                                            : 'border-white/30 text-white hover:bg-white/10'
-                                                    }`}
-                                                >
-                                                    <Bookmark
-                                                        className="size-5"
-                                                        fill={
-                                                            bookmarkedSet.has(event.id) ||
-                                                            bookmarkedSet.has(event.slug)
-                                                                ? 'currentColor'
-                                                                : 'none'
-                                                        }
-                                                    />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </article>
-                            ))}
+                            <p className="sr-only" role="status" aria-live="polite">
+                                {carouselAnnouncement}
+                            </p>
 
                             {heroEvents.length > 1 && (
-                                <>
-                                    <div className="absolute bottom-6 left-6 z-30 flex items-center gap-2 sm:left-10">
-                                        {heroEvents.map((event, index) => (
-                                            <button
-                                                key={event.id || event.slug}
-                                                type="button"
-                                                aria-label={`Tampilkan ${event.title}`}
-                                                onClick={() => setActiveSlide(index)}
-                                                className={`h-1.5 rounded-full transition-all cursor-pointer ${
+                                <nav
+                                    aria-label="Pilih slide sorotan"
+                                    className="absolute bottom-2 left-4 z-20 flex items-center gap-1 sm:bottom-3 sm:left-8 lg:left-12"
+                                >
+                                    {heroEvents.map((event, index) => (
+                                        <button
+                                            key={event.id || event.slug}
+                                            type="button"
+                                            aria-label={`Tampilkan slide ${index + 1}: ${event.title}`}
+                                            aria-current={index === activeSlide ? 'true' : undefined}
+                                            onClick={() =>
+                                                scrollToSlide(index, { userInitiated: true })
+                                            }
+                                            className="inline-flex h-7 items-center justify-center px-1 cursor-pointer touch-manipulation focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white rounded"
+                                        >
+                                            <span
+                                                className={`block h-1.5 rounded-full transition-all ${
                                                     index === activeSlide
                                                         ? 'w-7 bg-white'
-                                                        : 'w-2 bg-white/40 hover:bg-white/70'
+                                                        : 'w-2 bg-white/45 hover:bg-white/75'
                                                 }`}
                                             />
-                                        ))}
-                                    </div>
-                                    <div className="absolute bottom-6 right-6 z-30 flex items-center gap-2 sm:bottom-8 sm:right-10">
-                                        <button
-                                            type="button"
-                                            aria-label="Slide sebelumnya"
-                                            onClick={() => changeSlide(-1)}
-                                            className="flex size-9 items-center justify-center rounded-lg border border-white/25 bg-navy/50 text-white backdrop-blur-sm hover:bg-white/20 transition cursor-pointer"
-                                        >
-                                            <ChevronLeft className="size-4" aria-hidden="true" />
                                         </button>
-                                        <button
-                                            type="button"
-                                            aria-label="Slide selanjutnya"
-                                            onClick={() => changeSlide(1)}
-                                            className="flex size-9 items-center justify-center rounded-lg border border-white/25 bg-navy/50 text-white backdrop-blur-sm hover:bg-white/20 transition cursor-pointer"
-                                        >
-                                            <ChevronRight className="size-4" aria-hidden="true" />
-                                        </button>
-                                    </div>
-                                </>
+                                    ))}
+                                </nav>
                             )}
                         </div>
                     ) : (
@@ -530,7 +605,7 @@ export default function Home({
                                         }
                                     }}
                                     placeholder="Cari judul event..."
-                                    className="h-11 w-full rounded-lg border border-slate-200 bg-slate-50 pl-10 pr-9 text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-blue focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue/15 transition"
+                                    className="h-11 w-full rounded-lg border border-slate-200 bg-slate-50 pl-10 pr-9 text-base sm:text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-blue focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue/15 transition"
                                 />
                                 {searchQuery && (
                                     <button
@@ -553,7 +628,7 @@ export default function Home({
                                 <select
                                     value={selectedLocation}
                                     onChange={(e) => setSelectedLocation(e.target.value)}
-                                    className="h-11 w-full appearance-none rounded-lg border border-slate-200 bg-slate-50 pl-10 pr-9 text-sm font-medium text-slate-700 focus:border-brand-blue focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue/15 transition"
+                                    className="h-11 w-full appearance-none rounded-lg border border-slate-200 bg-slate-50 pl-10 pr-9 text-base sm:text-sm font-medium text-slate-700 focus:border-brand-blue focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue/15 transition"
                                 >
                                     <option value="Semua Kota">Semua Kota</option>
                                     {availableCities.map((city) => (
@@ -577,7 +652,7 @@ export default function Home({
                                 <select
                                     value={selectedTime}
                                     onChange={(e) => setSelectedTime(e.target.value)}
-                                    className="h-11 w-full appearance-none rounded-lg border border-slate-200 bg-slate-50 pl-10 pr-9 text-sm font-medium text-slate-700 focus:border-brand-blue focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue/15 transition"
+                                    className="h-11 w-full appearance-none rounded-lg border border-slate-200 bg-slate-50 pl-10 pr-9 text-base sm:text-sm font-medium text-slate-700 focus:border-brand-blue focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue/15 transition"
                                 >
                                     <option value="Semua Waktu">Semua Waktu</option>
                                     <option value="Hari Ini">Hari Ini</option>
@@ -690,36 +765,44 @@ export default function Home({
                             action="Lihat Semua"
                             actionHref="/kategori"
                         />
-                        <section className="px-4 pb-8 sm:px-8 lg:px-10">
+                        <section className="pb-6 md:px-8 md:pb-8 lg:px-10">
                             {featuredEvents.length > 0 ? (
-                                <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
+                                <div
+                                    role="region"
+                                    aria-label="Katalog Event Unggulan Minggu Ini"
+                                    className="flex gap-3.5 overflow-x-auto snap-x snap-mandatory scroll-px-4 px-4 pb-2 overscroll-x-contain no-scrollbar motion-safe:scroll-smooth touch-manipulation md:grid md:grid-cols-2 md:gap-5 md:overflow-visible md:px-0 md:pb-0 xl:grid-cols-4"
+                                >
                                     {featuredEvents.map((evt) => (
-                                        <FeaturedCard
+                                        <div
                                             key={evt.id || evt.slug}
-                                            {...evt}
-                                            isBookmarked={
-                                                bookmarkedSet.has(evt.id) ||
-                                                bookmarkedSet.has(evt.slug)
-                                            }
-                                            onToggleBookmark={(e) =>
-                                                handleToggleBookmark(
-                                                    evt.id,
-                                                    evt.slug,
-                                                    evt.title,
-                                                    e
-                                                )
-                                            }
-                                            onBuyTicket={(e) => {
-                                                if (!auth?.user) {
-                                                    e.preventDefault();
-                                                    openAuthModal('login');
+                                            className="w-[78vw] max-w-[290px] shrink-0 snap-start md:w-auto md:max-w-none"
+                                        >
+                                            <FeaturedCard
+                                                {...evt}
+                                                isBookmarked={
+                                                    bookmarkedSet.has(evt.id) ||
+                                                    bookmarkedSet.has(evt.slug)
                                                 }
-                                            }}
-                                        />
+                                                onToggleBookmark={(e) =>
+                                                    handleToggleBookmark(
+                                                        evt.id,
+                                                        evt.slug,
+                                                        evt.title,
+                                                        e
+                                                    )
+                                                }
+                                                onBuyTicket={(e) => {
+                                                    if (!auth?.user) {
+                                                        e.preventDefault();
+                                                        openAuthModal('login');
+                                                    }
+                                                }}
+                                            />
+                                        </div>
                                     ))}
                                 </div>
                             ) : (
-                                <div className="rounded-xl border border-dashed border-slate-300 bg-white px-6 py-10 text-center text-sm text-slate-500">
+                                <div className="mx-4 md:mx-0 rounded-xl border border-dashed border-slate-300 bg-white px-6 py-10 text-center text-sm text-slate-500">
                                     Belum ada event unggulan yang tersedia saat ini.
                                 </div>
                             )}
@@ -731,15 +814,24 @@ export default function Home({
                             action="Lihat Semua"
                             actionHref="/kategori"
                         />
-                        <section className="px-4 pb-10 sm:px-8 lg:px-10">
+                        <section className="pb-8 md:px-8 md:pb-10 lg:px-10">
                             {popularEvents.length > 0 ? (
-                                <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
+                                <div
+                                    role="region"
+                                    aria-label="Katalog Event Sedang Populer"
+                                    className="flex gap-3.5 overflow-x-auto snap-x snap-mandatory scroll-px-4 px-4 pb-2 overscroll-x-contain no-scrollbar motion-safe:scroll-smooth touch-manipulation md:grid md:grid-cols-2 md:gap-5 md:overflow-visible md:px-0 md:pb-0 xl:grid-cols-4"
+                                >
                                     {popularEvents.map((evt) => (
-                                        <PopularCard key={evt.id || evt.slug} {...evt} />
+                                        <div
+                                            key={evt.id || evt.slug}
+                                            className="w-[78vw] max-w-[290px] shrink-0 snap-start md:w-auto md:max-w-none"
+                                        >
+                                            <PopularCard {...evt} />
+                                        </div>
                                     ))}
                                 </div>
                             ) : (
-                                <div className="rounded-xl border border-dashed border-slate-300 bg-white px-6 py-10 text-center text-sm text-slate-500">
+                                <div className="mx-4 md:mx-0 rounded-xl border border-dashed border-slate-300 bg-white px-6 py-10 text-center text-sm text-slate-500">
                                     Belum ada event populer yang tersedia saat ini.
                                 </div>
                             )}
@@ -812,10 +904,10 @@ export default function Home({
                 </section>
             </main>
 
-            <footer className="border-t border-slate-200 bg-white px-4 pb-6 pt-12 sm:px-8 lg:px-10">
-                <div className="mb-10 grid grid-cols-1 gap-8 md:grid-cols-4">
-                    <div className="pr-4">
-                        <div className="mb-3 flex items-center gap-2">
+            <footer className="border-t border-slate-200 bg-white px-4 pb-6 pt-10 sm:px-8 sm:pt-12 lg:px-10">
+                <div className="mb-8 grid grid-cols-2 gap-x-6 gap-y-7 md:grid-cols-4 lg:grid-cols-5">
+                    <div className="col-span-2 border-b border-slate-100 pb-6 md:col-span-4 lg:col-span-1 lg:border-b-0 lg:pb-0 lg:pr-4">
+                        <div className="mb-2.5 flex items-center gap-2">
                             <img
                                 src="/hajirin_icon.svg"
                                 alt=""
@@ -825,17 +917,18 @@ export default function Home({
                             />
                             <span className="text-lg font-bold tracking-tight text-navy">HAJIRIN</span>
                         </div>
-                        <p className="mb-5 text-xs leading-relaxed text-slate-500">
+                        <p className="max-w-sm text-xs leading-relaxed text-slate-500">
                             Platform e-ticketing komunitas dan ekosistem penyelenggara event terpercaya di Indonesia.
                         </p>
-                        <FooterLinks
-                            links={[
-                                { label: 'Beranda', href: '/' },
-                                { label: 'Event Terdekat', href: '/event-terdekat' },
-                                { label: 'Hubungi Kami', href: '/syarat-ketentuan#kontak' },
-                            ]}
-                        />
                     </div>
+                    <FooterColumn
+                        title="Tentang Hajirin"
+                        links={[
+                            { label: 'Beranda', href: '/' },
+                            { label: 'Hubungi Kami', href: '/syarat-ketentuan#kontak' },
+                            { label: 'Pusat Bantuan', href: '/syarat-ketentuan#definisi' },
+                        ]}
+                    />
                     <FooterColumn
                         title="Untuk Pengunjung"
                         links={[
@@ -861,9 +954,9 @@ export default function Home({
                         ]}
                     />
                 </div>
-                <div className="flex flex-col items-center justify-between border-t border-slate-200 pt-5 text-xs text-slate-400 md:flex-row">
+                <div className="flex flex-col items-center justify-between gap-2 border-t border-slate-200 pt-5 text-center text-xs text-slate-400 sm:flex-row sm:text-left">
                     <p>© 2026 Hajirin - Platform E-ticketing &amp; Management Event Indonesia</p>
-                    <span className="mt-3 md:mt-0">Bahasa Indonesia</span>
+                    <span>Bahasa Indonesia</span>
                 </div>
             </footer>
 
@@ -905,7 +998,7 @@ export default function Home({
                     </button>
                 </div>
             )}
-        </div>
+        </UserLayout>
     );
 }
 
@@ -913,19 +1006,21 @@ function SectionHeading({ id, title, description, action, actionHref }) {
     return (
         <section
             id={id}
-            className="flex items-end justify-between px-4 pb-5 pt-8 sm:px-8 lg:px-10"
+            className="flex items-end justify-between gap-3 px-4 pb-3.5 pt-6 sm:px-8 sm:pb-5 sm:pt-8 lg:px-10"
         >
-            <div>
-                <h2 className="text-xl font-semibold tracking-tight text-slate-900">{title}</h2>
-                <p className="mt-0.5 text-sm text-slate-500">{description}</p>
+            <div className="min-w-0">
+                <h2 className="text-lg sm:text-xl font-semibold tracking-tight text-slate-900">
+                    {title}
+                </h2>
+                <p className="mt-0.5 text-xs sm:text-sm text-slate-500">{description}</p>
             </div>
             {action && (
                 <Link
                     href={actionHref || '/kategori'}
-                    className="hidden items-center gap-1 text-sm font-medium text-brand-blue hover:underline sm:inline-flex"
+                    className="inline-flex shrink-0 items-center gap-1 text-xs sm:text-sm font-medium text-brand-blue hover:underline"
                 >
                     <span>{action}</span>
-                    <ArrowRight className="size-4" aria-hidden="true" />
+                    <ArrowRight className="size-3.5 sm:size-4" aria-hidden="true" />
                 </Link>
             )}
         </section>
