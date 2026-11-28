@@ -24,6 +24,7 @@ class RegisteredUserController extends Controller
             'password' => Hash::make($request->password),
         ]);
         $user->role = 'USER';
+        $user->terms_accepted_at = now();
         $user->save();
 
         event(new Registered($user));

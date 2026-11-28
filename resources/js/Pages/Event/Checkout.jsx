@@ -629,6 +629,30 @@ export default function Checkout({
                                     </span>
                                 </div>
 
+                                <label
+                                    htmlFor="checkout-consent"
+                                    className="mb-4 flex items-start gap-2.5 text-xs text-slate-600 cursor-pointer select-none leading-relaxed"
+                                >
+                                    <input
+                                        id="checkout-consent"
+                                        type="checkbox"
+                                        required
+                                        className="mt-0.5 size-4 shrink-0 rounded border-slate-300 text-brand-blue focus:ring-brand-blue cursor-pointer"
+                                    />
+                                    <span>
+                                        Saya menyetujui{' '}
+                                        <a
+                                            href="/syarat-ketentuan#pemesanan"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="font-medium text-brand-blue hover:underline"
+                                        >
+                                            Ketentuan Pemesanan &amp; Refund
+                                        </a>{' '}
+                                        serta membagikan data peserta di atas kepada penyelenggara acara.
+                                    </span>
+                                </label>
+
                                 <Button
                                     type="submit"
                                     variant="primary"

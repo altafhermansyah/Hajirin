@@ -89,6 +89,7 @@ class EmailSystemTest extends TestCase
             'phone' => '081234567890',
             'password' => 'SecretPass123!',
             'password_confirmation' => 'SecretPass123!',
+            'terms' => true,
         ]);
 
         $response->assertRedirect('/');

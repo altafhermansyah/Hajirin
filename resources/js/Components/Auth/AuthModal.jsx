@@ -15,7 +15,6 @@ export default function AuthModal({
     const [view, setView] = useState(initialView);
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-    const [agreedToTerms, setAgreedToTerms] = useState(false);
     const titleId = useId();
 
     const loginForm = useForm({
@@ -30,6 +29,7 @@ export default function AuthModal({
         phone: '',
         password: '',
         password_confirmation: '',
+        terms: false,
     });
 
     useEffect(() => {
@@ -65,15 +65,18 @@ export default function AuthModal({
 
     const handleRegisterSubmit = (e) => {
         e.preventDefault();
-        if (!agreedToTerms) {
-            registerForm.setError('terms', 'Harap setujui Ketentuan Layanan dan Kebijakan Privasi.');
+        if (!registerForm.data.terms) {
+            registerForm.setError(
+                'terms',
+                'Anda wajib menyetujui Ketentuan Layanan, Kebijakan Privasi, dan pernyataan usia minimal 18 tahun atau izin wali.'
+            );
             return;
         }
 
         registerForm.post('/register', {
             preserveScroll: true,
             onSuccess: () => {
-                registerForm.reset('password', 'password_confirmation');
+                registerForm.reset('password', 'password_confirmation', 'terms');
                 onClose();
                 onSuccess?.();
             },
@@ -424,17 +427,17 @@ export default function AuthModal({
                                     <input
                                         id="reg-terms"
                                         type="checkbox"
-                                        checked={agreedToTerms}
+                                        checked={registerForm.data.terms}
                                         onChange={(e) => {
-                                            setAgreedToTerms(e.target.checked);
+                                            registerForm.setData('terms', e.target.checked);
                                             if (e.target.checked) {
                                                 registerForm.clearErrors('terms');
                                             }
                                         }}
-                                        className="w-4 h-4 mt-0.5 text-[#1D4ED8] border-gray-300 rounded focus:ring-[#1D4ED8] cursor-pointer"
+                                        className="w-4 h-4 mt-0.5 text-[#1D4ED8] border-gray-300 rounded focus:ring-[#1D4ED8] cursor-pointer shrink-0"
                                     />
                                     <label htmlFor="reg-terms" className="ml-2 text-xs text-gray-600 cursor-pointer select-none leading-relaxed">
-                                        Saya menyetujui{' '}
+                                        Saya berusia minimal 18 tahun (atau telah mendapat izin wali) serta menyetujui{' '}
                                         <a
                                             href="/syarat-ketentuan"
                                             target="_blank"

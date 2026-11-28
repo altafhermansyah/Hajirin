@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Eo;
 
 use App\Http\Controllers\Controller;
+use App\Support\AuditLog;
 use Carbon\Carbon;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Http\Request;
@@ -201,6 +202,17 @@ class EoAttendeeController extends Controller
             ->orderBy('tickets.id');
 
         $filename = 'peserta-penjualan-'.now()->format('Ymd-His').'.csv';
+
+        AuditLog::record(
+            action: 'attendees.exported',
+            actorId: $eoId,
+            subjectType: 'event',
+            subjectId: $selectedEventId ?: null,
+            metadata: [
+                'ticket_status' => $ticketStatus,
+                'has_search' => $search !== '',
+            ],
+        );
 
         return response()->streamDownload(function () use ($query): void {
             $handle = fopen('php://output', 'w');

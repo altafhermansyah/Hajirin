@@ -11,6 +11,7 @@ use App\Mail\EventModerationMail;
 use App\Models\Category;
 use App\Models\Event;
 use App\Models\User;
+use App\Support\AuditLog;
 use App\Support\Format;
 use App\Support\InAppNotification;
 use Carbon\Carbon;
@@ -250,6 +251,14 @@ class AdminEventController extends Controller
 
         Cache::forget(HandleInertiaRequests::ADMIN_COUNTS_CACHE_KEY);
 
+        AuditLog::record(
+            action: 'event.moderated',
+            actorId: $admin->id,
+            subjectType: 'event',
+            subjectId: $id,
+            metadata: ['decision' => 'APPROVED'],
+        );
+
         return back()->with('success', 'Event berhasil disetujui dan kini berstatus Published.');
     }
 
@@ -306,6 +315,14 @@ class AdminEventController extends Controller
 
         Cache::forget(HandleInertiaRequests::ADMIN_COUNTS_CACHE_KEY);
 
+        AuditLog::record(
+            action: 'event.moderated',
+            actorId: $admin->id,
+            subjectType: 'event',
+            subjectId: $id,
+            metadata: ['decision' => 'REJECTED'],
+        );
+
         return back()->with('success', 'Event telah ditolak beserta catatan revisi untuk EO.');
     }
 
@@ -350,6 +367,14 @@ class AdminEventController extends Controller
         });
 
         Cache::forget(HandleInertiaRequests::ADMIN_COUNTS_CACHE_KEY);
+
+        AuditLog::record(
+            action: 'event.cancelled',
+            actorId: $request->user()?->id,
+            subjectType: 'event',
+            subjectId: $id,
+            metadata: ['by' => 'ADMIN'],
+        );
 
         return back()->with('success', 'Event berhasil ditarik dan dibatalkan dari sistem.');
     }

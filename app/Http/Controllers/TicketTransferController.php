@@ -248,6 +248,13 @@ class TicketTransferController extends Controller
     public function accept(AcceptTicketTransferRequest $request, string $token): RedirectResponse
     {
         $user = $request->user();
+
+        if (! $user->hasVerifiedEmail()) {
+            throw ValidationException::withMessages([
+                'email_verification' => 'Verifikasi alamat email Anda dengan kode OTP terlebih dahulu sebelum mengklaim transfer tiket.',
+            ]);
+        }
+
         $code = $request->validated('code');
 
         $outcome = DB::transaction(function () use ($user, $token, $code): array {

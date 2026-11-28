@@ -252,6 +252,7 @@ class FeatureExpansionAndSecurityTest extends TestCase
             'email' => 'nohp@example.com',
             'password' => 'password123',
             'password_confirmation' => 'password123',
+            'terms' => true,
         ])->assertSessionHasErrors('phone');
 
         // Nomor HP mengandung huruf ditolak
@@ -261,6 +262,7 @@ class FeatureExpansionAndSecurityTest extends TestCase
             'phone' => '081234ABCD',
             'password' => 'password123',
             'password_confirmation' => 'password123',
+            'terms' => true,
         ])->assertSessionHasErrors('phone');
 
         // Nomor HP terlalu pendek ditolak
@@ -270,6 +272,7 @@ class FeatureExpansionAndSecurityTest extends TestCase
             'phone' => '08123',
             'password' => 'password123',
             'password_confirmation' => 'password123',
+            'terms' => true,
         ])->assertSessionHasErrors('phone');
 
         // Nomor HP dengan spasi/strip dinormalisasi dan diterima
@@ -279,6 +282,7 @@ class FeatureExpansionAndSecurityTest extends TestCase
             'phone' => '+62 812-3456-7890',
             'password' => 'password123',
             'password_confirmation' => 'password123',
+            'terms' => true,
         ])->assertRedirect('/');
 
         $this->assertDatabaseHas('users', [

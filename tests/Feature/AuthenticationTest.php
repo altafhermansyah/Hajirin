@@ -76,6 +76,7 @@ class AuthenticationTest extends TestCase
             'phone' => '081234567890',
             'password' => 'password123',
             'password_confirmation' => 'password123',
+            'terms' => true,
         ]);
 
         $this->assertAuthenticated();
@@ -97,6 +98,7 @@ class AuthenticationTest extends TestCase
             'phone' => '081234567890',
             'password' => 'password123',
             'password_confirmation' => 'mismatch',
+            'terms' => true,
         ]);
 
         $this->assertGuest();

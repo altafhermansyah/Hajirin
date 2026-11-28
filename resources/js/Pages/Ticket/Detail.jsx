@@ -553,6 +553,21 @@ export default function TicketDetail({ auth, order = {}, event = {}, tickets = [
                         </p>
                     )}
 
+                    <label
+                        htmlFor="transfer-recipient-consent"
+                        className="flex items-start gap-2.5 text-xs text-slate-600 cursor-pointer select-none leading-relaxed"
+                    >
+                        <input
+                            id="transfer-recipient-consent"
+                            type="checkbox"
+                            required
+                            className="mt-0.5 size-4 shrink-0 rounded border-slate-300 text-brand-blue focus:ring-brand-blue cursor-pointer"
+                        />
+                        <span>
+                            Saya menyatakan memiliki izin dari pemilik alamat email di atas untuk mengirimkan undangan transfer e-tiket ini.
+                        </span>
+                    </label>
+
                     <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
                         <Button
                             type="button"

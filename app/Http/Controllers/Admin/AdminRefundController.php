@@ -9,6 +9,7 @@ use App\Mail\RefundStatusMail;
 use App\Models\Order;
 use App\Models\Refund;
 use App\Models\Ticket;
+use App\Support\AuditLog;
 use App\Support\Format;
 use App\Support\InAppNotification;
 use App\Support\OrderQuota;
@@ -224,6 +225,13 @@ class AdminRefundController extends Controller
 
         Cache::forget(HandleInertiaRequests::ADMIN_COUNTS_CACHE_KEY);
 
+        AuditLog::record(
+            action: 'refund.approved',
+            actorId: $admin->id,
+            subjectType: 'refund',
+            subjectId: $id,
+        );
+
         return back()->with('success', 'Permohonan pengembalian dana berhasil disetujui dan tiket terkait telah dibatalkan.');
     }
 
@@ -286,6 +294,13 @@ class AdminRefundController extends Controller
         });
 
         Cache::forget(HandleInertiaRequests::ADMIN_COUNTS_CACHE_KEY);
+
+        AuditLog::record(
+            action: 'refund.rejected',
+            actorId: $admin->id,
+            subjectType: 'refund',
+            subjectId: $id,
+        );
 
         return back()->with('success', 'Permohonan pengembalian dana telah ditolak dengan catatan evaluasi.');
     }

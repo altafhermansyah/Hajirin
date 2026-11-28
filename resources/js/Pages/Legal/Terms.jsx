@@ -108,12 +108,13 @@ export default function Terms({ auth }) {
                             <section id="akun" className="scroll-mt-24 space-y-3">
                                 <h2 className="text-xl font-bold text-navy">2. Pendaftaran Akun &amp; Keamanan</h2>
                                 <p>
-                                    Untuk membeli tiket, mengajukan status EO, atau mengelola acara, Anda wajib membuat akun dengan informasi yang benar, akurat, dan terkini (nama lengkap, alamat email aktif, serta nomor telepon bila diperlukan).
+                                    Untuk membeli tiket, mengajukan status EO, atau mengelola acara, Anda wajib berusia minimal 18 tahun (atau telah memperoleh izin orang tua/wali) serta membuat akun dengan informasi yang benar, akurat, dan terkini (nama lengkap, alamat email aktif, dan nomor telepon/WhatsApp aktif).
                                 </p>
                                 <ul className="list-disc pl-5 space-y-1.5">
+                                    <li>Verifikasi alamat email menggunakan kode OTP 6 digit wajib diselesaikan sebelum melakukan pemesanan tiket, mengklaim transfer tiket, atau mengajukan akun Event Organizer.</li>
                                     <li>Anda bertanggung jawab penuh atas kerahasiaan kata sandi dan seluruh aktivitas yang terjadi melalui akun Anda.</li>
-                                    <li>Satu alamat email hanya dapat digunakan untuk satu akun terdaftar.</li>
-                                    <li>Segera gunakan fitur <em>Lupa Kata Sandi</em> atau hubungi Administrator apabila Anda menduga terjadi akses tidak sah pada akun Anda.</li>
+                                    <li>Satu alamat email hanya dapat digunakan untuk satu akun terdaftar (tidak peka huruf besar/kecil).</li>
+                                    <li>Anda dapat mengunduh salinan data atau menghapus akun sendiri kapan saja lewat tab Pengaturan Profil, sesuai Kebijakan Privasi.</li>
                                     <li>Administrator berhak menangguhkan (<em>suspend</em>) akun yang terbukti melanggar ketentuan atau melakukan aktivitas penipuan.</li>
                                 </ul>
                             </section>
@@ -134,7 +135,8 @@ export default function Terms({ auth }) {
                                     <li>Setiap lembar tiket memiliki kode unik dan QR Code yang bersifat rahasia dan hanya berlaku untuk <strong>satu kali check-in</strong>.</li>
                                     <li>Peserta wajib menjaga kerahasiaan kode QR e-tiket. Hajirin tidak bertanggung jawab atas penyalahgunaan tiket akibat penggandaan atau penyebaran QR Code oleh pemilik tiket.</li>
                                     <li>Saat check-in diverifikasi oleh EO atau Staff Check-In, status tiket berubah dari <strong>ACTIVE</strong> menjadi <strong>USED</strong> secara permanen disertai pencatatan waktu dan petugas pemeriksa.</li>
-                                    <li>Untuk acara daring (<em>online event</em>), tautan akses acara hanya diberikan kepada pemegang tiket yang sah sesuai ketentuan penyelenggara.</li>
+                                    <li><strong>Transfer E-Tiket:</strong> Pemegang tiket aktif dapat memindahtangankan tiket ke penerima lain dengan menyatakan telah memperoleh izin dari pemilik email penerima. Penerima wajib memiliki akun dengan email terverifikasi OTP yang sama dan memasukkan kode klaim 6 karakter; setelah diklaim, QR Code lama otomatis hangus dan dirotasi ke QR baru.</li>
+                                    <li>Untuk acara daring (<em>online event</em>), tautan akses acara hanya diberikan kepada pemegang tiket yang sah pada halaman detail e-tiket untuk pesanan lunas.</li>
                                 </ul>
                             </section>
 

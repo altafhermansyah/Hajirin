@@ -32,7 +32,32 @@ export default function AccountSecurityAndPrivacy({ user, flash = {} }) {
 
     const [dismissedCompleted, setDismissedCompleted] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [broadcastEnabled, setBroadcastEnabled] = useState(
+        user?.broadcast_emails_enabled !== false
+    );
+    const [isUpdatingPrefs, setIsUpdatingPrefs] = useState(false);
     const lastReloadRef = useRef(0);
+
+    useEffect(() => {
+        setBroadcastEnabled(user?.broadcast_emails_enabled !== false);
+    }, [user?.broadcast_emails_enabled]);
+
+    const handleToggleBroadcastEmails = () => {
+        if (isUpdatingPrefs) return;
+        const nextValue = !broadcastEnabled;
+        setBroadcastEnabled(nextValue);
+        setIsUpdatingPrefs(true);
+
+        router.patch(
+            '/profile/preferences',
+            { broadcast_emails_enabled: nextValue },
+            {
+                preserveScroll: true,
+                onError: () => setBroadcastEnabled(!nextValue),
+                onFinish: () => setIsUpdatingPrefs(false),
+            }
+        );
+    };
 
     const resetLinkForm = useForm({
         email: '',
@@ -288,21 +313,51 @@ export default function AccountSecurityAndPrivacy({ user, flash = {} }) {
                 <div>
                     <h2 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
                         <ShieldAlert className="size-4 text-slate-400" aria-hidden="true" />
-                        <span>Privasi, Ekspor Data &amp; Hapus Akun</span>
+                        <span>Data Saya &amp; Hapus Akun</span>
                     </h2>
                     <p className="text-xs text-slate-500 mt-0.5">
-                        Anda memiliki kendali penuh untuk mengunduh salinan data pribadi atau menghapus akun Hajirin Anda.
+                        Anda bebas mengunduh salinan data Anda atau menghapus akun Hajirin kapan saja.
                     </p>
+                </div>
+
+                {/* Preferensi Email Pengumuman EO */}
+                <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 flex items-center justify-between gap-4">
+                    <div className="space-y-0.5 min-w-0">
+                        <p className="text-sm font-semibold text-slate-900">
+                            Email Pengumuman dari Penyelenggara
+                        </p>
+                        <p className="text-xs text-slate-500 leading-relaxed">
+                            Terima salinan email saat penyelenggara mengirim info terbaru tentang acara yang Anda ikuti. Notifikasi di dalam aplikasi tetap aktif.
+                        </p>
+                    </div>
+                    <button
+                        type="button"
+                        role="switch"
+                        aria-checked={broadcastEnabled}
+                        aria-label="Aktifkan atau nonaktifkan email pengumuman dari penyelenggara"
+                        disabled={isUpdatingPrefs}
+                        onClick={handleToggleBroadcastEmails}
+                        className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-blue disabled:opacity-60 cursor-pointer ${
+                            broadcastEnabled ? 'bg-brand-blue' : 'bg-slate-300'
+                        }`}
+                    >
+                        <span
+                            aria-hidden="true"
+                            className={`inline-block size-4.5 rounded-full bg-white shadow-xs transition-transform ${
+                                broadcastEnabled ? 'translate-x-5.5' : 'translate-x-1'
+                            }`}
+                        />
+                    </button>
                 </div>
 
                 {/* Ekspor Data Pribadi */}
                 <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div className="space-y-0.5">
                         <p className="text-sm font-semibold text-slate-900">
-                            Ekspor Data Pribadi (JSON)
+                            Unduh Salinan Data Saya
                         </p>
                         <p className="text-xs text-slate-500 leading-relaxed">
-                            Unduh arsip lengkap profil, riwayat pesanan, e-tiket, transfer tiket, refund, dan bookmark Anda dalam format JSON.
+                            Simpan salinan profil, pesanan, tiket, dan event tersimpan Anda dalam satu berkas.
                         </p>
                     </div>
                     <a
@@ -311,7 +366,7 @@ export default function AccountSecurityAndPrivacy({ user, flash = {} }) {
                         className={buttonClass('outline', 'sm', 'shrink-0 bg-white')}
                     >
                         <Download className="size-3.5 text-slate-600" aria-hidden="true" />
-                        <span>Unduh Data Saya</span>
+                        <span>Unduh Data</span>
                     </a>
                 </div>
 
@@ -319,10 +374,10 @@ export default function AccountSecurityAndPrivacy({ user, flash = {} }) {
                 <div className="rounded-xl border border-rose-200 bg-rose-50/50 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div className="space-y-0.5">
                         <p className="text-sm font-semibold text-rose-950">
-                            Hapus Akun Secara Permanen
+                            Hapus Akun
                         </p>
                         <p className="text-xs text-rose-900/80 leading-relaxed">
-                            Tindakan ini tidak dapat dibatalkan. Akun tanpa riwayat transaksi akan dihapus total; akun dengan riwayat transaksi akan dianonimkan (PII dihapus) demi keutuhan laporan pembukuan.
+                            Akun yang dihapus tidak bisa dipulihkan. Data pribadi Anda akan dihapus, sementara catatan transaksi tetap disimpan tanpa nama Anda untuk keperluan pembukuan.
                         </p>
                     </div>
                     <Button
@@ -348,8 +403,8 @@ export default function AccountSecurityAndPrivacy({ user, flash = {} }) {
                 onClose={() => {
                     if (!deleteForm.processing) setIsDeleteModalOpen(false);
                 }}
-                title="Konfirmasi Penghapusan Akun"
-                description="Setelah dihapus, Anda tidak dapat lagi masuk atau memulihkan akun ini."
+                title="Hapus akun Anda?"
+                description="Setelah dihapus, Anda tidak bisa masuk lagi dan akun tidak bisa dipulihkan."
                 maxWidth="max-w-lg"
             >
                 <form onSubmit={handleDeleteAccount} className="space-y-4">
@@ -359,7 +414,7 @@ export default function AccountSecurityAndPrivacy({ user, flash = {} }) {
                             aria-hidden="true"
                         />
                         <div>
-                            Pesanan yang masih menunggu pembayaran serta transfer tiket yang belum diklaim akan otomatis dibatalkan. Pastikan Anda telah mengunduh salinan data pribadi jika masih dibutuhkan.
+                            Pesanan yang belum dibayar dan tiket yang sedang Anda transfer (belum diklaim) akan dibatalkan otomatis. Unduh salinan data Anda dulu jika masih diperlukan.
                         </div>
                     </div>
 
@@ -377,7 +432,7 @@ export default function AccountSecurityAndPrivacy({ user, flash = {} }) {
                             htmlFor="delete-account-email"
                             className="block text-xs font-medium text-slate-700 mb-1.5"
                         >
-                            Konfirmasi Alamat Email Akun <span className="text-rose-600">*</span>
+                            Email akun Anda <span className="text-rose-600">*</span>
                         </label>
                         <input
                             id="delete-account-email"
@@ -400,7 +455,7 @@ export default function AccountSecurityAndPrivacy({ user, flash = {} }) {
                             htmlFor="delete-account-confirmation"
                             className="block text-xs font-medium text-slate-700 mb-1.5"
                         >
-                            Ketik <span className="font-mono font-bold text-rose-700">HAPUS AKUN</span> untuk melanjutkan{' '}
+                            Ketik <span className="font-mono font-bold text-rose-700">HAPUS AKUN</span> untuk memastikan{' '}
                             <span className="text-rose-600">*</span>
                         </label>
                         <input
@@ -442,7 +497,7 @@ export default function AccountSecurityAndPrivacy({ user, flash = {} }) {
                             }
                         >
                             <Trash2 className="size-3.5" aria-hidden="true" />
-                            <span>Hapus Akun Permanen</span>
+                            <span>Ya, Hapus Akun Saya</span>
                         </Button>
                     </div>
                 </form>

@@ -16,6 +16,18 @@ class ForgotPasswordRequest extends FormRequest
     }
 
     /**
+     * Normalisasi email ke huruf kecil sebelum validasi dan pencarian akun.
+     */
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('email')) {
+            $this->merge([
+                'email' => mb_strtolower(trim((string) $this->input('email'))),
+            ]);
+        }
+    }
+
+    /**
      * Get the validation rules that apply to the request.
      *
      * @return array<string, ValidationRule|array<mixed>|string>

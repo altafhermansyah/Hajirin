@@ -12,6 +12,7 @@ import {
     Menu,
     QrCode,
     Search,
+    ShieldCheck,
     Tag,
     Ticket,
     Users,
@@ -152,6 +153,12 @@ export default function AdminLayout({ title, children }) {
             href: '/admin/reports',
             icon: FileText,
             active: currentPath.startsWith('/admin/reports'),
+        },
+        {
+            name: 'Log Audit',
+            href: '/admin/audit-logs',
+            icon: ShieldCheck,
+            active: currentPath.startsWith('/admin/audit-logs'),
         },
     ];
 

@@ -48,7 +48,9 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            'terms_accepted_at' => 'datetime',
             'password_changed_at' => 'datetime',
+            'broadcast_emails_enabled' => 'boolean',
             'password' => 'hashed',
         ];
     }

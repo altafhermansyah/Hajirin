@@ -384,6 +384,39 @@ export default function EoRegister({ auth, eoApplication = null }) {
                                             )}
                                         </div>
 
+                                        <label
+                                            htmlFor="eo-pii-consent"
+                                            className="flex items-start gap-2.5 rounded-lg border border-slate-200 bg-slate-50/70 p-3 text-xs text-slate-600 cursor-pointer select-none leading-relaxed"
+                                        >
+                                            <input
+                                                id="eo-pii-consent"
+                                                type="checkbox"
+                                                required
+                                                className="mt-0.5 size-4 shrink-0 rounded border-slate-300 text-brand-blue focus:ring-brand-blue cursor-pointer"
+                                            />
+                                            <span>
+                                                Saya menyatakan dokumen identitas/legalitas yang diunggah adalah asli serta menyetujui pemrosesan data verifikasi oleh Administrator Hajirin sesuai{' '}
+                                                <a
+                                                    href="/kebijakan-privasi"
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="font-medium text-brand-blue hover:underline"
+                                                >
+                                                    Kebijakan Privasi
+                                                </a>{' '}
+                                                dan{' '}
+                                                <a
+                                                    href="/syarat-ketentuan#kewajiban-eo"
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="font-medium text-brand-blue hover:underline"
+                                                >
+                                                    Kewajiban EO
+                                                </a>
+                                                .
+                                            </span>
+                                        </label>
+
                                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-4 border-t border-slate-200">
                                             <p className="text-xs text-slate-500">
                                                 Berkas disimpan di Private Storage dan hanya dapat diakses Admin melalui Pre-signed URL.

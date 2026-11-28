@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AdminAuditLogController;
 use App\Http\Controllers\Admin\AdminCategoryController;
 use App\Http\Controllers\Admin\AdminCheckInController;
 use App\Http\Controllers\Admin\AdminDashboardController;
@@ -76,6 +77,9 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::get('/profile/export-data', [UserProfileController::class, 'exportData'])
         ->middleware('throttle:5,60')
         ->name('profile.export-data');
+    Route::patch('/profile/preferences', [UserProfileController::class, 'updatePreferences'])
+        ->middleware('throttle:user-actions')
+        ->name('profile.preferences');
     Route::delete('/profile', [UserProfileController::class, 'destroy'])
         ->middleware('throttle:5,60')
         ->name('profile.destroy');
@@ -243,6 +247,9 @@ Route::middleware(['auth', 'active', 'admin'])->prefix('admin')->name('admin.')-
     // Laporan & Keuangan Platform (Financial Reporting & Settlements)
     Route::get('/reports', [AdminReportController::class, 'index'])->name('reports.index');
     Route::get('/reports/export-pdf', [AdminReportController::class, 'exportPdf'])->name('reports.export-pdf');
+
+    // Log Audit Keamanan & Akses Data Pribadi
+    Route::get('/audit-logs', AdminAuditLogController::class)->name('audit-logs.index');
 });
 
 // Route Klaim Transfer Tiket (dapat dibuka publik untuk melihat detail & instruksi masuk/daftar)

@@ -8,6 +8,7 @@ use App\Http\Requests\Admin\RejectEoApplicationRequest;
 use App\Mail\EoApplicationStatusMail;
 use App\Models\EoApplication;
 use App\Models\User;
+use App\Support\AuditLog;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -315,6 +316,15 @@ class AdminOrganizerController extends Controller
             abort(404, 'Berkas dokumen pengajuan tidak ditemukan di server.');
         }
 
+        AuditLog::record(
+            action: 'eo_document.viewed',
+            subjectType: 'eo_application',
+            subjectId: $application->id,
+            metadata: [
+                'applicant_user_id' => $application->user_id,
+            ],
+        );
+
         return Storage::disk('local')->response($application->document_path);
     }
 
@@ -373,6 +383,14 @@ class AdminOrganizerController extends Controller
 
         Cache::forget(HandleInertiaRequests::ADMIN_COUNTS_CACHE_KEY);
 
+        AuditLog::record(
+            action: 'eo_application.reviewed',
+            actorId: $admin->id,
+            subjectType: 'eo_application',
+            subjectId: $id,
+            metadata: ['decision' => 'APPROVED'],
+        );
+
         return back()->with('success', 'Pengajuan Event Organizer berhasil disetujui dan pengguna resmi berstatus EO.');
     }
 
@@ -427,6 +445,14 @@ class AdminOrganizerController extends Controller
 
         Cache::forget(HandleInertiaRequests::ADMIN_COUNTS_CACHE_KEY);
 
+        AuditLog::record(
+            action: 'eo_application.reviewed',
+            actorId: $admin->id,
+            subjectType: 'eo_application',
+            subjectId: $id,
+            metadata: ['decision' => 'REJECTED'],
+        );
+
         return back()->with('success', 'Pengajuan Event Organizer telah ditolak beserta catatan evaluasi untuk pemohon.');
     }
 
@@ -449,6 +475,14 @@ class AdminOrganizerController extends Controller
         if ($newStatus === 'SUSPENDED') {
             DB::table('sessions')->where('user_id', $user->id)->delete();
         }
+
+        AuditLog::record(
+            action: 'user.status_changed',
+            actorId: $request->user()?->id,
+            subjectType: 'user',
+            subjectId: $user->id,
+            metadata: ['new_status' => $newStatus, 'role' => 'EO'],
+        );
 
         $label = $newStatus === 'ACTIVE' ? 'diaktifkan kembali' : 'ditangguhkan (suspended)';
 
@@ -478,6 +512,14 @@ class AdminOrganizerController extends Controller
                 'created_at' => now(),
             ]);
         });
+
+        AuditLog::record(
+            action: 'eo.revoked',
+            actorId: $request->user()?->id,
+            subjectType: 'user',
+            subjectId: $user->id,
+            metadata: ['reason' => $reason],
+        );
 
         return back()->with('success', "Hak akses EO untuk {$user->name} berhasil dicabut dan role telah dikembalikan menjadi Peserta (USER).");
     }

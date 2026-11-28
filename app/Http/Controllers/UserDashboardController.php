@@ -155,6 +155,8 @@ class UserDashboardController extends Controller
             $typeCounts = $orderTickets->groupBy('ticket_type_name')->map->count();
             $typesSummary = $typeCounts->map(fn ($cnt, $name) => "{$name} ({$cnt}x)")->implode(', ');
             $hasActive = $orderTickets->contains('ticket_status', 'ACTIVE');
+            $hasUsed = $orderTickets->contains('ticket_status', 'USED');
+            $ticketGroupStatus = $hasActive ? 'ACTIVE' : ($hasUsed ? 'USED' : 'CANCELLED');
 
             return [
                 'id' => $first->id,
@@ -165,7 +167,7 @@ class UserDashboardController extends Controller
                 'primaryTicketCode' => $first->ticket_code,
                 'attendeeName' => $first->attendee_name,
                 'attendeeEmail' => $first->attendee_email,
-                'status' => $hasActive ? 'ACTIVE' : 'USED',
+                'status' => $ticketGroupStatus,
                 'quantity' => $totalCount,
                 'ticketType' => $typesSummary ?: $first->ticket_type_name,
                 'eventTitle' => $first->event_title,
@@ -177,34 +179,36 @@ class UserDashboardController extends Controller
             ];
         })->values();
 
-        // Undangan transfer tiket yang ditujukan ke email user dan masih aktif
-        $incomingTransfers = DB::table('ticket_transfers')
-            ->join('tickets', 'tickets.id', '=', 'ticket_transfers.ticket_id')
-            ->join('orders', 'orders.id', '=', 'tickets.order_id')
-            ->join('events', 'events.id', '=', 'orders.event_id')
-            ->join('users as senders', 'senders.id', '=', 'ticket_transfers.from_user_id')
-            ->whereRaw('LOWER(ticket_transfers.recipient_email) = ?', [mb_strtolower($user->email)])
-            ->where('ticket_transfers.status', 'PENDING')
-            ->where('ticket_transfers.expires_at', '>', now())
-            ->orderByDesc('ticket_transfers.created_at')
-            ->select(
-                'ticket_transfers.id',
-                'ticket_transfers.token',
-                'ticket_transfers.expires_at',
-                'senders.name as sender_name',
-                'events.title as event_title',
-                'events.starts_at as event_starts_at'
-            )
-            ->get()
-            ->map(fn ($row): array => [
-                'id' => $row->id,
-                'token' => $row->token,
-                'senderName' => $row->sender_name,
-                'eventTitle' => $row->event_title,
-                'eventDate' => Carbon::parse($row->event_starts_at)->timezone(config('app.timezone'))->locale('id')->translatedFormat('d M Y, H:i').' WIB',
-                'expiresAtFormatted' => Carbon::parse($row->expires_at)->timezone(config('app.timezone'))->locale('id')->translatedFormat('d M Y, H:i').' WIB',
-                'claimUrl' => route('ticket-transfers.show', $row->token),
-            ]);
+        // Undangan transfer tiket hanya ditampilkan jika email pengguna sudah terverifikasi OTP
+        $incomingTransfers = $user->hasVerifiedEmail()
+            ? DB::table('ticket_transfers')
+                ->join('tickets', 'tickets.id', '=', 'ticket_transfers.ticket_id')
+                ->join('orders', 'orders.id', '=', 'tickets.order_id')
+                ->join('events', 'events.id', '=', 'orders.event_id')
+                ->join('users as senders', 'senders.id', '=', 'ticket_transfers.from_user_id')
+                ->whereRaw('LOWER(ticket_transfers.recipient_email) = ?', [mb_strtolower($user->email)])
+                ->where('ticket_transfers.status', 'PENDING')
+                ->where('ticket_transfers.expires_at', '>', now())
+                ->orderByDesc('ticket_transfers.created_at')
+                ->select(
+                    'ticket_transfers.id',
+                    'ticket_transfers.token',
+                    'ticket_transfers.expires_at',
+                    'senders.name as sender_name',
+                    'events.title as event_title',
+                    'events.starts_at as event_starts_at'
+                )
+                ->get()
+                ->map(fn ($row): array => [
+                    'id' => $row->id,
+                    'token' => $row->token,
+                    'senderName' => $row->sender_name,
+                    'eventTitle' => $row->event_title,
+                    'eventDate' => Carbon::parse($row->event_starts_at)->timezone(config('app.timezone'))->locale('id')->translatedFormat('d M Y, H:i').' WIB',
+                    'expiresAtFormatted' => Carbon::parse($row->expires_at)->timezone(config('app.timezone'))->locale('id')->translatedFormat('d M Y, H:i').' WIB',
+                    'claimUrl' => route('ticket-transfers.show', $row->token),
+                ])
+            : collect();
 
         $bookmarkedRows = DB::table('bookmarks')
             ->join('events', 'events.id', '=', 'bookmarks.event_id')
@@ -215,7 +219,7 @@ class UserDashboardController extends Controller
                     ->where('eo_applications.status', '=', 'APPROVED');
             })
             ->where('bookmarks.user_id', $userId)
-            ->where('events.status', 'PUBLISHED')
+            ->whereIn('events.status', ['PUBLISHED', 'ONGOING'])
             ->select(
                 'events.id',
                 'events.title',

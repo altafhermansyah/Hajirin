@@ -311,11 +311,23 @@ export default function Dashboard({ auth, dashboard }) {
                                                     <h2 className="font-semibold text-base text-slate-900 line-clamp-2 leading-snug">
                                                         {ticket.eventTitle}
                                                     </h2>
-                                                    {ticket.isTransferredIn && (
-                                                        <NeutralTag className="shrink-0">
-                                                            Tiket Transfer
-                                                        </NeutralTag>
-                                                    )}
+                                                    <div className="flex items-center gap-1.5 shrink-0">
+                                                        {ticket.status === 'CANCELLED' && (
+                                                            <StatusBadge
+                                                                tone="danger"
+                                                                label="Dibatalkan"
+                                                            />
+                                                        )}
+                                                        {ticket.status === 'USED' && (
+                                                            <StatusBadge
+                                                                tone="info"
+                                                                label="Sudah Check-in"
+                                                            />
+                                                        )}
+                                                        {ticket.isTransferredIn && (
+                                                            <NeutralTag>Tiket Transfer</NeutralTag>
+                                                        )}
+                                                    </div>
                                                 </div>
 
                                                 <div className="flex items-start gap-4 mb-4">

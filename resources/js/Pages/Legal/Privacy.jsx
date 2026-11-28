@@ -101,10 +101,10 @@ export default function Privacy({ auth }) {
                                 <h2 className="text-xl font-bold text-navy">2. Data Pribadi yang Kami Kumpulkan</h2>
                                 <p>Jenis data yang kami proses bergantung pada fitur yang Anda gunakan:</p>
                                 <ul className="list-disc pl-5 space-y-1.5">
-                                    <li><strong>Data Akun Pengguna:</strong> Nama lengkap, alamat email, nomor telepon (opsional), foto profil (avatar), serta kata sandi yang disimpan dalam bentuk terenkripsi (<em>hashed</em>).</li>
-                                    <li><strong>Data Pemesanan &amp; E-Tiket:</strong> Nama peserta, email peserta, nomor telepon peserta, jenis tiket yang dipesan, metode pembayaran, referensi transaksi, riwayat refund, serta waktu check-in.</li>
-                                    <li><strong>Data Pengajuan Event Organizer (EO):</strong> Nama organisasi, nomor kontak penanggung jawab (PIC), tautan portofolio, alasan pengajuan, dan dokumen verifikasi/legalitas yang diunggah.</li>
-                                    <li><strong>Data Interaksi &amp; Preferensi:</strong> Daftar event yang disimpan (<em>bookmark</em>), status baca notifikasi, serta log aktivitas keamanan untuk mencegah penyalahgunaan.</li>
+                                    <li><strong>Data Akun Pengguna:</strong> Nama lengkap, alamat email terverifikasi OTP, nomor telepon/WhatsApp (wajib), foto profil (avatar), waktu persetujuan ketentuan layanan, serta kata sandi yang disimpan dalam bentuk terenkripsi (<em>hashed</em>).</li>
+                                    <li><strong>Data Pemesanan, E-Tiket, &amp; Transfer Tiket:</strong> Nama peserta, email peserta, nomor telepon peserta, jenis tiket yang dipesan, metode pembayaran, referensi transaksi, riwayat refund, waktu check-in, serta nama/email penerima saat Anda menggunakan fitur Transfer Tiket.</li>
+                                    <li><strong>Data Pengajuan Event Organizer (EO):</strong> Nama organisasi, nomor kontak penanggung jawab (PIC), tautan portofolio, alasan pengajuan, dan dokumen verifikasi/legalitas (KTP/KTM) yang diunggah.</li>
+                                    <li><strong>Data Interaksi &amp; Geolokasi Sisi Klien:</strong> Daftar event yang disimpan (<em>bookmark</em>), status baca notifikasi, serta log aktivitas keamanan. Fitur deteksi kota pada halaman <em>Event Terdekat</em> menghitung jarak 100% di peramban Anda tanpa mengirimkan koordinat GPS ke server Hajirin.</li>
                                 </ul>
                             </section>
 
@@ -148,7 +148,8 @@ export default function Privacy({ auth }) {
                                 <p>Sesuai ketentuan UU PDP, Anda memiliki hak untuk:</p>
                                 <ul className="list-disc pl-5 space-y-1.5">
                                     <li><strong>Mengakses &amp; Memperbarui Data:</strong> Melihat riwayat transaksi serta mengubah nama, nomor telepon, foto profil, dan kata sandi secara langsung melalui halaman Dashboard Akun.</li>
-                                    <li><strong>Meminta Koreksi atau Penghapusan:</strong> Mengajukan koreksi data yang tidak akurat atau permintaan penghapusan akun kepada Administrator (sepanjang tidak terikat kewajiban transaksi aktif).</li>
+                                    <li><strong>Mengunduh Salinan Data:</strong> Anda dapat mengunduh salinan data Anda sendiri lewat menu <em>Unduh Data</em> di tab Pengaturan Profil.</li>
+                                    <li><strong>Menghapus Akun:</strong> Anda dapat menghapus akun kapan saja lewat menu <em>Hapus Akun</em>. Akun tanpa riwayat transaksi dihapus sepenuhnya. Jika Anda pernah bertransaksi, data pribadi Anda (nama, email, telepon, foto, dan dokumen verifikasi) dihapus, sedangkan catatan transaksinya tetap disimpan tanpa identitas Anda untuk keperluan pembukuan.</li>
                                     <li><strong>Menarik Persetujuan:</strong> Menghentikan penggunaan layanan atau mencabut bookmark dan notifikasi kapan saja.</li>
                                 </ul>
                             </section>

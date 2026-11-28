@@ -15,3 +15,7 @@ Schedule::command('hajirin:expire-pending-orders')
 Schedule::command('hajirin:sync-event-statuses')
     ->everyFiveMinutes()
     ->withoutOverlapping(10);
+
+Schedule::command('hajirin:purge-eo-documents')
+    ->daily()
+    ->withoutOverlapping(30);

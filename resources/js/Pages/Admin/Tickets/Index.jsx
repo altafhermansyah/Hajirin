@@ -19,6 +19,7 @@ import { Pagination } from '../../../Components/ui/Pagination';
 import { FlashBanner } from '../../../Components/ui/FlashBanner';
 import { Button, buttonClass } from '../../../Components/ui/Button';
 import { Modal } from '../../../Components/ui/Dialog';
+import QrCodeSvg from '../../../Components/QrCodeSvg';
 
 const TICKET_STATUS_META = {
     ACTIVE: { tone: 'success', label: 'Valid Aktif' },
@@ -388,7 +389,9 @@ export default function TicketManagementIndex({
                         </div>
 
                         <div className="text-center p-5 rounded-lg border border-dashed border-slate-300 bg-white">
-                            <QrCode className="size-24 mx-auto text-slate-800 mb-2" aria-hidden="true" />
+                            <div className="mx-auto mb-3 inline-flex rounded-lg border border-slate-200 bg-white p-2">
+                                <QrCodeSvg value={detailTicket.ticketCode} size={144} />
+                            </div>
                             <p className="font-mono font-semibold text-sm text-slate-900 tracking-wider">
                                 {detailTicket.ticketCode}
                             </p>

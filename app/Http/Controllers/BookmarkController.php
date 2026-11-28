@@ -35,6 +35,10 @@ class BookmarkController extends Controller
             $bookmarked = false;
             $message = 'Event berhasil dihapus dari daftar simpanan.';
         } else {
+            if (! in_array($eventModel->status, ['PUBLISHED', 'ONGOING'], true)) {
+                abort(404);
+            }
+
             Bookmark::firstOrCreate([
                 'user_id' => $user->id,
                 'event_id' => $eventModel->id,

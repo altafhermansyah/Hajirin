@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreAdminUserRequest;
 use App\Http\Requests\Admin\UpdateAdminUserRequest;
 use App\Models\User;
+use App\Support\AuditLog;
 use Carbon\Carbon;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
@@ -214,6 +215,14 @@ class AdminUserController extends Controller
         if ($newStatus === 'SUSPENDED') {
             DB::table('sessions')->where('user_id', $targetUser->id)->delete();
         }
+
+        AuditLog::record(
+            action: 'user.status_changed',
+            actorId: $request->user()?->id,
+            subjectType: 'user',
+            subjectId: $targetUser->id,
+            metadata: ['new_status' => $newStatus, 'role' => $targetUser->role],
+        );
 
         $label = $newStatus === 'ACTIVE' ? 'diaktifkan kembali' : 'ditangguhkan (suspended)';
 

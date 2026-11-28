@@ -43,7 +43,7 @@ class SendEventBroadcastNotificationsJob implements ShouldQueue
             ->where('orders.status', 'PAID')
             ->where('tickets.status', '!=', 'CANCELLED')
             ->distinct()
-            ->get(['users.id', 'users.name', 'users.email']);
+            ->get(['users.id', 'users.name', 'users.email', 'users.broadcast_emails_enabled']);
 
         foreach ($recipients->chunk(200) as $chunk) {
             InAppNotification::sendMany(
@@ -56,6 +56,10 @@ class SendEventBroadcastNotificationsJob implements ShouldQueue
 
             if ($this->sendEmail) {
                 foreach ($chunk as $recipient) {
+                    if (! (bool) ($recipient->broadcast_emails_enabled ?? true)) {
+                        continue;
+                    }
+
                     Mail::to($recipient->email)->send(
                         new EventBroadcastMail(
                             recipientName: $recipient->name,

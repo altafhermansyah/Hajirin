@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\DeleteAccountRequest;
 use App\Http\Requests\SendProfilePasswordResetRequest;
 use App\Models\Order;
+use App\Support\AuditLog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -104,12 +105,42 @@ class UserProfileController extends Controller
     }
 
     /**
+     * Perbarui preferensi komunikasi email pengumuman dari penyelenggara event.
+     */
+    public function updatePreferences(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'broadcast_emails_enabled' => ['required', 'boolean'],
+        ]);
+
+        $enabled = (bool) $validated['broadcast_emails_enabled'];
+
+        $request->user()->forceFill([
+            'broadcast_emails_enabled' => $enabled,
+        ])->save();
+
+        return back()->with(
+            'success',
+            $enabled
+                ? 'Email pengumuman dari penyelenggara event telah diaktifkan.'
+                : 'Email pengumuman dari penyelenggara event telah dinonaktifkan.'
+        );
+    }
+
+    /**
      * Ekspor seluruh data pribadi pengguna dalam format JSON yang dapat diunduh.
      */
     public function exportData(Request $request): StreamedResponse
     {
         $user = $request->user();
         $userId = $user->id;
+
+        AuditLog::record(
+            action: 'account.exported',
+            actorId: $userId,
+            subjectType: 'user',
+            subjectId: $userId,
+        );
 
         $orders = DB::table('orders')
             ->join('events', 'events.id', '=', 'orders.event_id')
@@ -275,8 +306,16 @@ class UserProfileController extends Controller
 
         $originalEmail = $user->email;
         $avatarPath = $user->avatar_path;
+        $eoDocumentPaths = DB::table('eo_applications')
+            ->where('user_id', $user->id)
+            ->whereNotNull('document_path')
+            ->pluck('document_path')
+            ->all();
 
-        DB::transaction(function () use ($user, $originalEmail): void {
+        $deletedUserId = $user->id;
+        $wasHardDeleted = false;
+
+        DB::transaction(function () use ($user, $originalEmail, &$wasHardDeleted): void {
             // 1. Batalkan pesanan PENDING dan kembalikan kuota tiket
             $pendingOrders = Order::query()
                 ->with(['items.ticketType'])
@@ -338,12 +377,25 @@ class UserProfileController extends Controller
                 || DB::table('tickets')->where('checked_in_by', $user->id)->exists()
                 || DB::table('tickets')->where('holder_user_id', $user->id)->exists();
 
+            $anonymizedEmail = 'deleted-'.Str::uuid()->toString().'@deleted.hajirin.local';
+
+            // Anonimkan data penerima pada histori transfer tiket (termasuk yang hanya cocok via email)
+            DB::table('ticket_transfers')
+                ->where(function ($query) use ($user, $originalEmail): void {
+                    $query->where('to_user_id', $user->id)
+                        ->orWhereRaw('LOWER(recipient_email) = ?', [mb_strtolower($originalEmail)]);
+                })
+                ->update([
+                    'recipient_name' => 'Pengguna Terhapus',
+                    'recipient_email' => $anonymizedEmail,
+                    'updated_at' => now(),
+                ]);
+
             if (! $hasAuditOrFinancialHistory) {
                 $user->delete();
+                $wasHardDeleted = true;
             } else {
                 // PII Scrubbing / Anonimisasi agar pembukuan EO, audit check-in & Admin tetap utuh
-                $anonymizedEmail = 'deleted-'.Str::uuid()->toString().'@deleted.hajirin.local';
-
                 $user->forceFill([
                     'name' => 'Pengguna Terhapus',
                     'email' => $anonymizedEmail,
@@ -354,6 +406,17 @@ class UserProfileController extends Controller
                     'status' => 'SUSPENDED',
                 ])->save();
 
+                // Anonimkan dokumen/kontak pengajuan EO milik user
+                DB::table('eo_applications')
+                    ->where('user_id', $user->id)
+                    ->update([
+                        'contact_phone' => '-',
+                        'portfolio_url' => null,
+                        'document_path' => '',
+                        'reason' => 'Data pengajuan telah dianonimkan sesuai permintaan penghapusan akun.',
+                        'updated_at' => now(),
+                    ]);
+
                 DB::table('orders')
                     ->where('user_id', $user->id)
                     ->update([
@@ -363,8 +426,19 @@ class UserProfileController extends Controller
                         'updated_at' => now(),
                     ]);
 
+                // Sapu seluruh tiket yang dipegang user ATAU tiket lama (holder_user_id NULL) pada order milik user
                 DB::table('tickets')
-                    ->where('holder_user_id', $user->id)
+                    ->where(function ($query) use ($user): void {
+                        $query->where('holder_user_id', $user->id)
+                            ->orWhere(function ($legacy) use ($user): void {
+                                $legacy->whereNull('holder_user_id')
+                                    ->whereIn('order_id', function ($sub) use ($user): void {
+                                        $sub->select('id')
+                                            ->from('orders')
+                                            ->where('user_id', $user->id);
+                                    });
+                            });
+                    })
                     ->update([
                         'attendee_name' => 'Pengguna Terhapus',
                         'attendee_email' => $anonymizedEmail,
@@ -374,15 +448,32 @@ class UserProfileController extends Controller
             }
         });
 
-        // Hapus berkas avatar setelah commit berhasil
+        // Hapus berkas avatar & dokumen KTP/legalitas EO setelah transaksi commit berhasil
         if ($avatarPath && Str::startsWith($avatarPath, '/storage/avatars/')) {
             $oldPath = str_replace('/storage/', '', $avatarPath);
             Storage::disk('public')->delete($oldPath);
         }
 
+        foreach ($eoDocumentPaths as $docPath) {
+            if (is_string($docPath) && $docPath !== '') {
+                Storage::disk('local')->delete($docPath);
+            }
+        }
+
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
+
+        AuditLog::record(
+            action: 'account.deleted',
+            actorId: $wasHardDeleted ? null : $deletedUserId,
+            subjectType: 'user',
+            subjectId: $deletedUserId,
+            metadata: [
+                'mode' => $wasHardDeleted ? 'hard_delete' : 'anonymized',
+                'purged_eo_documents' => count($eoDocumentPaths),
+            ],
+        );
 
         return redirect()
             ->route('home')

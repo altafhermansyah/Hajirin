@@ -7,6 +7,7 @@ use App\Models\Event;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Models\Ticket;
+use App\Support\AuditLog;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -273,6 +274,16 @@ class AdminOrderController extends Controller
                     }
                 }
             }
+
+            AuditLog::record(
+                action: 'order.marked_paid',
+                subjectType: 'order',
+                subjectId: $order->id,
+                metadata: [
+                    'order_reference' => $order->order_reference,
+                    'total_amount' => (float) $order->total_amount,
+                ],
+            );
 
             // Kirim notifikasi
             DB::table('notifications')->insert([

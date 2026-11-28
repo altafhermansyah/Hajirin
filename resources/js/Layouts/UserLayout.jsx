@@ -3,6 +3,7 @@ import { Link, usePage } from '@inertiajs/react';
 import { Compass, Home, Ticket, UserRound } from 'lucide-react';
 import Navbar from '../Components/Navbar';
 import AuthModal from '../Components/Auth/AuthModal';
+import CookieNotice from '../Components/CookieNotice';
 
 export default function UserLayout({
     auth: authProp,
@@ -202,6 +203,8 @@ export default function UserLayout({
                     </div>
                 </nav>
             )}
+
+            <CookieNotice />
 
             {!user && !onOpenAuthModal && (
                 <AuthModal

@@ -46,7 +46,7 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'auth' => [
                 'user' => $user ? [
-                    ...$user->only('id', 'name', 'email', 'phone', 'avatar_path', 'role', 'email_verified_at'),
+                    ...$user->only('id', 'name', 'email', 'phone', 'avatar_path', 'role', 'email_verified_at', 'broadcast_emails_enabled'),
                     'password_changed_at' => $user->password_changed_at
                         ? $user->password_changed_at->copy()->timezone(config('app.timezone'))->toIso8601String()
                         : null,
